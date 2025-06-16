@@ -1,0 +1,39 @@
+### Launch ###
+command = zsh --login -c "if command -v tmux >/dev/null 2>&1; then tmux attach || tmux; else zsh; fi"
+
+### Theming ###
+theme = rose-pine-moon
+
+# TRANSPARENCY = OFF
+background-opacity = 1.0
+background-blur = false
+
+font-family = "JetBrainsMono Nerd Font"
+font-size = 12
+
+window-decoration = false
+window-padding-x = 10
+window-padding-y = 10
+window-padding-balance = true
+
+cursor-style = block
+cursor-style-blink = false
+mouse-hide-while-typing
+cursor-invert-fg-bg = true
+
+### Ghostty behavior ###
+confirm-close-surface = false
+auto-update = check
+auto-update-channel = stable
+window-save-state = always
+shell-integration-features = no-cursor
+
+### Keybinds ###
+keybind = page_up=scroll_page_up
+keybind = page_down=scroll_page_down
+keybind = ctrl+enter=reload_config
+### Unbinds ###
+keybind = ctrl+shift+h=unbind
+keybind = ctrl+shift+j=unbind
+keybind = ctrl+shift+k=unbind
+keybind = ctrl+shift+l=unbind
