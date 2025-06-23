@@ -43,6 +43,9 @@ bindkey -e
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 
+bindkey -r "^[^["
+bindkey '^[s' sudo-command-line
+
 # History
 HISTSIZE=5000
 HISTFILE=~/.zsh_history
