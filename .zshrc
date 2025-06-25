@@ -4,7 +4,8 @@ source ~/.config/zshrc.d/auto-Hypr.sh
 # source ~/.config/zshrc.d/dots-hyprland.zsh
 
 # Append to PATH
-PATH=$HOME/.local/bin:$PATH
+export PATH=$HOME/.local/bin:$PATH
+export PATH="$HOME/.deno/bin:$PATH"
 
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
