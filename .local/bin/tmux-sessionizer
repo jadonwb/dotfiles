@@ -2,6 +2,13 @@
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/tmux-sessionizer"
 CONFIG_FILE="$CONFIG_DIR/tmux-sessionizer.conf"
 
+# Add a flag to control popup mode
+POPUP_MODE=false
+if [[ "$1" == "--popup" ]]; then
+    POPUP_MODE=true
+    shift
+fi
+
 # config file example
 # ------------------------
 # # file: ~/.config/tmux-sessionizer/tmux-sessionizer.conf
@@ -13,7 +20,6 @@ CONFIG_FILE="$CONFIG_DIR/tmux-sessionizer.conf"
 # # if set this override the TS_MAX_DEPTH (1)
 # TS_MAX_DEPTH=2
 # ------------------------
-
 # test if the config file exists
 if [[ -f "$CONFIG_FILE" ]]; then
     # shellcheck source=/dev/null
@@ -21,12 +27,11 @@ if [[ -f "$CONFIG_FILE" ]]; then
 fi
 
 sanity_check() {
-    if ! command -v tmux &>/dev/null; then
+    if ! command -v tmux &> /dev/null; then
         echo "tmux is not installed. Please install it first."
         exit 1
     fi
-
-    if ! command -v fzf &>/dev/null; then
+    if ! command -v fzf &> /dev/null; then
         echo "fzf is not installed. Please install it first."
         exit 1
     fi
@@ -58,9 +63,6 @@ sanity_check
 [[ -n "$TS_SEARCH_PATHS" ]] || TS_SEARCH_PATHS=(~/ ~/personal ~/personal/dev/env/.config)
 
 # Add any extra search paths to the TS_SEARCH_PATHS array
-# e.g : EXTRA_SEARCH_PATHS=("$HOME/extra1:4" "$HOME/extra2")
-# note : Path can be suffixed with :number to limit or extend the depth of the search for the Path
-
 if [[ ${#TS_EXTRA_SEARCH_PATHS[@]} -gt 0 ]]; then
     TS_SEARCH_PATHS+=("${TS_EXTRA_SEARCH_PATHS[@]}")
 fi
@@ -70,14 +72,11 @@ find_dirs() {
     # list TMUX sessions
     if [[ -n "${TMUX}" ]]; then
         current_session=$(tmux display-message -p '#S')
-        tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session"
+        tmux list-sessions -F "[TMUX] #{session_name}" 2> /dev/null | grep -vFx "[TMUX] $current_session"
     else
-        tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null
+        tmux list-sessions -F "[TMUX] #{session_name}" 2> /dev/null
     fi
 
-    # note: TS_SEARCH_PATHS is an array of paths to search for directories
-    # if the path ends with :number, it will search for directories with a max depth of number ;)
-    # if there is no number, it will search for directories with a max depth defined by TS_MAX_DEPTH or 1 if not set
     for entry in "${TS_SEARCH_PATHS[@]}"; do
         # Check if entry as :number as suffix then adapt the maxdepth parameter
         if [[ "$entry" =~ ^([^:]+):([0-9]+)$ ]]; then
@@ -86,7 +85,6 @@ find_dirs() {
         else
             path="$entry"
         fi
-
         [[ -d "$path" ]] && find "$path" -mindepth 1 -maxdepth "${depth:-${TS_MAX_DEPTH:-1}}" -path '*/.git' -prune -o -type d -print
     done
 }
@@ -94,20 +92,29 @@ find_dirs() {
 if [[ $# -eq 1 ]]; then
     selected="$1"
 else
-    selected=$(find_dirs | fzf)
+    selected=$(find_dirs | fzf --reverse)
 fi
 
 if [[ -z $selected ]]; then
     exit 0
 fi
 
+# Handle TMUX session selection
 if [[ "$selected" =~ ^\[TMUX\]\ (.+)$ ]]; then
-    selected="${BASH_REMATCH[1]}"
+    selected_name="${BASH_REMATCH[1]}"
+    if [[ "$POPUP_MODE" == true ]]; then
+        echo "$selected_name"
+        exit 0
+    else
+        switch_to "$selected_name"
+        exit 0
+    fi
 fi
 
 selected_name=$(basename "$selected" | tr . _)
 tmux_running=$(pgrep tmux)
 
+# Create session if it doesn't exist
 if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
     tmux new-session -ds "$selected_name" -c "$selected"
     hydrate "$selected_name" "$selected"
@@ -118,4 +125,9 @@ if ! has_session "$selected_name"; then
     hydrate "$selected_name" "$selected"
 fi
 
-switch_to "$selected_name"
+# In popup mode, just output the session name
+if [[ "$POPUP_MODE" == true ]]; then
+    echo "$selected_name"
+else
+    switch_to "$selected_name"
+fi
