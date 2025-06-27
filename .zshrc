@@ -1,21 +1,19 @@
-# Autolaunch Hyprland
-source ~/.config/zshrc.d/auto-Hypr.sh
-# Colorscheme for zsh
-# source ~/.config/zshrc.d/dots-hyprland.zsh
-
 # Append to PATH
 export PATH=$HOME/.local/bin:$PATH
-export PATH="$HOME/.deno/bin:$PATH"
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
 
+
+# Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
-# Download Zinit, if its not there yet
+# Download Zinit, if it's not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
-	mkdir -p "$(dirname $ZINIT_HOME)"
-	git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+   mkdir -p "$(dirname $ZINIT_HOME)"
+   git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 
-# Source/load zinit
+# Source/Load zinit
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Add in zsh plugins
@@ -25,22 +23,21 @@ zinit light zsh-users/zsh-autosuggestions
 zinit light Aloxaf/fzf-tab
 
 # Add in snippets
+zinit snippet OMZL::git.zsh
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
-zinit snippet OMZP::archlinux
 zinit snippet OMZP::command-not-found
 
 # Load completions
-autoload -U compinit && compinit
+autoload -Uz compinit && compinit -u
 
 zinit cdreplay -q
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# To customize prompt
 eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
 
-
 # Keybindings
-# bindkey -e
+bindkey -e
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 
@@ -69,15 +66,18 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
 alias ls='ls --color'
-alias c='clear'
 alias vim='nvim'
+alias c='clear'
 
 # Shell integrations
-eval "$(fzf --zsh)"
+source /usr/share/doc/fzf/examples/key-bindings.zsh
+source /usr/share/doc/fzf/examples/completion.zsh
 eval "$(zoxide init --cmd cd zsh)"
-
+umask 007
 
 # tmux
 bindkey -s ^f "tmux-sessionizer\n"
 
-export PATH=$PATH:/home/jadon/.spicetify
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
