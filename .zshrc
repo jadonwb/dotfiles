@@ -70,12 +70,22 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 # Aliases
 alias ls='ls --color'
 alias c='clear'
+alias q='exit'
 alias vim='nvim'
 
 # Shell integrations
 eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd cd zsh)"
 
+# fzf options
+# export FZF_DEFAULT_OPTS="--color=bg:-1,bg+:-1"
+# bg+:#414559,bg:#303446,
+export FZF_DEFAULT_OPTS=" \
+--color=spinner:#F2D5CF,hl:#E78284 \
+--color=fg:#C6D0F5,header:#E78284,info:#CA9EE6,pointer:#F2D5CF \
+--color=marker:#BABBF1,fg+:#C6D0F5,prompt:#CA9EE6,hl+:#E78284 \
+--color=selected-bg:#51576D \
+--color=border:#414559,label:#C6D0F5"
 
 # tmux
 bindkey -s ^f "tmux-sessionizer\n"
