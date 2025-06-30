@@ -35,7 +35,7 @@ autoload -U compinit && compinit
 
 zinit cdreplay -q
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# Custom prompt
 eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
 
 
@@ -61,6 +61,7 @@ setopt hist_ignore_dups
 setopt hist_find_no_dups
 
 # Completion styling
+zstyle ':fzf-tab:*' fzf-flags ${(z)FZF_DEFAULT_OPTS}
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
@@ -76,16 +77,6 @@ alias vim='nvim'
 # Shell integrations
 eval "$(fzf --zsh)"
 eval "$(zoxide init --cmd cd zsh)"
-
-# fzf options
-# export FZF_DEFAULT_OPTS="--color=bg:-1,bg+:-1"
-# bg+:#414559,bg:#303446,
-export FZF_DEFAULT_OPTS=" \
---color=spinner:#F2D5CF,hl:#E78284 \
---color=fg:#C6D0F5,header:#E78284,info:#CA9EE6,pointer:#F2D5CF \
---color=marker:#BABBF1,fg+:#C6D0F5,prompt:#CA9EE6,hl+:#E78284 \
---color=selected-bg:#51576D \
---color=border:#414559,label:#C6D0F5"
 
 # tmux
 bindkey -s ^f "tmux-sessionizer\n"
