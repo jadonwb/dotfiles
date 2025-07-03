@@ -6,6 +6,7 @@ source ~/.config/zshrc.d/auto-Hypr.sh
 # Append to PATH
 export PATH=$HOME/.local/bin:$PATH
 export PATH="$HOME/.deno/bin:$PATH"
+export PATH=$HOME/.cargo/bin:$PATH
 
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
