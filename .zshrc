@@ -1,7 +1,7 @@
 # Append to PATH
 export PATH=$HOME/.local/bin:$PATH
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
+export PATH=$HOME/.cargo/bin:$PATH
+export MANPAGER='nvim +Man!'
 
 
 # Set the directory we want to store zinit and plugins
