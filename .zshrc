@@ -3,11 +3,6 @@ source ~/.config/zshrc.d/auto-Hypr.sh
 # Colorscheme for zsh
 # source ~/.config/zshrc.d/dots-hyprland.zsh
 
-# Append to PATH
-export PATH=$HOME/.local/bin:$PATH
-export PATH=$HOME/.cargo/bin:$PATH
-export MANPAGER='nvim +Man!'
-
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if its not there yet
@@ -81,5 +76,3 @@ eval "$(zoxide init --cmd cd zsh)"
 
 # tmux
 bindkey -s ^f "tmux-sessionizer\n"
-
-export PATH=$PATH:/home/jadon/.spicetify

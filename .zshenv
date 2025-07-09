@@ -4,3 +4,8 @@ export FZF_DEFAULT_OPTS=" \
 --color=marker:#BABBF1,fg+:#C6D0F5,prompt:#CA9EE6,hl+:#E78284 \
 --color=selected-bg:#51576D \
 --color=border:#414559,label:#C6D0F5"
+
+export PATH=$HOME/.local/bin:$PATH
+export PATH=$HOME/.cargo/bin:$PATH
+export MANPAGER='nvim +Man!'
+export PATH=$PATH:/home/jadon/.spicetify
