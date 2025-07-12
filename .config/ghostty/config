@@ -1,13 +1,10 @@
 ### Launch ###
-# initial-command = zsh --login
 gtk-single-instance = true
 quit-after-last-window-closed = false
-# command = zsh --login -c "if command -v tmux >/dev/null 2>&1; then tmux attach || tmux; else zsh; fi"
 command = zsh --login
 
 ### Theming ###
-# theme = rose-pine-moon
-theme = catppuccin-frappe
+theme = catppuccin-mocha
 
 
 background-opacity = 0.90
@@ -35,14 +32,3 @@ shell-integration-features = no-cursor
 keybind = page_up=scroll_page_up
 keybind = page_down=scroll_page_down
 keybind = ctrl+shift+r=reload_config
-### Unbinds ###
-keybind = ctrl+shift+h=unbind
-keybind = ctrl+shift+j=unbind
-keybind = ctrl+shift+k=unbind
-keybind = ctrl+shift+l=unbind
-
-keybind = ctrl+v=unbind
-keybind = ctrl+v=paste_from_clipboard
-
-# Shaders
-# custom-shader = ~/.config/ghostty/shaders/cursor_blaze.glsl
