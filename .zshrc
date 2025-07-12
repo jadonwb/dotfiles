@@ -36,9 +36,11 @@ eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
 
 
 # Keybindings
-# bindkey -e
+bindkey -e
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
+bindkey -r '^s'
+bindkey -r '^q'
 
 bindkey -r "^[^["
 bindkey '^[s' sudo-command-line
