@@ -1,3 +1,9 @@
+if [[ "$(hostname)" == "ws205-2004" ]]; then
+  IN_CONTAINER=1
+else
+  IN_CONTAINER=0
+fi
+
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
@@ -10,20 +16,22 @@ fi
 # Source/Load zinit
 source "${ZINIT_HOME}/zinit.zsh"
 
+# Load completions
+autoload -Uz compinit && compinit -u
+
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-zinit light Aloxaf/fzf-tab
+if [[ "$IN_CONTAINER" -eq 0 ]]; then
+   zinit light Aloxaf/fzf-tab
+fi
 
 # Add in snippets
 zinit snippet OMZL::git.zsh
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
-
-# Load completions
-autoload -Uz compinit && compinit -u
 
 zinit cdreplay -q
 
@@ -69,8 +77,8 @@ alias vim='nvim'
 alias c='clear'
 
 # Shell integrations
-source /usr/share/doc/fzf/examples/key-bindings.zsh
-source /usr/share/doc/fzf/examples/completion.zsh
+source ~/.fzf/key-bindings.zsh
+source ~/.fzf/completion.zsh
 eval "$(zoxide init --cmd cd zsh)"
 umask 007
 
@@ -80,3 +88,5 @@ bindkey -s ^f "tmux-sessionizer\n"
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+export FZF_TAB_DEBUG=1
