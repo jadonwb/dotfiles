@@ -65,49 +65,49 @@ VERSION="0.1.0"
 
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
-    -h | --help)
-        echo "Usage: tmux-sessionizer [OPTIONS] [SEARCH_PATH]"
-        echo "Options:"
-        echo "  -h, --help             Display this help message"
-        echo "  -s, --session <name>   session command index."
-        echo "  --vsplit               Create vertical split (horizontal layout) for session command"
-        echo "  --hsplit               Create horizontal split (vertical layout) for session command"
-        exit 0
-        ;;
-    -s | --session)
-        session_idx="$2"
-        if [[ -z $session_idx ]]; then
-            echo "Session index cannot be empty"
-            exit 1
-        fi
+        -h | --help)
+            echo "Usage: tmux-sessionizer [OPTIONS] [SEARCH_PATH]"
+            echo "Options:"
+            echo "  -h, --help             Display this help message"
+            echo "  -s, --session <name>   session command index."
+            echo "  --vsplit               Create vertical split (horizontal layout) for session command"
+            echo "  --hsplit               Create horizontal split (vertical layout) for session command"
+            exit 0
+            ;;
+        -s | --session)
+            session_idx="$2"
+            if [[ -z $session_idx ]]; then
+                echo "Session index cannot be empty"
+                exit 1
+            fi
 
-        if [[ -z $TS_SESSION_COMMANDS ]]; then
-            echo "TS_SESSION_COMMANDS is not set.  Must have a command set to run when switching to a session"
-            exit 1
-        fi
+            if [[ -z $TS_SESSION_COMMANDS ]]; then
+                echo "TS_SESSION_COMMANDS is not set.  Must have a command set to run when switching to a session"
+                exit 1
+            fi
 
-        if [[ -z "$session_idx" || "$session_idx" -lt 0 || "$session_idx" -ge "${#TS_SESSION_COMMANDS[@]}" ]]; then
-            echo "Error: Invalid index. Please provide an index between 0 and $((${#TS_SESSION_COMMANDS[@]} - 1))."
-            exit 1
-        fi
+            if [[ -z "$session_idx" || "$session_idx" -lt 0 || "$session_idx" -ge "${#TS_SESSION_COMMANDS[@]}" ]]; then
+                echo "Error: Invalid index. Please provide an index between 0 and $((${#TS_SESSION_COMMANDS[@]} - 1))."
+                exit 1
+            fi
 
-        session_cmd="${TS_SESSION_COMMANDS[$session_idx]}"
+            session_cmd="${TS_SESSION_COMMANDS[$session_idx]}"
 
-        shift
-        ;;
-    --vsplit)
-        split_type="vsplit"
-        ;;
-    --hsplit)
-        split_type="hsplit"
-        ;;
-    -v | --version)
-        echo "tmux-sessionizer version $VERSION"
-        exit 0
-        ;;
-    *)
-        user_selected="$1"
-        ;;
+            shift
+            ;;
+        --vsplit)
+            split_type="vsplit"
+            ;;
+        --hsplit)
+            split_type="hsplit"
+            ;;
+        -v | --version)
+            echo "tmux-sessionizer version $VERSION"
+            exit 0
+            ;;
+        *)
+            user_selected="$1"
+            ;;
     esac
     shift
 done
@@ -121,12 +121,12 @@ if [[ -n "$split_type" && -z "$session_idx" ]]; then
 fi
 
 sanity_check() {
-    if ! command -v tmux &>/dev/null; then
+    if ! command -v tmux &> /dev/null; then
         echo "tmux is not installed. Please install it first."
         exit 1
     fi
 
-    if ! command -v fzf &>/dev/null; then
+    if ! command -v fzf &> /dev/null; then
         echo "fzf is not installed. Please install it first."
         exit 1
     fi
@@ -187,7 +187,7 @@ set_pane_id() {
     init_pane_cache
 
     # Remove existing entry if it exists
-    grep -v "^${session_idx}:${split_type}:" "$PANE_CACHE_FILE" > "${PANE_CACHE_FILE}.tmp" 2>/dev/null || true
+    grep -v "^${session_idx}:${split_type}:" "$PANE_CACHE_FILE" > "${PANE_CACHE_FILE}.tmp" 2> /dev/null || true
     mv "${PANE_CACHE_FILE}.tmp" "$PANE_CACHE_FILE"
 
     # Add new entry
@@ -199,12 +199,12 @@ cleanup_dead_panes() {
     local temp_file="${PANE_CACHE_FILE}.tmp"
 
     while IFS=: read -r idx split pane_id; do
-        if tmux list-panes -a -F "#{pane_id}" 2>/dev/null | grep -q "^${pane_id}$"; then
+        if tmux list-panes -a -F "#{pane_id}" 2> /dev/null | grep -q "^${pane_id}$"; then
             echo "${idx}:${split}:${pane_id}" >> "$temp_file"
         fi
     done < "$PANE_CACHE_FILE"
 
-    mv "$temp_file" "$PANE_CACHE_FILE" 2>/dev/null || touch "$PANE_CACHE_FILE"
+    mv "$temp_file" "$PANE_CACHE_FILE" 2> /dev/null || touch "$PANE_CACHE_FILE"
 }
 
 sanity_check
@@ -225,9 +225,9 @@ find_dirs() {
     # list TMUX sessions
     if [[ -n "${TMUX}" ]]; then
         current_session=$(tmux display-message -p '#S')
-        tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null | grep -vFx "[TMUX] $current_session"
+        tmux list-sessions -F "[TMUX] #{session_name}" 2> /dev/null | grep -vFx "[TMUX] $current_session"
     else
-        tmux list-sessions -F "[TMUX] #{session_name}" 2>/dev/null
+        tmux list-sessions -F "[TMUX] #{session_name}" 2> /dev/null
     fi
 
     # note: TS_SEARCH_PATHS is an array of paths to search for directories
@@ -242,7 +242,7 @@ find_dirs() {
             path="$entry"
         fi
 
-        [[ -d "$path" ]] && find "$path" -mindepth 1 -maxdepth "${depth:-${TS_MAX_DEPTH:-1}}" -path '*/.git' -prune -o -type d -print
+        [[ -d "$path" ]] && find -L "$path" -mindepth 1 -maxdepth "${depth:-${TS_MAX_DEPTH:-1}}" -path '*/.git' -prune -o -type d -print
     done
 }
 
@@ -286,7 +286,7 @@ handle_split_session_cmd() {
     # Check if pane already exists
     local existing_pane_id=$(get_pane_id "$session_idx" "$split_type")
 
-    if [[ -n "$existing_pane_id" ]] && tmux list-panes -a -F "#{pane_id}" 2>/dev/null | grep -q "^${existing_pane_id}$"; then
+    if [[ -n "$existing_pane_id" ]] && tmux list-panes -a -F "#{pane_id}" 2> /dev/null | grep -q "^${existing_pane_id}$"; then
         log "switching to existing pane $existing_pane_id"
         tmux select-pane -t "$existing_pane_id"
         if [[ -z $TMUX ]]; then
