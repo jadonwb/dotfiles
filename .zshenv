@@ -1,11 +1,9 @@
-# export FZF_DEFAULT_OPTS=" \
-# 	--color=fg:#908caa,bg:-1,hl:#ea9a97 \
-# 	--color=fg+:#e0def4,bg+:-1,hl+:#ea9a97 \
-# 	--color=border:#44415a,header:#3e8fb0,gutter:#232136 \
-# 	--color=spinner:#f6c177,info:#9ccfd8 \
-# 	--color=pointer:#c4a7e7,marker:#eb6f92,prompt:#908caa"
+export FZF_DEFAULT_OPTS="--color=16"
 
-export PATH=$HOME/.local/bin:$PATH
+export PATH="./bin:$HOME/.local/bin:$HOME/.local/share/omarchy/bin:$PATH"
+export OMARCHY_PATH="/home/$USER/.local/share/omarchy"
 export PATH=$HOME/.cargo/bin:$PATH
 export MANPAGER='nvim +Man!'
-
+export EDITOR='nvim'
+export SUDO_EDITOR="$EDITOR"
+export BAT_THEME=ansi
