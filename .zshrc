@@ -1,8 +1,3 @@
-# Autolaunch Hyprland
-source ~/.config/zshrc.d/auto-Hypr.sh
-# Colorscheme for zsh
-# source ~/.config/zshrc.d/dots-hyprland.zsh
-
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if its not there yet
