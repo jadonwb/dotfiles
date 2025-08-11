@@ -1,3 +1,5 @@
+stty -ixon
+
 if [[ "$(hostname)" == "ws205-2004" ]]; then
   IN_CONTAINER=1
 else
@@ -76,6 +78,15 @@ alias q='exit'
 alias vim='nvim'
 alias c='clear'
 
+function up() {
+   local N="${1:-1}"
+   local DIR=""
+   for ((i = 0; i < N; i++)); do
+      DIR="../$DIR"
+   done
+   cd "$DIR" || return 1
+}
+
 # Shell integrations
 source ~/.fzf/key-bindings.zsh
 source ~/.fzf/completion.zsh
@@ -85,8 +96,24 @@ umask 007
 # tmux
 bindkey -s ^f "tmux-sessionizer\n"
 
+function sesh-sessions() {
+  {
+    exec </dev/tty
+    exec <&1
+    local session
+    session=$(sesh list -t -z -d | fzf --height 40% --reverse --border-label ' sesh ' --border --prompt '⚡  ')
+    zle reset-prompt > /dev/null 2>&1 || true
+    [[ -z "$session" ]] && return
+    sesh connect $session
+  }
+}
+
+zle     -N            sesh-sessions
+bindkey -M emacs '^s' sesh-sessions
+bindkey -M vicmd '^s' sesh-sessions
+bindkey -M viins '^s' sesh-sessions
+
+
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-export FZF_TAB_DEBUG=1
