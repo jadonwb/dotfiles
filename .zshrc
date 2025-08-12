@@ -1,14 +1,11 @@
 stty -ixon
 
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+eval "$(fzf --zsh)"
+
 # export ENV
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
 export MANPAGER='nvim +Man!'
-
-if [[ "$(hostname)" == "ws205-2004" ]]; then
-  IN_CONTAINER=1
-else
-  IN_CONTAINER=0
-fi
 
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
@@ -29,9 +26,7 @@ autoload -Uz compinit && compinit -u
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-if [[ "$IN_CONTAINER" -eq 0 ]]; then
-   zinit light Aloxaf/fzf-tab
-fi
+zinit light Aloxaf/fzf-tab
 
 # Add in snippets
 zinit snippet OMZL::git.zsh
@@ -94,9 +89,6 @@ alias g='lazygit'
 alias d='docker'
 n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
 
-# Shell integrations
-source ~/.fzf/key-bindings.zsh
-source ~/.fzf/completion.zsh
 eval "$(zoxide init --cmd cd zsh)"
 umask 007
 
