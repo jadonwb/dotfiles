@@ -1,6 +1,11 @@
 # Disable stupid flow control
 stty -ixon
 
+# Interactive exports
+export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
+export MANPAGER='nvim +Man!'
+export BAT_THEME=ansi
+
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if its not there yet
