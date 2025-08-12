@@ -72,29 +72,30 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
-alias ls='ls --color'
-alias c='clear'
-alias q='exit'
 alias vim='nvim'
 alias c='clear'
-
-function up() {
-   local N="${1:-1}"
-   local DIR=""
-   for ((i = 0; i < N; i++)); do
-      DIR="../$DIR"
-   done
-   cd "$DIR" || return 1
+alias q='exit'
+alias ls='eza -lh --group-directories-first --icons=auto'
+alias lsa='ls -a'
+alias lt='eza --tree --level=2 --long --icons --git'
+alias lta='lt -a'
+alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+open() {
+  xdg-open "$@" >/dev/null 2>&1 &
 }
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias g='lazygit'
+alias d='docker'
+n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
+alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=down:75% | xargs -ro yay -S"
 
 # Shell integrations
 source ~/.fzf/key-bindings.zsh
 source ~/.fzf/completion.zsh
 eval "$(zoxide init --cmd cd zsh)"
 umask 007
-
-# tmux
-bindkey -s ^f "tmux-sessionizer\n"
 
 function sesh-sessions() {
   {
@@ -113,7 +114,3 @@ bindkey -M emacs '^s' sesh-sessions
 bindkey -M vicmd '^s' sesh-sessions
 bindkey -M viins '^s' sesh-sessions
 
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
