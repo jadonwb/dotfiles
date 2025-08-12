@@ -1,5 +1,9 @@
 stty -ixon
 
+# export ENV
+export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
+export MANPAGER='nvim +Man!'
+
 if [[ "$(hostname)" == "ws205-2004" ]]; then
   IN_CONTAINER=1
 else
