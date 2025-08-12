@@ -93,7 +93,6 @@ alias ....='cd ../../..'
 alias g='lazygit'
 alias d='docker'
 n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
-alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=down:75% | xargs -ro yay -S"
 
 # Shell integrations
 source ~/.fzf/key-bindings.zsh
