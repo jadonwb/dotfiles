@@ -20,9 +20,9 @@ marker_copied = { fg = "#f6c177", bg = "#f6c177" }
 marker_cut = { fg = "#B4637A", bg = "#B4637A" }
 
 # Tab
-tab_active   = { reversed = true }
+tab_active = { reversed = true }
 tab_inactive = {}
-tab_width    = 1
+tab_width = 1
 
 # Border
 border_symbol = "│"
@@ -138,14 +138,8 @@ rules = [
     { mime = "application/x-rar", fg = "#eb6f92" },
 
     # Fallback
-    { name = "*", fg = "#e0def4" },
+    { name = "*", fg = "#9177B6" },
     { name = "*/", fg = "#31748f" },
 ]
 
 # : }}}
-
-
-# [flavor]
-# dark = "catppuccin-mocha"
-# light = "catppuccin-latte"
-
