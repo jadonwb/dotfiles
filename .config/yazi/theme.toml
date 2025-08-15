@@ -3,21 +3,20 @@
 # : Manager {{{
 
 [mgr]
-cwd = { fg = "#9ccfd8" }
+cwd = { fg = "4" }
 
 # Hovered
-# hovered = { fg = "#e0def4", bg = "#26233a" }
 hovered = { reversed = true }
 preview_hovered = { underline = true }
 
 # Find
-find_keyword = { fg = "#f6c177", italic = true }
-find_position = { fg = "#eb6f92", bg = "reset", italic = true }
+find_keyword = { fg = "3", italic = true }
+find_position = { fg = "1", bg = "reset", italic = true }
 
 # Marker
-marker_selected = { fg = "#9ccfd8", bg = "#9ccfd8" }
-marker_copied = { fg = "#f6c177", bg = "#f6c177" }
-marker_cut = { fg = "#B4637A", bg = "#B4637A" }
+marker_selected = { fg = "2", bg = "2" }
+marker_copied = { fg = "3", bg = "3" }
+marker_cut = { fg = "1", bg = "1" }
 
 # Tab
 tab_active = { reversed = true }
@@ -26,7 +25,7 @@ tab_width = 1
 
 # Border
 border_symbol = "│"
-border_style = { fg = "#524f67" }
+border_style = { fg = "8" }
 
 # Highlighting
 syntect_theme = "~/.config/yazi/rose-pine.tmTheme"
@@ -38,24 +37,24 @@ syntect_theme = "~/.config/yazi/rose-pine.tmTheme"
 [status]
 separator_open = ""
 separator_close = ""
-separator_style = { fg = "#2A273F", bg = "#31748f" }
+separator_style = { fg = "0", bg = "2" }
 
 # Mode
-mode_normal = { fg = "#191724", bg = "#ebbcba", bold = true }
-mode_select = { fg = "#e0def4", bg = "#9ccfd8", bold = true }
-mode_unset = { fg = "#e0def4", bg = "#b4637a", bold = true }
+mode_normal = { fg = "0", bg = "6", bold = true }
+mode_select = { fg = "15", bg = "2", bold = true }
+mode_unset = { fg = "15", bg = "1", bold = true }
 
 # Progress
-progress_label = { fg = "#e0def4", bold = true }
-progress_normal = { fg = "#191724", bg = "#2A273F" }
-progress_error = { fg = "#B4637A", bg = "#2A273F" }
+progress_label = { fg = "15", bold = true }
+progress_normal = { fg = "0", bg = "0" }
+progress_error = { fg = "1", bg = "0" }
 
-# Permissions
-permissions_t = { fg = "#31748f" }
-permissions_r = { fg = "#f6c177" }
-permissions_w = { fg = "#B4637A" }
-permissions_x = { fg = "#9ccfd8" }
-permissions_s = { fg = "#524f67" }
+# Permissions BROKEN!!!
+permissions_t = { fg = "2" }
+permissions_r = { fg = "3" }
+permissions_w = { fg = "1" }
+permissions_x = { fg = "4" }
+permissions_s = { fg = "8" }
 
 # : }}}
 
@@ -63,7 +62,7 @@ permissions_s = { fg = "#524f67" }
 # : Input {{{
 
 [input]
-border = { fg = "#524f67" }
+border = { fg = "8" }
 title = {}
 value = {}
 selected = { reversed = true }
@@ -74,8 +73,8 @@ selected = { reversed = true }
 # : Select {{{
 
 [select]
-border = { fg = "#524f67" }
-active = { fg = "#eb6f92" }
+border = { fg = "8" }
+active = { fg = "1" }
 inactive = {}
 
 # : }}}
@@ -84,7 +83,7 @@ inactive = {}
 # : Tasks {{{
 
 [tasks]
-border = { fg = "#524f67" }
+border = { fg = "8" }
 title = {}
 hovered = { underline = true }
 
@@ -94,12 +93,12 @@ hovered = { underline = true }
 # : Which {{{
 
 [which]
-mask = { bg = "#313244" }
-cand = { fg = "#9ccfd8" }
-rest = { fg = "#9399b2" }
-desc = { fg = "#eb6f92" }
+mask = { bg = "0" }
+cand = { fg = "4" }
+rest = { fg = "7" }
+desc = { fg = "1" }
 separator = "  "
-separator_style = { fg = "#585b70" }
+separator_style = { fg = "8" }
 
 # : }}}
 
@@ -107,11 +106,11 @@ separator_style = { fg = "#585b70" }
 # : Help {{{
 
 [help]
-on = { fg = "#eb6f92" }
-exec = { fg = "#9ccfd8" }
-desc = { fg = "#9399b2" }
-hovered = { bg = "#585b70", bold = true }
-footer = { fg = "#2A273F", bg = "#e0def4" }
+on = { fg = "1" }
+exec = { fg = "4" }
+desc = { fg = "7" }
+hovered = { bg = "8", bold = true }
+footer = { fg = "0", bg = "15" }
 
 # : }}}
 
@@ -122,24 +121,24 @@ footer = { fg = "#2A273F", bg = "#e0def4" }
 
 rules = [
     # Images
-    { mime = "image/*", fg = "#9ccfd8" },
+    { mime = "image/*", fg = "2" },
 
     # Videos
-    { mime = "video/*", fg = "#f6c177" },
-    { mime = "audio/*", fg = "#f6c177" },
+    { mime = "video/*", fg = "3" },
+    { mime = "audio/*", fg = "3" },
 
     # Archives
-    { mime = "application/zip", fg = "#eb6f92" },
-    { mime = "application/gzip", fg = "#eb6f92" },
-    { mime = "application/x-tar", fg = "#eb6f92" },
-    { mime = "application/x-bzip", fg = "#eb6f92" },
-    { mime = "application/x-bzip2", fg = "#eb6f92" },
-    { mime = "application/x-7z-compressed", fg = "#eb6f92" },
-    { mime = "application/x-rar", fg = "#eb6f92" },
+    { mime = "application/zip", fg = "1" },
+    { mime = "application/gzip", fg = "1" },
+    { mime = "application/x-tar", fg = "1" },
+    { mime = "application/x-bzip", fg = "1" },
+    { mime = "application/x-bzip2", fg = "1" },
+    { mime = "application/x-7z-compressed", fg = "1" },
+    { mime = "application/x-rar", fg = "1" },
 
     # Fallback
-    { name = "*", fg = "#9177B6" },
-    { name = "*/", fg = "#31748f" },
+    { name = "*", fg = "5" },
+    { name = "*/", fg = "4" },
 ]
 
 # : }}}
