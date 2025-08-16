@@ -1,0 +1,26 @@
+[[session]]
+name = "Downloads"
+path = "~/Downloads"
+startup_command = "yazi"
+
+[[session]]
+name = "Home"
+path = "~"
+startup_command = "ls"
+
+[[session]]
+name = "repositories (c)"
+path = "~/c"
+startup_command = "ls"
+
+[[session]]
+name = "dotfiles"
+path = "~/c/dotfiles"
+startup_command = "nvim ."
+
+[[session]]
+name = "Neovim Config"
+path = "~/.config/nvim"
+startup_command = "nvim ."
+
+# [[session]]

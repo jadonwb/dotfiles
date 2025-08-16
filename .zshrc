@@ -112,5 +112,3 @@ bindkey -M vicmd '^s' sesh-sessions
 bindkey -M viins '^s' sesh-sessions
 
 source $HOME/.zfuncs
-
-# eval "$(starship init zsh)"
