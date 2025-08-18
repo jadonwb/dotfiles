@@ -75,7 +75,7 @@ alias vim='nvim'
 alias c='clear'
 alias q='exit'
 alias ls='eza -lh --group-directories-first --icons=auto'
-alias lsa='ls -a'
+alias lsa='ls -aag'
 alias lt='eza --tree --level=2 --long --icons --git'
 alias lta='lt -a'
 alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
