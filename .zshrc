@@ -74,6 +74,7 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 alias vim='nvim'
 alias c='clear'
 alias q='exit'
+alias bls='/bin/ls'
 alias ls='eza -lh --group-directories-first --icons=auto'
 alias lsa='ls -aag'
 alias lt='eza --tree --level=2 --long --icons --git'
@@ -93,15 +94,18 @@ eval "$(zoxide init --cmd cd zsh)"
 umask 007
 
 function sesh-sessions() {
-  {
-    exec </dev/tty
-    exec <&1
-    local session
-    session=$(sesh list -t -z -d | fzf --height 40% --reverse --border-label ' sesh ' --border --prompt '⚡  ')
-    zle reset-prompt > /dev/null 2>&1 || true
-    [[ -z "$session" ]] && return
-    sesh connect $session
-  }
+  exec </dev/tty
+  exec <&1
+  local session
+  session=$(sesh list -t -z -d | fzf \
+    --height 40% \
+    --reverse \
+    --border-label ' sesh ' \
+    --border \
+    --prompt '⚡  ')
+  zle reset-prompt > /dev/null 2>&1 || true
+  [[ -z "$session" ]] && return
+  sesh connect $session
 }
 
 zle     -N            sesh-sessions
