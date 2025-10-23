@@ -1,10 +1,17 @@
-stty -ixon
+# zmodload zsh/zprof
+
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+stty -ixon < /dev/tty
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 
 # export ENV
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
+export _ZO_EXCLUDE_DIRS="/net/*:/media/*:/tmp/*"
 export MANPAGER='nvim +Man!'
 
 # Set the directory we want to store zinit and plugins
@@ -19,25 +26,37 @@ fi
 # Source/Load zinit
 source "${ZINIT_HOME}/zinit.zsh"
 
-# Load completions
-autoload -Uz compinit && compinit -u
+# prompt
+zinit ice depth=1; zinit light romkatv/powerlevel10k
 
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
+zinit ice wait lucid
 zinit light zsh-users/zsh-completions
+zinit ice wait lucid atload"_zsh_autosuggest_start"
 zinit light zsh-users/zsh-autosuggestions
+zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
 # Add in snippets
+zinit ice wait lucid
 zinit snippet OMZL::git.zsh
+zinit ice wait lucid
 zinit snippet OMZP::git
+zinit ice wait lucid
 zinit snippet OMZP::sudo
+zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
-zinit cdreplay -q
+autoload -Uz compinit
+for dump in ~/.zcompdump(N.mh+24); do
+  compinit
+done
+compinit -C
 
-# Custom prompt
-eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
+zinit cdreplay -q
 
 # Keybindings
 bindkey -e
@@ -69,8 +88,10 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:c:*' disabled-on any
 
 # Aliases
+alias comprebuild='rm -f ~/.zcompdump* && exec zsh'
 alias vim='nvim'
 alias c='clear'
 alias q='exit'
@@ -90,7 +111,13 @@ alias g='lazygit'
 alias d='docker'
 n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
 
-eval "$(zoxide init --cmd cd zsh)"
+# lazy load zoxide
+function cd() {
+  unfunction cd
+  eval "$(zoxide init --cmd cd zsh)"
+  cd "$@"
+}
+
 umask 007
 
 function sesh-sessions() {
@@ -113,3 +140,6 @@ bindkey -M emacs '^s' sesh-sessions
 bindkey -M vicmd '^s' sesh-sessions
 bindkey -M viins '^s' sesh-sessions
 
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# zprof
