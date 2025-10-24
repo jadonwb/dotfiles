@@ -38,8 +38,6 @@ zinit light zsh-users/zsh-autosuggestions
 zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
-ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-
 # Add in snippets
 zinit ice wait lucid
 zinit snippet OMZL::git.zsh
