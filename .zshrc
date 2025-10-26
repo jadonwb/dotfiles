@@ -1,7 +1,12 @@
-# Disable stupid flow control
-stty -ixon
+# zmodload zsh/zprof
 
-# Interactive exports
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+stty -ixon < /dev/tty
+
+# exports for interactive shell
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
 export MANPAGER='nvim +Man!'
 export BAT_THEME=ansi
@@ -17,26 +22,32 @@ fi
 # Source/load zinit
 source "${ZINIT_HOME}/zinit.zsh"
 
+# prompt
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
+zinit ice wait lucid
 zinit light zsh-users/zsh-completions
+zinit ice wait lucid atload"_zsh_autosuggest_start"
 zinit light zsh-users/zsh-autosuggestions
+zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
 # Add in snippets
+zinit ice wait lucid
 zinit snippet OMZP::git
+zinit ice wait lucid
 zinit snippet OMZP::sudo
+zinit ice wait lucid
 zinit snippet OMZP::archlinux
+zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
 # Load completions
 autoload -U compinit && compinit
 
 zinit cdreplay -q
-
-# Custom prompt
-eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
-
 
 # Keybindings
 bindkey -e
@@ -92,8 +103,14 @@ alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=dow
 
 # Shell integrations
 eval "$(fzf --zsh)"
-eval "$(zoxide init --cmd cd zsh)"
 eval "$(mise activate bash)"
+  # lazy load zoxide
+function cd() {
+  unfunction cd
+  eval "$(zoxide init --cmd cd zsh)"
+  cd "$@"
+}
+
 
 # tmux
 function sesh-sessions() {
@@ -114,3 +131,7 @@ bindkey -M vicmd '^s' sesh-sessions
 bindkey -M viins '^s' sesh-sessions
 
 source $HOME/.zfuncs
+
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# zprof
