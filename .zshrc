@@ -50,9 +50,9 @@ zinit snippet OMZP::command-not-found
 
 autoload -Uz compinit
 for dump in ~/.zcompdump(N.mh+24); do
-  compinit
+  compinit -u
 done
-compinit -C
+compinit -Cu
 
 zinit cdreplay -q
 
