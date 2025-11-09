@@ -72,14 +72,14 @@ case "$1" in
         echo "Failed to get color2 from kitty.conf" >&2
         exit 1
     fi
-    save_current_border_size
-    hyprctl keyword "$SIZE_KEY" "4" >/dev/null
+    # save_current_border_size
+    # hyprctl keyword "$SIZE_KEY" "4" >/dev/null
     ;;
   off)
     while tmux display-message -p '#{client_prefix}' | grep -q 1; do
         sleep 0.05
     done
     restore_border
-    restore_border_size
+    # restore_border_size
     ;;
 esac
