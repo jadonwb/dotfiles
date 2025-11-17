@@ -4,6 +4,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+# disable flow-control thingy
 stty -ixon < /dev/tty
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
@@ -48,11 +49,7 @@ zinit snippet OMZP::sudo
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
-autoload -Uz compinit
-for dump in ~/.zcompdump(N.mh+24); do
-  compinit -u
-done
-compinit -Cu
+autoload -Uz compinit && compinit -u
 
 zinit cdreplay -q
 
