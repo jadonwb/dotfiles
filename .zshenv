@@ -7,7 +7,3 @@ export ROCM_PATH=/opt/rocm
 export HIP_PATH=/opt/rocm
 export HSA_OVERRIDE_GFX_VERSION=11.0.0
 export AMD_LOG_LEVEL=3
-
-# cleanup path
-path=(${(u)path})
-export PATH="${(j/:/)path}"

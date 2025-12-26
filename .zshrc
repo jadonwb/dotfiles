@@ -59,6 +59,10 @@ bindkey -r '^q'
 bindkey -r "^[^["
 bindkey '^[s' sudo-command-line
 
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^[e' edit-command-line
+
 # History
 HISTSIZE=5000
 HISTFILE=~/.zsh_history
@@ -96,39 +100,26 @@ open() {
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
+alias .....='cd ../../../..'
 alias g='lazygit'
 alias d='docker'
-n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
-alias yayf="yay -Slq | fzf --multi --preview 'yay -Sii {1}' --preview-window=down:75% | xargs -ro yay -S"
 
 # Shell integrations
-eval "$(fzf --zsh)"
-eval "$(mise activate bash)"
-  # lazy load zoxide
+if command -v try &> /dev/null; then
+  eval "$(try init ~/c/tries)"
+fi
+if command -v fzf &> /dev/null; then
+  eval "$(fzf --zsh)"
+fi
+if command -v mise &> /dev/null; then
+  eval "$(mise activate zsh)"
+fi
+# lazy load zoxide
 function cd() {
   unfunction cd
   eval "$(zoxide init --cmd cd zsh)"
   cd "$@"
 }
-
-
-# tmux
-function sesh-sessions() {
-  {
-    exec </dev/tty
-    exec <&1
-    local session
-    session=$(sesh list -t -c -z | fzf --height 40% --reverse --border-label ' sesh ' --border --prompt '⚡  ')
-    zle reset-prompt > /dev/null 2>&1 || true
-    [[ -z "$session" ]] && return
-    sesh connect $session
-  }
-}
-
-zle     -N             sesh-sessions
-bindkey -M emacs '^s' sesh-sessions
-bindkey -M vicmd '^s' sesh-sessions
-bindkey -M viins '^s' sesh-sessions
 
 source $HOME/.zfuncs
 
