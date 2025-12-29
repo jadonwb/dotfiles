@@ -5,4 +5,4 @@ if [[ $(basename "$(pwd)") != "dotfiles" ]]; then
     exit 1
 fi
 
-stow -t ~ . --adopt --no-folding
+stow -t ~ . --adopt --no-folding --dotfiles
