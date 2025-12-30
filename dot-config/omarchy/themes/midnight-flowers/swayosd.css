@@ -1,0 +1,36 @@
+@define-color background-color #070617;
+@define-color border-color #312e55;
+@define-color label #c5c6c6;
+@define-color image #c5c6c6;
+@define-color progress #c99b4a;
+
+window {
+    background-color: transparent;
+    border: none;
+    border-radius: 999px;
+    padding: 0;
+    box-shadow: none;
+}
+
+.osd, 
+osd {
+    /* Slightly more opaque purple to match your Waybar style */
+    background-color: alpha(@bg-color, 0.85); 
+    border: 2px solid @border-color;
+    border-radius: 9999px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    padding: 12px 20px;
+}
+
+image {
+    color: @accent-color;
+    -gtk-icon-size: 24px; /* Restored icon size for visibility */
+    margin: 0 16px 0 0;
+}
+
+label {
+    color: @label-color;
+    font-size: 13px; /* Matched to your Waybar font size */
+    font-weight: 800;
+    margin: 0;
+}

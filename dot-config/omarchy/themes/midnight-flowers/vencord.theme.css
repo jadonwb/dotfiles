@@ -1,0 +1,47 @@
+/**
+* @name base16 Discord
+* @author @bypass_
+* @version 0.1.0
+* @description Built using Aether and Pywal
+* @source https://github.com/imbypass/base16-Discord
+**/
+
+/* import the parent */
+@import url('https://imbypass.github.io/base16-discord/omarchy-discord.theme.css');
+
+:root {
+    --color00: #070617;
+    --color01: #BE4D69;
+    --color02: #39A657;
+    --color03: #c99b4a;
+    --color04: #4541e1;
+    --color05: #c56bc5;
+    --color06: #67c0d7;
+    --color07: #979898;
+    --color08: #312e55;
+    --color09: #BE4D69;
+    --color10: #39A657;
+    --color11: #c99b4a;
+    --color12: #4541e1;
+    --color13: #c56bc5;
+    --color14: #67c0d7;
+    --color15: #c5c6c6;
+
+    /* Typography Match */
+    --font: "JetBrainsMono Nerd Font"; /* Swapped to match your system font */
+    --font-code: var(--font);
+    --font-primary: var(--font);
+    --font-display: var(--font);
+    --font-heading: var(--font);
+
+    --font-weight-light: 500;
+    --font-weight-normal: 600;
+    --font-weight-medium: 700;
+    --font-weight-semibold: 800;
+    --font-weight-bold: 900;
+
+    /* Custom Rounding to match your system "Pill" style */
+    --radius-small: 8px;
+    --radius-medium: 12px;
+    --radius-large: 14px;
+}
