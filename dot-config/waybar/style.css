@@ -2,7 +2,7 @@
 
 * {
     font-family: 'JetBrainsMono Nerd Font';
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     transition: all 0.1s ease;
 }
@@ -14,22 +14,23 @@ window#waybar { background: transparent; }
 #custom-google-tasks, #custom-google-keep {
     background: alpha(@background, 0.6); 
     border-radius: 14px;
-    padding: 0px 20px;
-    margin: 4px 4px;
+    padding: 0px 22px;
+    margin: 4px 3px;
 }
 
-#workspaces { border: 2px solid #cdd6f4; padding: 0px 2px; }
-#workspaces button { padding: 0px 12px; color: @text; margin: 3px 1px; }
-#workspaces button.active { color: @text; background: #f38ba8; border-radius: 10px; }
+#custom-system, #custom-omarchy { color: @magenta; border: 2px solid @magenta; }
+
+#workspaces { border: 2px solid @blue; padding: 0px 2px; }
+#workspaces button { padding: 0px 12px; color: @cyan; margin: 3px 1px; }
+#workspaces button.active { background: @magenta; color: @background; border-radius: 10px; }
 #workspaces button.empty { opacity: 0.3; }
 
-#clock { color: #89b4fa; border: 2px solid #89b4fa; }
-#network { color: #a6e3a1; border: 2px solid #a6e3a1; }
-#cpu { color: #cba6f7; border: 2px solid #cba6f7; }
-#bluetooth { color: #89b4fa; border: 2px solid #89b4fa; }
-#pulseaudio { color: #89dceb; border: 2px solid #89dceb; }
-#custom-system, #custom-omarchy { color: #f38ba8; border: 2px solid #f38ba8; }
+#clock { color: @magenta; border: 2px solid @blue; }
+#cpu { color: @yellow; border: 2px solid @yellow; }
+#bluetooth { color: @green; border: 2px solid @green; }
+#network { color: @cyan; border: 2px solid @cyan; }
+#pulseaudio { color: @blue; border: 2px solid @blue; }
 
 #custom-screenrecording-indicator.active {
-  color: #a55555;
+  color: @red;
 }
