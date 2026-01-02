@@ -183,7 +183,7 @@
         brightness(103%) contrast(94%);
 }
 
-/* Rounded Corners - Matching your Hyprland/Waybar "Pill" style */
+/* Rounded Corners */
 * {
     border-radius: 14px;
 }
