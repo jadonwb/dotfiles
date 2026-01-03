@@ -5,6 +5,7 @@ return {
         priority = 1000,
         opts = {
             disable_italics = false,
+            -- transparent = true,
             colors = {
                 -- Monotone shades (base00-base07)
                 base00 = "#070617", -- Default background
