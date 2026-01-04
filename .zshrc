@@ -25,13 +25,15 @@ source "${ZINIT_HOME}/zinit.zsh"
 # prompt
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
+# Load completions
+autoload -U compinit && compinit
+
+zinit cdreplay -q
+
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
-zinit ice wait lucid
 zinit light zsh-users/zsh-completions
-zinit ice wait lucid atload"_zsh_autosuggest_start"
 zinit light zsh-users/zsh-autosuggestions
-zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
 # Add in snippets
@@ -44,10 +46,6 @@ zinit snippet OMZP::archlinux
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
-# Load completions
-autoload -U compinit && compinit
-
-zinit cdreplay -q
 
 # Keybindings
 bindkey -e
