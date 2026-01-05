@@ -1,0 +1,46 @@
+[[session]]
+name = "Sesh"
+path = "~/.config/sesh"
+startup_command = "nvim sesh.toml"
+
+[[session]]
+name = "Downloads"
+path = "~/Downloads"
+startup_command = "yazi"
+
+[[session]]
+name = "Home"
+path = "~"
+startup_command = "ls"
+
+[[session]]
+name = "repositories (c)"
+path = "~/c"
+startup_command = "ls"
+
+[[session]]
+name = "dotfiles"
+path = "~/c/dotfiles"
+startup_command = "nvim ."
+
+[[session]]
+name = "Neovim"
+path = "~/.config/nvim"
+startup_command = "nvim ."
+
+[[session]]
+name = "Configs"
+path = "~/.config"
+startup_command = "nvim ."
+
+[[session]]
+name = "Hyprland"
+path = "~/.config/hypr"
+startup_command = "nvim ."
+
+[[session]]
+name = "Omarchy"
+path = "~/.local/share/omarchy/"
+startup_command = "nvim ."
+
+# [[session]]

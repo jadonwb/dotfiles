@@ -1,0 +1,21 @@
+[color]
+# Use the gradient feature to transition through your theme colors
+gradient = 1
+gradient_count = 8
+
+# Cyan (Matches Clock & Borders)
+gradient_color_1 = '#91e3e1'
+# Blue (Matches GTK Hover)
+gradient_color_2 = '#a7aaaf'
+# Bright Blue
+gradient_color_3 = '#d7d8db'
+# Magenta (Matches Workspaces & Omarchy Icon)
+gradient_color_4 = '#e382d2'
+# Bright Magenta
+gradient_color_5 = '#f6cbee'
+# Bright Cyan
+gradient_color_6 = '#d9f7f6'
+# Bright Magenta
+gradient_color_7 = '#f6cbee'
+# Cyan (Back to Start)
+gradient_color_8 = '#91e3e1'
