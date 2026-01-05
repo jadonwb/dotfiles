@@ -20,7 +20,7 @@ startup_command = "ls"
 
 [[session]]
 name = "dotfiles"
-path = "~/c/dotfiles"
+path = "~/dotfiles"
 startup_command = "nvim ."
 
 [[session]]
