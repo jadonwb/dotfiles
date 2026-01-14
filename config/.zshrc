@@ -30,15 +30,11 @@ source "${ZINIT_HOME}/zinit.zsh"
 # prompt
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
-# Load completions
-autoload -Uz compinit && compinit -u
-
-zinit cdreplay -q
-
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
+zinit light jeffreytse/zsh-vi-mode
 zinit light Aloxaf/fzf-tab
 
 # Add in snippets
@@ -51,6 +47,10 @@ zinit snippet OMZP::sudo
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
+# Load completions
+autoload -Uz compinit && compinit -u
+
+zinit cdreplay -q
 
 # Keybindings
 bindkey -e
@@ -63,7 +63,7 @@ bindkey -r "^[^["
 bindkey '^[s' sudo-command-line
 
 # History
-HISTSIZE=5000
+HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
@@ -85,25 +85,27 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:c:*' disabled-on any
 
 # Aliases
-alias comprebuild='rm -f ~/.zcompdump* && exec zsh'
 alias vim='nvim'
+alias v='nvim'
+alias n='nvim .'
+alias t='tmux'
+alias ta='tmux a'
 alias c='clear'
 alias q='exit'
-alias bls='/bin/ls'
-alias ls='eza -lh --group-directories-first --icons=auto'
-alias lsa='ls -aag'
-alias lt='eza --tree --level=2 --long --icons --git'
-alias lta='lt -a'
-alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+alias f='fd -H'
+alias s='rg --hidden'
+alias lf='eza --long --no-user --header --icons --git --all --group-directories-first'
+alias lt='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
+
 open() {
   xdg-open "$@" >/dev/null 2>&1 &
 }
+
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
+alias .....='cd ../../..'
 alias g='lazygit'
-alias d='docker'
-n() { if [ "$#" -eq 0 ]; then nvim .; else nvim "$@"; fi; }
 
 # lazy load zoxide
 function cd() {
@@ -113,26 +115,6 @@ function cd() {
 }
 
 umask 007
-
-function sesh-sessions() {
-  exec </dev/tty
-  exec <&1
-  local session
-  session=$(sesh list -t -z -d | fzf \
-    --height 40% \
-    --reverse \
-    --border-label ' sesh ' \
-    --border \
-    --prompt '⚡  ')
-  zle reset-prompt > /dev/null 2>&1 || true
-  [[ -z "$session" ]] && return
-  sesh connect $session
-}
-
-zle     -N            sesh-sessions
-bindkey -M emacs '^s' sesh-sessions
-bindkey -M vicmd '^s' sesh-sessions
-bindkey -M viins '^s' sesh-sessions
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 

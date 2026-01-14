@@ -10,7 +10,7 @@
 window#waybar { background: transparent; }
 
 #custom-omarchy, #workspaces, #clock, #network, #cpu, #bluetooth, #pulseaudio, 
-#custom-system, #custom-screenrecording-indicator, #custom-update, 
+#custom-system, #custom-screenrecording-indicator,
 #custom-google-tasks, #custom-google-keep {
     background: alpha(@background, 0.6); 
     border-radius: 14px;

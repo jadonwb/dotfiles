@@ -12,7 +12,6 @@
   ],
   "modules-center": [
     "clock",
-    "custom/update",
     "custom/screenrecording-indicator"
   ],
   "modules-right": [
@@ -29,10 +28,7 @@
     "all-outputs": true,
     "persistent-workspaces": {
       "1": [],
-      "2": [],
-      "3": [],
-      "4": [],
-      "5": []
+      "2": []
     }
   },
   "clock": {
@@ -78,14 +74,6 @@
     "format": " 󰣇 ",
     "on-click": "omarchy-menu",
     "tooltip-format": "Omarchy Menu"
-  },
-  "custom/update": {
-    "format": "",
-    "exec": "omarchy-update-available",
-    "on-click": "omarchy-launch-floating-terminal-with-presentation omarchy-update",
-    "tooltip-format": "Omarchy update available",
-    "signal": 7,
-    "interval": 21600
   },
   "pulseaudio": {
     "format": "{icon}",

@@ -7,3 +7,4 @@ export GOPATH=$HOME/go
 export PATH=$HOME/bin:$PATH
 export PATH=$HOME/.local/bin:$PATH
 export PATH=$PATH:$GOPATH/bin
+export PATH=$HOME/.opencode/bin:$PATH
