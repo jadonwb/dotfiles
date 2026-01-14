@@ -25,15 +25,11 @@ source "${ZINIT_HOME}/zinit.zsh"
 # prompt
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
-# Load completions
-autoload -U compinit && compinit
-
-zinit cdreplay -q
-
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
+zinit light jeffreytse/zsh-vi-mode
 zinit light Aloxaf/fzf-tab
 
 # Add in snippets
@@ -46,6 +42,10 @@ zinit snippet OMZP::archlinux
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
+# Load completions
+autoload -Uz compinit && compinit
+
+zinit cdreplay -q
 
 # Keybindings
 bindkey -e
@@ -85,16 +85,21 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 # Aliases
 alias make='bear -- make'
 alias vim='nvim'
+alias v='nvim'
+alias n='nvim .'
+alias t='tmux'
+alias ta='tmux a'
 alias c='clear'
 alias q='exit'
-alias ls='eza -lh --group-directories-first --icons=auto'
-alias lsa='ls -a'
-alias lt='eza --tree --level=2 --long --icons --git'
-alias lta='lt -a'
-alias ff="fzf --preview 'bat --style=numbers --color=always {}'"
+alias f='fd -H'
+alias s='rg --hidden'
+alias ls='eza --long --no-user --header --icons --git --all --group-directories-first'
+alias lt='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
+
 open() {
   xdg-open "$@" >/dev/null 2>&1 &
 }
+
 alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
@@ -118,6 +123,9 @@ function cd() {
   eval "$(zoxide init --cmd cd zsh)"
   cd "$@"
 }
+
+# Change tmux window name on directory change
+export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
 
 source $HOME/.zfuncs
 
