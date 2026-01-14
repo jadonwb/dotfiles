@@ -114,6 +114,8 @@ function cd() {
   cd "$@"
 }
 
+export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
+
 umask 007
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
