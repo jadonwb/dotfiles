@@ -57,12 +57,8 @@ bindkey -r '^q'
 bindkey -r "^[^["
 bindkey '^[s' sudo-command-line
 
-autoload -Uz edit-command-line
-zle -N edit-command-line
-bindkey '^[e' edit-command-line
-
 # History
-HISTSIZE=5000
+HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
@@ -105,7 +101,6 @@ alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../../..'
 alias g='lazygit'
-alias d='docker'
 
 # Shell integrations
 if command -v try &> /dev/null; then
