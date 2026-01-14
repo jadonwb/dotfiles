@@ -11,7 +11,7 @@ window#waybar { background: transparent; }
 
 #custom-omarchy, #workspaces, #clock, #network, #cpu, #bluetooth, #pulseaudio, 
 #custom-system, #custom-screenrecording-indicator, #custom-update, 
-#custom-google-tasks, #custom-google-keep {
+#custom-google-tasks, #custom-google-keep, #custom-expand-icon, #tray {
     background: alpha(@background, 0.6); 
     border-radius: 14px;
     padding: 0px 22px;
@@ -30,7 +30,25 @@ window#waybar { background: transparent; }
 #bluetooth { color: @green; border: 2px solid @green; }
 #network { color: @cyan; border: 2px solid @cyan; }
 #pulseaudio { color: @blue; border: 2px solid @blue; }
+#tray { border: 2px solid @foreground; }
 
 #custom-screenrecording-indicator.active {
   color: @red;
+}
+
+#custom-voxtype {
+  min-width: 12px;
+  margin: 0 0 0 7.5px;
+}
+
+#custom-voxtype.recording {
+  color: @red;
+}
+
+#tray {
+  margin-right: 16px;
+}
+
+tooltip {
+  padding: 2px;
 }
