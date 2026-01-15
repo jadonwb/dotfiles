@@ -4,27 +4,27 @@ background = "#070617"
 foreground = "#c5c6c6"
 
 [colors.normal]
-black   = "#070617"
-red     = "#BE4D69"
-green   = "#39A657"
-yellow  = "#c99b4a"
-blue    = "#4541e1"
+black = "#070617"
+red = "#BE4D69"
+green = "#2A8643"
+yellow = "#c99b4a"
+blue = "#4541e1"
 magenta = "#c56bc5"
-cyan    = "#67c0d7"
-white   = "#979898"
+cyan = "#67c0d7"
+white = "#979898"
 
 [colors.bright]
-black   = "#312e55"
-red     = "#BE4D69"
-green   = "#39A657"
-yellow  = "#c99b4a"
-blue    = "#4541e1"
+black = "#312e55"
+red = "#BE4D69"
+green = "#2A8643"
+yellow = "#c99b4a"
+blue = "#4541e1"
 magenta = "#c56bc5"
-cyan    = "#67c0d7"
-white   = "#c5c6c6"
+cyan = "#67c0d7"
+white = "#c5c6c6"
 
 [colors.cursor]
-text   = "#070617"
+text = "#070617"
 cursor = "#c5c6c6"
 
 [window]
