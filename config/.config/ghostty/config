@@ -32,4 +32,4 @@ keybind = super+control+shift+alt+arrow_right=resize_split:right,100
 mouse-scroll-multiplier = 0.95
 
 # Opacity
-# background-opacity = 0.73
+background-opacity = 0.95
