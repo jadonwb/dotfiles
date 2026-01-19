@@ -21,7 +21,7 @@ return {
                 base08 = "#BE4D69", -- Variables, errors, red
                 base09 = "#BE4D69", -- Integers, constants, orange
                 base0A = "#c99b4a", -- Classes, types, yellow
-                base0B = "#39A657", -- Strings, green
+                base0B = "#2A8669", -- Strings, green
                 base0C = "#67c0d7", -- Support, regex, cyan
                 base0D = "#4541e1", -- Functions, keywords, blue
                 base0E = "#c56bc5", -- Keywords, storage, magenta

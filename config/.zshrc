@@ -60,7 +60,8 @@ bindkey -r '^s'
 bindkey -r '^q'
 
 bindkey -r "^[^["
-bindkey '^[s' sudo-command-line
+bindkey -M vicmd '!' sudo-command-line
+bindkey -M viins '^[[33;5u' sudo-command-line
 
 # History
 HISTSIZE=10000
