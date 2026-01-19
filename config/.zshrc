@@ -95,8 +95,10 @@ alias c='clear'
 alias q='exit'
 alias ff='fd -H'
 alias sg='rg --hidden'
-alias lf='eza --long --no-user --header --icons --git --all --group-directories-first'
-alias lt='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
+alias ls='eza --long --no-user --header --icons --git --group-directories-first'
+alias lsa='eza --long --no-user --header --icons --git --all --group-directories-first'
+alias lt='eza --long --no-user --header --icons --git --group-directories-first --tree'
+alias lta='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
 
 open() {
   xdg-open "$@" >/dev/null 2>&1 &
