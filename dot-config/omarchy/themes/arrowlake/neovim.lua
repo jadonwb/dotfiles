@@ -1,11 +1,11 @@
 return {
-    {
-        "jadonwb/arrowlake.nvim"
+  {
+    'jadonwb/arrowlake.nvim',
+  },
+  {
+    'LazyVim/LazyVim',
+    opts = {
+      colorscheme = 'tokyonight-moon',
     },
-    {
-        "LazyVim/LazyVim",
-        opts = {
-            colorscheme = "tokyonight-moon",
-        },
-    },
+  },
 }
