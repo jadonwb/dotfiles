@@ -108,7 +108,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias .....='cd ../../..'
-alias g='lazygit'
+alias lg="nvim +'lua Snacks.lazygit()'"
 
 # lazy load zoxide
 function cd() {
