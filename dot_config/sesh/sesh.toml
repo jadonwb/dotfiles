@@ -4,6 +4,11 @@ path = "~/.config/sesh"
 startup_command = "nvim sesh.toml"
 
 [[session]]
+name = "Tmux"
+path = "~/.config/tmux"
+startup_command = "nvim tmux.conf"
+
+[[session]]
 name = "Downloads"
 path = "~/Downloads"
 startup_command = "yazi"
@@ -11,17 +16,14 @@ startup_command = "yazi"
 [[session]]
 name = "Home"
 path = "~"
-startup_command = "ls"
 
 [[session]]
 name = "repositories (c)"
 path = "~/c"
-startup_command = "ls"
 
 [[session]]
 name = "dotfiles"
-path = "~/c/dotfiles"
-startup_command = "nvim"
+path = "~/.local/share/chezmoi"
 
 [[session]]
 name = "Neovim"
@@ -42,5 +44,3 @@ startup_command = "nvim"
 name = "Omarchy"
 path = "~/.local/share/omarchy/"
 startup_command = "nvim"
-
-# [[session]]
