@@ -5,7 +5,8 @@ return {
   {
     'LazyVim/LazyVim',
     opts = {
-      colorscheme = 'tokyonight-moon',
+      colorscheme = 'arrowlake-darker',
+      transparent = true,
     },
   },
 }
