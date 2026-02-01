@@ -1,0 +1,6 @@
+export OMARCHY_PATH="$HOME/.local/share/omarchy"
+export PATH="$OMARCHY_PATH/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="/home/jadon/.lmstudio/bin:$PATH"
+export PATH="/opt/rocm/bin:$PATH"

@@ -1,0 +1,143 @@
+# zmodload zsh/zprof
+
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+stty -ixon < /dev/tty
+
+# exports for interactive shell
+export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
+export MANPAGER='nvim +Man!'
+export BAT_THEME=ansi
+
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+
+# Download Zinit, if its not there yet
+if [ ! -d "$ZINIT_HOME" ]; then
+	mkdir -p "$(dirname $ZINIT_HOME)"
+	git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+fi
+
+# Source/load zinit
+source "${ZINIT_HOME}/zinit.zsh"
+
+# prompt
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+
+# Add in zsh plugins
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+zinit light zsh-users/zsh-autosuggestions
+zinit light jeffreytse/zsh-vi-mode
+zinit light Aloxaf/fzf-tab
+
+# Add in snippets
+zinit ice wait lucid
+zinit snippet OMZP::git
+zinit ice wait lucid
+zinit snippet OMZP::sudo
+zinit ice wait lucid
+zinit snippet OMZP::archlinux
+zinit ice wait lucid
+zinit snippet OMZP::command-not-found
+
+# Load completions
+autoload -Uz compinit && compinit
+
+zinit cdreplay -q
+
+# Keybindings
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
+bindkey -r '^s'
+bindkey -r '^q'
+
+bindkey -M vicmd '!' sudo-command-line
+bindkey -M viins '^[[33;5u' sudo-command-line
+
+# History
+HISTSIZE=10000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+setopt appendhistory
+setopt sharehistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
+
+# Completion styling
+zstyle ':fzf-tab:*' fzf-flags ${(z)FZF_DEFAULT_OPTS}
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+
+# Aliases
+alias make='bear -- make'
+alias vim='nvim'
+alias v='nvim'
+alias n='nvim .'
+alias t='tmux'
+alias ta='tmux a'
+alias c='clear'
+alias q='exit'
+alias ff='fd -H'
+alias sg='rg --hidden'
+alias ls='eza --long --no-user --header --icons --git --group-directories-first'
+alias lsa='eza --long --no-user --header --icons --git --all --group-directories-first'
+alias lt='eza --long --no-user --header --icons --git --group-directories-first --tree'
+alias lta='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
+
+open() {
+  xdg-open "$@" >/dev/null 2>&1 &
+}
+
+deref() {
+  local f real dir
+  for f in "$@"; do
+    [[ -L $f ]] || continue
+
+    dir=$(dirname -- "$f")
+    real=$(readlink -- "$f") || continue
+
+    rm -- "$f" || continue
+    cp -- "$dir/$real" "$f"
+  done
+}
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+alias g='lazygit'
+
+# Shell integrations
+if command -v try &> /dev/null; then
+  eval "$(try init ~/c/tries)"
+fi
+if command -v fzf &> /dev/null; then
+  eval "$(fzf --zsh)"
+fi
+if command -v mise &> /dev/null; then
+  eval "$(mise activate zsh)"
+fi
+# lazy load zoxide
+function cd() {
+  unfunction cd
+  eval "$(zoxide init --cmd cd zsh)"
+  cd "$@"
+}
+
+# Change tmux window name on directory change
+export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
+
+source $HOME/.zfuncs
+
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# zprof
