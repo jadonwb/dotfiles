@@ -49,3 +49,6 @@ startup_command = "nvim"
 name = "Chezmoi"
 path = "~/.config/chezmoi"
 startup_command = "nvim"
+
+{{- if eq .machine.type "work" }}
+{{- end}}

@@ -8,9 +8,11 @@ stty -ixon < /dev/tty
 
 # exports for interactive shell
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
+export _ZO_EXCLUDE_DIRS="/net/*:/media/*:/tmp/*"
 export MANPAGER='nvim +Man!'
 export BAT_THEME=ansi
 
+# Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if its not there yet
@@ -37,8 +39,10 @@ zinit ice wait lucid
 zinit snippet OMZP::git
 zinit ice wait lucid
 zinit snippet OMZP::sudo
+{{- if eq .machine.type "personal" }}
 zinit ice wait lucid
 zinit snippet OMZP::archlinux
+{{- end}}
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
@@ -139,6 +143,10 @@ function cd() {
 export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
 
 source $HOME/.zfuncs
+
+{{- if eq .machine.type "work" }}
+umask 007
+{{- end}}
 
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 

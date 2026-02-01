@@ -1,10 +1,18 @@
 # Dynamic theme colors
 config-file = ?"~/.config/omarchy/current/theme/ghostty.conf"
 
+{{- if eq .machine.type "work" }}
+command = /usr/bin/zsh --login
+{{- end}}
+
 # Font
 font-family = "JetBrainsMono Nerd Font"
 font-style = Regular
+{{- if eq .machine.type "work" }}
+font-size = 10
+{{- else}}
 font-size = 9
+{{- end}}
 
 # Window
 window-padding-x = 14

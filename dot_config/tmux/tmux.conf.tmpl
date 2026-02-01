@@ -1,3 +1,7 @@
+{{- if eq .machine.type "work" }}
+set-option -g default-shell /usr/bin/zsh
+{{- end}}
+
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
 
 set -g default-terminal "tmux-256color"
@@ -126,7 +130,7 @@ set -g message-style "fg=#3F3BF5,bg=default"
 set -g message-command-style "fg=#3F3BF5,bg=default"
 
 set -g pane-border-style "fg=#312e55"
-set -g pane-active-border-style "fg=#3F3BF5"
+set -g pane-active-border-style "fg=#ff007c"
 
 set -g status "on"
 set -g status-justify "left"
@@ -160,7 +164,11 @@ set -g @prefix_highlight_output_suffix ""
 #####################################################################################################################
 
 # Plugin manager
+{{- if eq .machine.type "work" }}
+set-environment -g TMUX_PLUGIN_MANAGER_PATH '/home/jadon.brutcher/.config/tmux/plugins/'
+{{- else}}
 set-environment -g TMUX_PLUGIN_MANAGER_PATH '/home/jadon/.config/tmux/plugins/'
+{{- end}}
 
 # List of plugins
 set -g @plugin 'tmux-plugins/tpm'
@@ -168,10 +176,9 @@ set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-yank'
 set -g @plugin 'jaclu/tmux-menus'
 set -g @plugin 'soyuka/tmux-current-pane-hostname'
-set -g @plugin 'jaclu/tmux-mouse-swipe'
 set -g @plugin 'noscript/tmux-mighty-scroll'
 set -g @plugin 'nhdaly/tmux-better-mouse-mode'
-set -g @plugin 'lljbash/tmux-update-display'
+# set -g @plugin 'lljbash/tmux-update-display'
 set -g @plugin 'trevin-j/tmux-resurrect-nvim'
 set -g @plugin 'tmux-plugins/tmux-continuum'
 
@@ -187,17 +194,15 @@ set -g @menus_trigger 'm'
 
 # Sesh
 bind-key -n 'M-s' run-shell "sesh connect \"$(
-  sesh list -t --icons | fzf-tmux -p 45%,40% \
+  sesh list -t -c -d --icons | fzf-tmux -p 35%,55% \
     --no-sort --ansi --border-label ' Sessions ' --prompt '⚡  ' \
-    --header 'CTRL+a all | CTRL+t tmux | CTRL+x dirs | CTRL+d kill | CTRL+f find' \
+    --header 'CTRL+a all | CTRL+t tmux | CTRL+f find | CTRL+d kill ' \
     --border rounded \
     --color=border:#4541e1 \
     --bind 'alt-s:abort' \
     --bind 'tab:down,btab:up' \
-    --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list --icons)' \
+    --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list -d --icons)' \
     --bind 'ctrl-t:change-prompt(⚡  )+reload(sesh list -t --icons)' \
-    --bind 'ctrl-g:change-prompt(⚙️  )+reload(sesh list -c --icons)' \
-    --bind 'ctrl-x:change-prompt(📁  )+reload(sesh list -z --icons)' \
     --bind 'ctrl-f:change-prompt(🔎  )+reload(fd -H -d 2 -t d -E .Trash . ~)' \
     --bind 'ctrl-d:execute(tmux kill-session -t {2..})+change-prompt(⚡  )+reload(sesh list --icons)' \
 )\""
