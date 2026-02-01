@@ -18,11 +18,11 @@ name = "Home"
 path = "~"
 
 [[session]]
-name = "repositories (c)"
+name = "C (source)"
 path = "~/c"
 
 [[session]]
-name = "dotfiles"
+name = "Dots"
 path = "~/.local/share/chezmoi"
 
 [[session]]
