@@ -1,11 +1,13 @@
-# My changes
+{{- if eq .machine.type "work" }}
+windowrule = opacity 0.95 0.9 override, match:tag chromium-based-browser
+{{- else}}
 windowrule {
     name = windowrule-1
     opacity = 0.87 0.83
     match:tag = chromium-based-browser
 }
+{{- end}}
 
-# Per app styling
 windowrule {
     name = windowrule-2
     opacity = 0.85 0.7 override

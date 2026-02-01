@@ -1,0 +1,14 @@
+# Extra env variables
+# env = MY_GLOBAL_ENV,setting
+
+{{- if eq .machine.type "work" }}
+env = WLR_NO_HARDWARE_CURSORS,1
+env = GBM_BACKEND,nvidia-drm
+env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+env = LIBVA_DRIVER_NAME,nvidia
+env = __GL_GSYNC_ALLOWED,1
+env = __GL_VRR_ALLOWED,1
+env = OGL_DEDICATED_HW_STATE_PER_CONTEXT,ENABLE_ROBUST
+
+env = HYPRCURSOR_THEME,rose-pine-hyprcursor
+{{- end}}

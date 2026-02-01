@@ -33,24 +33,13 @@ bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 
 bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
 
-# needs works
-# bindd = SUPER, Slash, Text, exec, \
-#   sleep 0.5 && \
-#   wtype -M ctrl -k a -k c -m ctrl && \
-#   $terminal --app-id=text.box \
-#           -e bash -c "\
-#             wl-paste | nvim -n - +'file /tmp/nvimedit_temp_buf' && \
-#             cat /tmp/nvimedit_temp_buf | wl-copy && \
-#             rm -f /tmp/nvimedit_temp_buf" && \
-#   wtype -M ctrl -k v -m ctrl
-
-bindd = SUPER, Slash, Quick terminal toggle, exec, $hypr_scripts/popterm.sh
-
 binddr = SUPER, SUPER_L, Omarchy menu, exec, pkill walker || omarchy-menu
 
+{{- if eq .machine.type "work" }}
+bindr = SUPER, SPACE, exec, pkill rofi || rofi -show drun -modi drun,filebrowser,run,window # Super Key to Launch rofi menu
+{{- end}}
+
 # utilities
-# unbind = SUPER, C
-# bindd = SUPER, C, Copy, exec, $hypr_scripts/smart-copy.sh
 bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
 bindd = SUPER SHIFT, K, Show key bindings, exec, omarchy-menu-keybindings
 
@@ -58,5 +47,7 @@ bindd = SUPER SHIFT, K, Show key bindings, exec, omarchy-menu-keybindings
 bind = SUPER, PERIOD, exec, $hypr_scripts/toggle-cursor.sh
 
 # window picker
-unbind = SUPER, S
-bind = SUPER, S, exec, pkill walker || omarchy-menu Workspace
+# unbind = SUPER, S
+# bind = SUPER, S, exec, pkill walker || omarchy-menu Workspace
+
+bind = SUPER SHIFT, W, exec, notify-send 'click window to kill' && hyprctl kill

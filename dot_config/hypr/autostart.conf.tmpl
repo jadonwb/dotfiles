@@ -1,0 +1,9 @@
+# Extra autostart processes
+# exec-once = uwsm app -- my-service
+
+{{- if eq .machine.type "work" }}
+exec-once = uwsm-app -- swaybg -i /home/jadon.brutcher/.config/omarchy/current/background -m fill
+exec-once = uwsm-app -- /home/jadon.brutcher/bin/mako
+
+exec-once = hyprctl setcursor rose-pine-hyprcursor 20
+{{- end}}
