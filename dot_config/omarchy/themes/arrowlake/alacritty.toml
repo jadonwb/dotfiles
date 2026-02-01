@@ -1,33 +1,41 @@
-[colors]
+# -----------------------------------------------------------------------------
+# Arrowlake Alacritty Colors
+# Theme: Arrowlake Moon
+# Upstream: https://github.com/jadonwb/arrowlake.nvim/raw/main/extras/alacritty/arrowlake_darker.toml
+# -----------------------------------------------------------------------------
+
+# Default colors
 [colors.primary]
-background = "#070617"
-foreground = "#c5c6c6"
+background = '#0D0C25'
+foreground = '#c8d3f5'
 
+# Normal colors
 [colors.normal]
-black = "#070617"
-red = "#BE4D69"
-green = "#2A8669"
-yellow = "#c99b4a"
-blue = "#4541e1"
-magenta = "#c56bc5"
-cyan = "#67c0d7"
-white = "#979898"
+black = '#0a0a1e'
+red = '#ff007c'
+green = '#2A8669'
+yellow = '#FFC066'
+blue = '#3F3BF5'
+magenta = '#DA4AB4'
+cyan = '#61DDEE'
+white = '#a9b1d6'
 
+# Bright colors
 [colors.bright]
-black = "#312e55"
-red = "#BE4D69"
-green = "#2A8669"
-yellow = "#c99b4a"
-blue = "#4541e1"
-magenta = "#c56bc5"
-cyan = "#67c0d7"
-white = "#c5c6c6"
+black = '#312e55'
+red = '#ff498a'
+green = '#009672'
+yellow = '#ffd29e'
+blue = '#4f4cff'
+magenta = '#fa40cc'
+cyan = '#63edff'
+white = '#c8d3f5'
 
 [colors.cursor]
-text = "#070617"
-cursor = "#c5c6c6"
+text = "#0a0a1e"
+cursor = "#c8d3f5"
 
-[window]
-# Matching the opacity/blur of your Ghostty and Hyprland setup
-opacity = 0.73
-blur = true
+# [window]
+# # Matching the opacity/blur of your Ghostty and Hyprland setup
+# opacity = 0.73
+# blur = true

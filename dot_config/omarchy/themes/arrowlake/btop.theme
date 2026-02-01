@@ -2,69 +2,69 @@
 theme[main_bg]="#070617"
 
 # Main text color
-theme[main_fg]="#c5c6c6"
+theme[main_fg]="#c8d3f5"
 
 # Title color for boxes
-theme[title]="#c56bc5"
+theme[title]="#DA4AB4"
 
 # Highlight color for keyboard shortcuts
-theme[hi_fg]="#67c0d7"
+theme[hi_fg]="#61DDEE"
 
 # Background color of selected item in processes box
 theme[selected_bg]="#312e55"
 
 # Foreground color of selected item in processes box
-theme[selected_fg]="#c5c6c6"
+theme[selected_fg]="#c8d3f5"
 
 # Color of inactive/disabled text
 theme[inactive_fg]="#312e55"
 
 # Misc colors for processes box including mini cpu graphs, details memory graph and details status text
-theme[proc_misc]="#c56bc5"
+theme[proc_misc]="#DA4AB4"
 
 # Box outline and divider line color
-theme[cpu_box]="#4541e1"
-theme[mem_box]="#4541e1"
-theme[net_box]="#4541e1"
-theme[proc_box]="#4541e1"
+theme[cpu_box]="#3F3BF5"
+theme[mem_box]="#3F3BF5"
+theme[net_box]="#3F3BF5"
+theme[proc_box]="#3F3BF5"
 theme[div_line]="#312e55"
 
 # Gradient for all meters and graphs
-theme[temp_start]="#67c0d7"
-theme[temp_mid]="#4541e1"
-theme[temp_end]="#4541e1"
+theme[temp_start]="#61DDEE"
+theme[temp_mid]="#3F3BF5"
+theme[temp_end]="#3F3BF5"
 
 
-theme[cpu_start]="#67c0d7"
-theme[cpu_mid]="#4541e1"
-theme[cpu_end]="#4541e1"
+theme[cpu_start]="#61DDEE"
+theme[cpu_mid]="#3F3BF5"
+theme[cpu_end]="#3F3BF5"
 
 
-theme[free_start]="#4541e1"
-theme[free_mid]="#c99b4a"
-theme[free_end]="#c99b4a"
+theme[free_start]="#3F3BF5"
+theme[free_mid]="#FFC066"
+theme[free_end]="#FFC066"
 
 
-theme[cached_start]="#c99b4a"
-theme[cached_mid]="#c99b4a"
-theme[cached_end]="#c99b4a"
+theme[cached_start]="#FFC066"
+theme[cached_mid]="#FFC066"
+theme[cached_end]="#FFC066"
 
 
-theme[available_start]="#67c0d7"
-theme[available_mid]="#67c0d7"
-theme[available_end]="#67c0d7"
+theme[available_start]="#61DDEE"
+theme[available_mid]="#61DDEE"
+theme[available_end]="#61DDEE"
 
 
-theme[used_start]="#4541e1"
-theme[used_mid]="#4541e1"
-theme[used_end]="#4541e1"
+theme[used_start]="#3F3BF5"
+theme[used_mid]="#3F3BF5"
+theme[used_end]="#3F3BF5"
 
 
-theme[download_start]="#c99b4a"
-theme[download_mid]="#67c0d7"
-theme[download_end]="#4541e1"
+theme[download_start]="#FFC066"
+theme[download_mid]="#61DDEE"
+theme[download_end]="#3F3BF5"
 
 
-theme[upload_start]="#c99b4a"
-theme[upload_mid]="#67c0d7"
-theme[upload_end]="#4541e1"
+theme[upload_start]="#FFC066"
+theme[upload_mid]="#61DDEE"
+theme[upload_end]="#3F3BF5"
