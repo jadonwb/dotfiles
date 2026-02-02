@@ -1,4 +1,5 @@
 {{- if eq .machine.type "work" }}
-/home/jadon.brutcher/.config/hypr/hypridle.conf
+.config/hypr/hypridle.conf
+.config/hypr/hyprlock.conf
 {{- else}}
 {{- end}}

@@ -25,7 +25,6 @@ windowrule {
     match:class = text.box
 }
 
-
 windowrule {
     name = windowrule-4
     float = on
@@ -33,4 +32,24 @@ windowrule {
     size = (monitor_w*0.35) (monitor_h*0.3)
     move = (monitor_w*0.64) (monitor_h*0.62)
     match:class = org.jadon.popterm
+}
+
+windowrule {
+    name = gst-no-anim
+    match:class = GStreamer
+    no_anim = on
+}
+
+windowrule {
+    name = gst-no-rounding
+    match:class = GStreamer
+    rounding = 0
+}
+
+windowrule {
+    name = gst-no-transparency
+    opacity = 1.0 1.0 override
+    float = on
+    center = on
+    match:class = GStreamer
 }
