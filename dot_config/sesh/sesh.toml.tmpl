@@ -51,4 +51,16 @@ path = "~/.config/chezmoi"
 startup_command = "nvim"
 
 {{- if eq .machine.type "work" }}
+[[session]]
+name = "Yocto"
+path = "~/AF2-NXP/dms-yocto/"
+
+[[session]]
+name = "Fusion"
+path = "~/AF2-NXP/Fusion_2s_i.MX/"
+startup_command = "nvim"
+
+[[session]]
+name = "Update Server"
+path = "~/AF2-NXP/af2_update_manager/"
 {{- end}}
