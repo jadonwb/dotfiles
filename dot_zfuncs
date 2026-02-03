@@ -65,3 +65,10 @@ img2png() {
     -define png:exclude-chunk=all \
     "${1%.*}.png"
 }
+
+# For my yocto work
+reflash() {
+    umount "$1"* > /dev/null 2>&1
+    sudo dd if=/dev/zero of="$1" bs=1M count=100 && sync
+    sudo bmaptool copy "$2" "$1"
+  }
