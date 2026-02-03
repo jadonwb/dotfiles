@@ -1,12 +1,7 @@
 [[session]]
-name = "Sesh"
+name = "sesh"
 path = "~/.config/sesh"
 startup_command = "nvim sesh.toml"
-
-[[session]]
-name = "Tmux"
-path = "~/.config/tmux"
-startup_command = "nvim tmux.conf"
 
 [[session]]
 name = "Downloads"
@@ -14,53 +9,53 @@ path = "~/Downloads"
 startup_command = "yazi"
 
 [[session]]
-name = "Home"
+name = "home"
 path = "~"
 
 [[session]]
-name = "C (source)"
+name = "c (source)"
 path = "~/c"
 
 [[session]]
-name = "Dots"
+name = "dots"
 path = "~/.local/share/chezmoi"
 
 [[session]]
-name = "Neovim"
+name = "neovim"
 path = "~/.config/nvim"
 startup_command = "nvim"
 
 [[session]]
-name = "Configs"
+name = "configs"
 path = "~/.config"
 startup_command = "nvim"
 
 [[session]]
-name = "Hyprland"
+name = "hyprland"
 path = "~/.config/hypr"
 startup_command = "nvim"
 
 [[session]]
-name = "Omarchy"
+name = "omarchy"
 path = "~/.local/share/omarchy/"
 startup_command = "nvim"
 
 [[session]]
-name = "Chezmoi"
+name = "chezmoi"
 path = "~/.config/chezmoi"
 startup_command = "nvim"
 
 {{- if eq .machine.type "work" }}
 [[session]]
-name = "Yocto"
+name = "yocto"
 path = "~/AF2-NXP/dms-yocto/"
 
 [[session]]
-name = "Fusion"
+name = "fusion"
 path = "~/AF2-NXP/Fusion_2s_i.MX/"
 startup_command = "nvim"
 
 [[session]]
-name = "Update Server"
+name = "update-server"
 path = "~/AF2-NXP/af2_update_manager/"
 {{- end}}
