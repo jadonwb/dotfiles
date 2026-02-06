@@ -1,0 +1,19 @@
+[user]
+	email = jadon.brutcher@deltamobile.com
+	name = Jadon Brutcher
+[safe]
+	directory = *
+
+[protocol "file"]
+	allow = always
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+[rebase]
+	autoStash = true
+[merge]
+    tool = nvimdiff
+[mergetool "nvimdiff"]
+    cmd = nvim -d $LOCAL $MERGED $REMOTE -c 'wincmd J | wincmd ='
+[mergetool]
+    prompt = false
+    keepBackup = false
