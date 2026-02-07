@@ -1,8 +1,13 @@
 [user]
-	email = jadon.brutcher@deltamobile.com
 	name = Jadon Brutcher
+{{- if eq .machine.type "personal" }}
+	email = jadonwbrutcher@icloud.com
+{{- else}}
+	email = jadon.brutcher@deltamobile.com
+
 [safe]
 	directory = *
+{{- end}}
 
 [protocol "file"]
 	allow = always

@@ -89,8 +89,6 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 # Aliases
 alias make='bear -- make'
 alias vim='nvim'
-alias v='nvim'
-alias n='nvim .'
 alias t='tmux'
 alias ta='tmux a'
 alias c='clear'
@@ -106,6 +104,8 @@ alias lta='eza --long --no-user --header --icons --git --all --group-directories
 alias lg="nvim +'lua Snacks.lazygit()'"
 alias oc="opencode"
 alias dots="chezmoi"
+
+svim() { sudoedit "$@" }
 
 open() {
   xdg-open "$@" >/dev/null 2>&1 &
