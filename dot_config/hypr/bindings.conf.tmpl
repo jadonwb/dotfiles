@@ -7,6 +7,11 @@ unbind = SUPER ALT, SPACE
 unbind = SUPER, K
 unbind = SUPER, J
 
+unbind = SUPER, F
+bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
+workspace = name:special:yazi,on-created-empty:omarchy-launch-or-focus-tui yazi
+bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
+
 bind = SUPER SHIFT, Q, exec, systemctl suspend
 
 bindd = SUPER, I, Toggle window split, togglesplit, # dwindle
@@ -17,7 +22,6 @@ bindd = SUPER, K, Move window focus up, movefocus, u
 bindd = SUPER, J, Move window focus down, movefocus, d
 
 bindd = SUPER, RETURN, Terminal, exec, $terminal --dir="$(omarchy-cmd-terminal-cwd)"
-bindd = SUPER SHIFT, F, File manager, exec, omarchy-launch-or-focus-tui yazi
 bindd = SUPER, B, Browser, exec, $browser
 bindd = SUPER ALT, B, Browser (private), exec, $browser --private
 bindd = SUPER, N, Editor, exec, omarchy-launch-editor

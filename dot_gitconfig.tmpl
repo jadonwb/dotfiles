@@ -1,8 +1,13 @@
 [user]
-	email = jadon.brutcher@example.invalid
 	name = Jadon Brutcher
+{{- if eq .machine.type "personal" }}
+	email = jadonwbrutcher@icloud.com
+{{- else}}
+	email = jadon.brutcher@example.invalid
+
 [safe]
 	directory = *
+{{- end}}
 
 [protocol "file"]
 	allow = always
