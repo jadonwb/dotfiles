@@ -3,6 +3,7 @@
     "plugin": [
         "@mohak34/opencode-notifier@latest"
     ],
+    "theme": "arrowlake",
     "provider": {
         "llama.cpp": {
             "npm": "@ai-sdk/openai-compatible",
