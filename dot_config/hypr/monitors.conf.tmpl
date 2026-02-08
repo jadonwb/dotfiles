@@ -13,8 +13,8 @@
 
 # Straight 1x setup for low-resolution displays like 1080p or 1440p
 {{- if eq .machine.type "personal" }}
-env = GDK_SCALE,2
-monitor=,2560x1440@165,auto,2
+env = GDK_SCALE,1.67
+monitor=,2560x1440@165,auto,1.67
 {{- else}}
 env = GDK_SCALE,1.25
 
