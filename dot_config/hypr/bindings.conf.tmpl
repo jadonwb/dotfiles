@@ -1,6 +1,3 @@
-# Application bindings
-$terminal = uwsm-app -- xdg-terminal-exec
-$browser = omarchy-launch-browser
 $hypr_scripts = /home/jadon/.config/hypr/scripts
 
 unbind = SUPER ALT, SPACE
@@ -21,9 +18,9 @@ bindd = SUPER, L, Move window focus right, movefocus, r
 bindd = SUPER, K, Move window focus up, movefocus, u
 bindd = SUPER, J, Move window focus down, movefocus, d
 
-bindd = SUPER, RETURN, Terminal, exec, $terminal --dir="$(omarchy-cmd-terminal-cwd)"
-bindd = SUPER, B, Browser, exec, $browser
-bindd = SUPER ALT, B, Browser (private), exec, $browser --private
+bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
+bindd = SUPER SHIFT, RETURN, Browser, exec, omarchy-launch-browser
+bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --private
 bindd = SUPER, N, Editor, exec, omarchy-launch-editor
 bindd = SUPER SHIFT, T, Activity, exec, omarchy-launch-tui btop
 bindd = SUPER, D, Docker, exec, omarchy-launch-tui lazydocker
