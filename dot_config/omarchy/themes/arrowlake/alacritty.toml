@@ -13,22 +13,22 @@ foreground = '#c8d3f5'
 [colors.normal]
 black = '#0a0a1e'
 red = '#ff007c'
-green = '#2A8669'
-yellow = '#FFC066'
+green = '#2A8A6B'
+yellow = '#FFD888'
 blue = '#3F3BF5'
-magenta = '#DA4AB4'
-cyan = '#61DDEE'
+magenta = '#C24EBA'
+cyan = '#58E2CB'
 white = '#a9b1d6'
 
 # Bright colors
 [colors.bright]
 black = '#312e55'
 red = '#ff498a'
-green = '#009672'
-yellow = '#ffd29e'
+green = '#009a74'
+yellow = '#ffe8c2'
 blue = '#4f4cff'
-magenta = '#fa40cc'
-cyan = '#63edff'
+magenta = '#ea34df'
+cyan = '#00f5d9'
 white = '#c8d3f5'
 
 [colors.cursor]
