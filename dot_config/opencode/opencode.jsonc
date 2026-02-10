@@ -4,6 +4,12 @@
         "@mohak34/opencode-notifier@latest"
     ],
     "theme": "arrowlake",
+    "tui": {
+        "scroll_acceleration": {
+            "enabled": true
+        },
+        "diff_style": "auto"
+    },
     "provider": {
         "llama.cpp": {
             "npm": "@ai-sdk/openai-compatible",
