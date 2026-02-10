@@ -21,7 +21,10 @@ bindd = SUPER, J, Move window focus down, movefocus, d
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER SHIFT, RETURN, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --private
-bindd = SUPER, N, Editor, exec, omarchy-launch-editor
+
+workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
+bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
+
 bindd = SUPER SHIFT, T, Activity, exec, omarchy-launch-tui btop
 {{- if eq .machine.type "personal" }}
 bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
