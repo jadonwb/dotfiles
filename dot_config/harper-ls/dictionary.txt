@@ -1,3 +1,5 @@
 Opencode
+TODO
 gstreamer
 lsp
+psplash
