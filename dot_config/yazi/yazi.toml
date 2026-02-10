@@ -32,3 +32,6 @@ run = "git"
 id = "git"
 url = "*/"
 run = "git"
+
+[mgr]
+show_hidden = true

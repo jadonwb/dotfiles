@@ -1,0 +1,9 @@
+overrides:
+  # Specific override for Markdown (.md) files
+  - files: "*.md"
+    # https://prettier.io/docs/en/options
+    options:
+      proseWrap: "always"
+      printWidth: 80
+      # indent_style: "space"
+      # tab_width: 4
