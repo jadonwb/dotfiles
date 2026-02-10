@@ -1,0 +1,8 @@
+{{- if eq .machine.type "personal" }}
+daily_notes_folder = "/home/jadon/Documents/notes/daily"
+new_file_folder_path = "/home/jadon/Documents/notes"
+{{- else }}
+daily_notes_folder = "/home/jadon.brutcher/Documents/notes/daily"
+new_file_folder_path = "/home/jadon.brutcher/Documents/notes"
+{{- end }}
+dailynote = "%Y-%m-%d-%A"
