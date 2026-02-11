@@ -40,11 +40,13 @@ bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 
 bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
 
-binddr = SUPER, SUPER_L, Omarchy menu, exec, pkill walker || omarchy-menu
 
 {{- if eq .machine.type "work" }}
-unbind = SUPER, SPACE
-bindr = SUPER, SPACE, exec, pkill rofi || rofi -show drun -modi drun,filebrowser,run,window # Super Key to Launch rofi menu
+binddr = SUPER, SUPER_L, Omarchy menu, exec, omarchy-menu
+#unbind = SUPER, SPACE
+#bindr = SUPER, SPACE, exec, pkill rofi || rofi -show drun -modi drun,filebrowser,run,window # Super Key to Launch rofi menu
+{{- else}}
+binddr = SUPER, SUPER_L, Omarchy menu, exec, pkill walker || omarchy-menu
 {{- end}}
 
 # utilities
