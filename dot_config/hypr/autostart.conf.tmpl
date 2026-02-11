@@ -2,6 +2,7 @@
 # exec-once = uwsm app -- my-service
 
 {{- if eq .machine.type "work" }}
+exec-once = uwsm-app -- /home/jadon.brutcher/.cargo/bin/walker --gapplication-service &
 exec-once = uwsm-app -- swaybg -i /home/jadon.brutcher/.config/omarchy/current/background -m fill
 # exec-once = uwsm-app -- mako
 
