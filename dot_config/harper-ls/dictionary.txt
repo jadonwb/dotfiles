@@ -1,5 +1,6 @@
 Opencode
 TODO
+bitbake
 gstreamer
 lsp
 psplash
