@@ -25,7 +25,9 @@ bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --pri
 workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
 bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
 
-bindd = SUPER SHIFT, T, Activity, exec, omarchy-launch-tui btop
+workspace = name:special:activity,on-created-empty:omarchy-launch-tui btop
+bindd = SUPER SHIFT, T, toggle special workspace activity, togglespecialworkspace, activity
+
 {{- if eq .machine.type "personal" }}
 bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
 {{- end}}
