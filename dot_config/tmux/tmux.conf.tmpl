@@ -189,7 +189,7 @@ bind-key -n 'M-s' run-shell "sesh connect \"$(
     --no-sort --ansi --border-label ' Sessions ' --prompt '⚡  ' \
     --header 'CTRL+a all | CTRL+t tmux | CTRL+f find | CTRL+d kill ' \
     --border rounded \
-    --color=border:#4541e1 \
+    --color=border:'#4541e1' \
     --bind 'alt-s:abort' \
     --bind 'tab:down,btab:up' \
     --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list -d --icons)' \
