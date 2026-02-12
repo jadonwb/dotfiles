@@ -44,7 +44,7 @@ bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
 
 
 {{- if eq .machine.type "work" }}
-binddr = SUPER, SUPER_L, Omarchy menu, exec, omarchy-menu
+binddr = SUPER, SEMICOLON, Omarchy menu, exec, omarchy-menu
 #unbind = SUPER, SPACE
 #bindr = SUPER, SPACE, exec, pkill rofi || rofi -show drun -modi drun,filebrowser,run,window # Super Key to Launch rofi menu
 {{- else}}
