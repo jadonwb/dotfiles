@@ -1,6 +1,5 @@
 $hypr_scripts = /home/jadon/.config/hypr/scripts
 
-unbind = SUPER ALT, SPACE
 unbind = SUPER, K
 unbind = SUPER, J
 
@@ -41,15 +40,6 @@ workspace = name:special:music,on-created-empty:omarchy-launch-webapp "https://m
 bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 
 bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
-
-
-{{- if eq .machine.type "work" }}
-binddr = SUPER, SEMICOLON, Omarchy menu, exec, omarchy-menu
-#unbind = SUPER, SPACE
-#bindr = SUPER, SPACE, exec, pkill rofi || rofi -show drun -modi drun,filebrowser,run,window # Super Key to Launch rofi menu
-{{- else}}
-binddr = SUPER, SUPER_L, Omarchy menu, exec, pkill walker || omarchy-menu
-{{- end}}
 
 # utilities
 bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
