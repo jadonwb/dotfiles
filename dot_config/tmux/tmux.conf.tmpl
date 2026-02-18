@@ -2,47 +2,20 @@
 set-option -g default-shell /usr/bin/zsh
 {{- end}}
 
-is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
-
-set -g default-terminal "tmux-256color"
-set -as terminal-overrides ",*:Tc"
-set-option -ga terminal-overrides ',xterm-kitty:cnorm=\E[?12h\E[?25h'
-
+# Prefix
 unbind C-b
 set-option -g prefix 'C-s'
 bind-key 'C-s' send-prefix
 
-# 0 is too far from `
-set -g base-index 1
+# Reload tmux config
+bind r source-file ~/.tmux.conf \; \
+	display-message "Reloaded the config"
 
-# Tab bar
-set-option -g status-position top
-
-set -g status-keys vi
-set -g history-limit 10000
-set -g mode-keys vi
-set -g monitor-activity off
-set -g visual-activity off
-set-option -g bell-action none
-set -g detach-on-destroy off
-
+# Vi for copy mode
+setw -g mode-keys vi
 bind-key -n 'M-v' copy-mode
-unbind '['
-unbind -T copy-mode-vi MouseDragEnd1Pane
-bind-key -T copy-mode-vi 'v' send -X begin-selection
-bind-key -T copy-mode-vi 'y' send -X copy-pipe-and-cancel
-bind-key -T copy-mode-vi C-Insert send -X copy-pipe-and-cancel # FIXME:
-bind-key -T copy-mode-vi Escape send -X cancel
-
-# Enable mouse control (clickable windows, panes, resizable panes)
-set -g mouse on
-
-# Enable copy-pasting
-set -g set-clipboard on
-
-# Render undercurls and double underlines
-set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'
-set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{255}%&%d::%p1%{255}%&%d%;m'
+bind -T copy-mode-vi v send -X begin-selection
+bind -T copy-mode-vi y send -X copy-selection-and-cancel
 
 # Tabs (windows) and panes
 bind -n M-1 select-window -t 1
@@ -67,6 +40,9 @@ bind -n 'M-\' split-window -v -c "#{pane_current_path}"
 unbind '"'
 unbind %
 
+# Helper
+is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
+
 # Resize key-bindings
 bind-key -n 'C-left' if-shell "$is_vim" 'send-keys C-left'  'resize-pane -L 1'
 bind-key -n 'C-down' if-shell "$is_vim" 'send-keys C-down'  'resize-pane -D 1'
@@ -77,9 +53,6 @@ bind-key -T copy-mode-vi 'C-left' resize-pane -L 1
 bind-key -T copy-mode-vi 'C-down' resize-pane -D 1
 bind-key -T copy-mode-vi 'C-up' resize-pane -U 1
 bind-key -T copy-mode-vi 'C-right' resize-pane -R 1
-
-# Zoom in/out panes
-bind -n 'M-z' resize-pane -Z
 
 # Navigation key-bindings
 bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h' { if -F '#{pane_at_left}' '' 'select-pane -L' }
@@ -101,58 +74,58 @@ bind-key -n 'M-N' swap-window -t +1\; select-window -t +1
 bind-key -n 'M-b' last-window
 bind-key -n 'M-B' run-shell "sesh last"
 
-# No delay for escape key press
+set -g default-terminal "tmux-256color"
+set -ag terminal-overrides ",*:RGB"
+set -g status-keys vi
+set -g mouse on
+set -g base-index 1
+setw -g pane-base-index 1
+set -g renumber-windows on
+set -g history-limit 50000
 set -sg escape-time 0
-
-# Reload tmux config
-bind-key r source-file ~/.tmux.conf \; \
-	display-message "Reloaded the config"
-
-# For integration with vim
 set -g focus-events on
-set -g allow-passthrough all
-set -g extended-keys on
+set -g set-clipboard on
+set -g allow-passthrough on
+set -g extended-keys on # Workaround with injecting terminal features bug with snacks.nvim picker in neovim, might be able to delete if fixed
+setw -g aggressive-resize on
+set -g detach-on-destroy off
 
-set -g status-interval 1
+# Render undercurls and double underlines
+set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'
+set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{255}%&%d::%p1%{255}%&%d%;m'
 
 set -g popup-style 'bg=default,fg=default'
-set -g popup-border-style "fg=colour4"
+set -g popup-border-style "fg=blue"
 set -g popup-border-lines 'rounded'
 
-#####################################################################################################################
-#####################################################################################################################
-# ArrowLake colors for Tmux
-#####################################################################################################################
-
-set -g mode-style "fg=#3F3BF5,bg=default"
-set -g message-style "fg=#3F3BF5,bg=default"
-set -g message-command-style "fg=#3F3BF5,bg=default"
+set -g mode-style "fg=blue,bg=default"
+set -g message-style "fg=blue,bg=default"
+set -g message-command-style "fg=blue,bg=default"
 set -g pane-border-style "fg=#312e55"
-set -g pane-active-border-style "fg=#FFD888"
-set-option -g pane-border-lines double
+set -g pane-active-border-style "fg=yellow"
+set-option -g pane-border-lines single
 set-option -g pane-border-indicators both
 set-option -g pane-border-status off
-set -g status "on"
-set -g status-justify "left"
-set -g status-style "fg=#3F3BF5,bg=default"
-set -g status-left-length "100"
-set -g status-right-length "100"
-set -g status-left-style NONE
-set -g status-right-style NONE
-set -g status-left "#[fg=#0a0a1e,bg=#3F3BF5,bold] #S #[fg=#3F3BF5,bg=default,nobold,nounderscore,noitalics]"
-set -g status-right "#[fg=default,bg=default,nobold,nounderscore,noitalics]#[fg=#3F3BF5,bg=default] #{prefix_highlight} #[fg=#312e55,bg=default,nobold,nounderscore,noitalics]#[fg=#3F3BF5,bg=#312e55] %Y-%m-%d  %I:%M %p #[fg=#3F3BF5,bg=#312e55,nobold,nounderscore,noitalics]#[fg=#0a0a1e,bg=#3F3BF5,bold] #h "
-if-shell '[ "$(tmux show-option -gqv "clock-mode-style")" == "24" ]' {
-  set -g status-right "#[fg=default,bg=default,nobold,nounderscore,noitalics]#[fg=#3F3BF5,bg=default] #{prefix_highlight} #[fg=#312e55,bg=default,nobold,nounderscore,noitalics]#[fg=#3F3BF5,bg=#312e55] %Y-%m-%d  %H:%M #[fg=#3F3BF5,bg=#312e55,nobold,nounderscore,noitalics]#[fg=#0a0a1e,bg=#3F3BF5,bold] #h "
-}
-setw -g window-status-activity-style "underscore,fg=#a9b1d6,bg=default"
-setw -g window-status-separator ""
-setw -g window-status-style "NONE,fg=#a9b1d6,bg=default"
-setw -g window-status-format "#[fg=default,bg=default,nobold,nounderscore,noitalics]#[default] #I  #W #F #[fg=default,bg=default,nobold,nounderscore,noitalics]"
-setw -g window-status-current-format "#[fg=default,bg=#312e55,nobold,nounderscore,noitalics]#[fg=#3F3BF5,bg=#312e55,bold] #I  #W #F #[fg=#312e55,bg=default,nobold,nounderscore,noitalics]"
 
-#####################################################################################################################
-#####################################################################################################################
-#####################################################################################################################
+# Status bar
+set -g status-position top
+set -g status-interval 5
+set -g status-left-length 30
+set -g status-right-length 50
+set -g window-status-separator ""
+
+# Theme
+set -g status-style "bg=default,fg=default"
+set -g status-left "#[fg=black,bg=blue,bold] #S #[bg=default] "
+set -g status-right "#[fg=blue]#{?client_prefix,PREFIX ,}#[fg=brightblack]#h "
+set -g window-status-format "#[fg=brightblack] #I:#W "
+set -g window-status-current-format "#[fg=blue,bold] #I:#W "
+set -g pane-border-style "fg=brightblack"
+set -g pane-active-border-style "fg=blue"
+set -g message-style "bg=default,fg=blue"
+set -g message-command-style "bg=default,fg=blue"
+set -g mode-style "bg=blue,fg=black"
+setw -g clock-mode-colour blue
 
 # Plugin manager
 {{- if eq .machine.type "work" }}
@@ -163,25 +136,8 @@ set-environment -g TMUX_PLUGIN_MANAGER_PATH '/home/jadon/.config/tmux/plugins/'
 
 # List of plugins
 set -g @plugin 'tmux-plugins/tpm'
-set -g @plugin 'tmux-plugins/tmux-sensible'
-set -g @plugin 'tmux-plugins/tmux-yank'
-set -g @plugin 'jaclu/tmux-menus'
-set -g @plugin 'soyuka/tmux-current-pane-hostname'
-set -g @plugin 'noscript/tmux-mighty-scroll'
-set -g @plugin 'nhdaly/tmux-better-mouse-mode'
-# set -g @plugin 'lljbash/tmux-update-display'
 set -g @plugin 'trevin-j/tmux-resurrect-nvim'
 set -g @plugin 'tmux-plugins/tmux-continuum'
-
-# Unbind keys
-unbind-key m
-unbind-key M
-unbind-key M-m
-unbind-key n
-unbind-key p
-
-# Bindings for menu plugin
-set -g @menus_trigger 'm'
 
 # Sesh
 bind-key -n 'M-s' run-shell "sesh connect \"$(
