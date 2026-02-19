@@ -65,6 +65,8 @@ bindkey -r '^q'
 bindkey -M vicmd '!' sudo-command-line
 bindkey -M viins '^[[33;5u' sudo-command-line
 
+bindkey '^[[Z' autosuggest-accept # Shift-Tab to accept autosuggestions
+
 # History
 HISTSIZE=10000
 HISTFILE=~/.zsh_history
