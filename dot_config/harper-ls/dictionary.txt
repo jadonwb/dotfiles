@@ -1,6 +1,9 @@
 Opencode
+TLDR
 TODO
 bitbake
 gstreamer
+ivi
 lsp
 psplash
+xdg
