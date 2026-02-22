@@ -57,4 +57,16 @@ startup_command = "nvim"
 [[session]]
 name = "update-server"
 path = "~/AF2-NXP/af2_update_manager/"
+{{- else}}
+[[session]]
+name = "llama-toolboxes"
+path = "~/c/amd-strix-halo-toolboxes/"
+
+[[session]]
+name = "vllm-toolboxes"
+path = "~/c/amd-strix-halo-vllm-toolboxes/"
+
+[[session]]
+name = "comfyui-toolboxes"
+path = "~/c/amd-strix-halo-image-video-toolboxes/"
 {{- end}}
