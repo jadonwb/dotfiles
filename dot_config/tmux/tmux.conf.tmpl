@@ -71,8 +71,8 @@ bind-key -n 'M-n' next-window
 bind-key -n 'M-P' swap-window -t -1\; select-window -t -1
 bind-key -n 'M-N' swap-window -t +1\; select-window -t +1
 
-bind-key -n 'M-b' last-window
-bind-key -n 'M-B' run-shell "sesh last"
+bind-key -n 'M-l' last-window
+bind-key -n 'M-L' run-shell "sesh last"
 
 set -g default-terminal "tmux-256color"
 set -ag terminal-overrides ",*:RGB"

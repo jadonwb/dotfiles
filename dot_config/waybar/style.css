@@ -10,8 +10,8 @@
 window#waybar { background: transparent; }
 
 #custom-omarchy, #workspaces, #clock, #network, #cpu, #bluetooth, #pulseaudio, 
-#custom-system, #custom-screenrecording-indicator, #custom-update, 
-#custom-google-tasks, #custom-google-keep, #custom-expand-icon, #tray {
+#custom-system, #custom-screenrecording-indicator, #custom-idle-indicator, #custom-update, 
+#custom-google-tasks, #custom-google-keep, #custom-expand-icon, #tray, #custom-notification-silencing-indicator {
     background: alpha(@background, 0.6); 
     border-radius: 14px;
     padding: 0px 22px;
@@ -32,7 +32,9 @@ window#waybar { background: transparent; }
 #pulseaudio { color: @blue; border: 2px solid @blue; }
 #tray { border: 2px solid @foreground; }
 
-#custom-screenrecording-indicator.active {
+#custom-screenrecording-indicator.active,
+#custom-idle-indicator.active,
+#custom-notification-silencing-indicator.active {
   color: @red;
 }
 
