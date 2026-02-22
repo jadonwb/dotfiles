@@ -2,13 +2,12 @@ $hypr_scripts = /home/jadon/.config/hypr/scripts
 
 unbind = SUPER, K
 unbind = SUPER, J
-
 unbind = SUPER, F
+
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
+
 workspace = name:special:yazi,on-created-empty:omarchy-launch-or-focus-tui yazi
 bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
-
-bind = SUPER SHIFT, Q, exec, systemctl suspend
 
 bindd = SUPER, I, Toggle window split, togglesplit, # dwindle
 
@@ -17,6 +16,15 @@ bindd = SUPER, L, Move window focus right, movefocus, r
 bindd = SUPER, K, Move window focus up, movefocus, u
 bindd = SUPER, J, Move window focus down, movefocus, d
 
+bindd = SUPER SHIFT, H, Swap window to the left, swapwindow, l
+bindd = SUPER SHIFT, L, Swap window to the right, swapwindow, r
+bindd = SUPER SHIFT, K, Swap window up, swapwindow, u
+bindd = SUPER SHIFT, J, Swap window down, swapwindow, d
+
+bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
+
+bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
+
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER SHIFT, RETURN, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --private
@@ -24,13 +32,14 @@ bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --pri
 workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
 bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
 
+unbind = SUPER CTRL, T
 workspace = name:special:activity,on-created-empty:omarchy-launch-tui btop
-bindd = SUPER SHIFT, T, toggle special workspace activity, togglespecialworkspace, activity
+bindd = SUPER CTRL, T, toggle special workspace activity, togglespecialworkspace, activity
 
 {{- if eq .machine.type "personal" }}
 bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
 {{- end}}
-bindd = SUPER, D, Docker, exec, omarchy-launch-tui lazydocker
+
 bindd = SUPER SHIFT, G, Gamemode, exec, $hypr_scripts/gamemode.sh
 
 # If your web app url contains #, type it as ## to prevent hyperland treat it as comments
@@ -40,10 +49,6 @@ workspace = name:special:music,on-created-empty:omarchy-launch-webapp "https://m
 bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 
 bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
-
-# utilities
-bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
-bindd = SUPER SHIFT, K, Show key bindings, exec, omarchy-menu-keybindings
 
 # toggle cursor
 bind = SUPER, PERIOD, exec, $hypr_scripts/toggle-cursor.sh
