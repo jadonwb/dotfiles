@@ -57,7 +57,11 @@ input-field {
     check_color = $cyan
     fail_color = $red
     
+    {{- if eq .machine.type "laptop" }}
+    placeholder_text = <span> Enter Password 󰈷 </span>
+    {{- else}}
     placeholder_text = <span foreground="##e6d9db">Enter Password...</span>
+    {{- end}}
     hide_input = false
     
     position = 0, -200

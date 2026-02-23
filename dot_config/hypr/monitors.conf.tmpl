@@ -15,7 +15,7 @@
 {{- if eq .machine.type "personal" }}
 env = GDK_SCALE,1.67
 monitor=,2560x1440@165,auto,1.67
-{{- else}}
+{{- else if eq .machine.type "work" }}
 env = GDK_SCALE,1.25
 
 monitor=HDMI-A-1,1920x1080@120,auto,1.25
@@ -33,6 +33,9 @@ workspace=9,monitor:DP-1
 workspace=10,monitor:HDMI-A-1
 
 env = WLR_DRM_NO_ATOMIC,1
+{{- else}}
+env = GDK_SCALE,1
+monitor=,preferred,auto,auto
 {{- end}}
 
 # Example for Framework 13 w/ 6K XDR Apple display

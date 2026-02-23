@@ -4,6 +4,6 @@ export SUDO_EDITOR="$EDITOR"
 
 {{- if eq .machine.type "personal" }}
 . "$HOME/.local/share/../bin/env"
-{{- else}}
+{{- else if eq .machine.type "work" }}
 . "$HOME"/.cargo/env
 {{- end}}
