@@ -48,6 +48,10 @@ zinit snippet OMZP::sudo
 zinit ice wait lucid
 zinit snippet OMZP::archlinux
 {{- end}}
+{{- if eq .machine.type "laptop" }}
+zinit ice wait lucid
+zinit snippet OMZP::archlinux
+{{- end}}
 zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
@@ -138,6 +142,11 @@ if command -v try &> /dev/null; then
   eval "$(try init ~/c/tries)"
 fi
 {{- if eq .machine.type "personal" }}
+if command -v fzf &> /dev/null; then
+  eval "$(fzf --zsh)"
+fi
+{{- end}}
+{{- if eq .machine.type "laptop" }}
 if command -v fzf &> /dev/null; then
   eval "$(fzf --zsh)"
 fi
