@@ -123,6 +123,62 @@
       };
       #endif
 
+      #ifdef LAYER_MouseSlow
+      MouseSlow {
+        bindings = <
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ SLO
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+                  ___ ___ ___                                             ___ ___ ___
+                                          ___ ___ ___     ___ ___ ___ 
+        >;
+        layer-id = <LAYER_MouseSlow>;
+      };
+      #endif
+
+      #ifdef LAYER_MouseFast
+      MouseFast {
+        bindings = <
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ FST
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+                  ___ ___ ___                                             ___ ___ ___
+                                      ___ ___ ___     ___ ___ ___ 
+        >;
+        layer-id = <LAYER_MouseFast>;
+      };
+      #endif
+
+      #ifdef LAYER_MouseWarp
+      MouseWarp {
+        bindings = <
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ WRP
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+                  ___ ___ ___                                             ___ ___ ___
+                                      ___ ___ ___     ___ ___ ___ 
+        >;
+        layer-id = <LAYER_MouseWarp>;
+      };
+      #endif
+
+      #ifdef LAYER_Mouse
+      Mouse {
+        bindings = <
+              ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ WRP
+              ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ FST
+              ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ SLO
+              ___ ___ WHT WHT WHT ___                                     ___ ___ ___ ___ ___ ___
+                      ___ ___ ___                                             ___ ___ ___
+                                          ___ ___ BLU     WHT WHT WHT 
+        >;
+        layer-id = <LAYER_Mouse>;
+      };
+      #endif
+
       #ifdef LAYER_LeftPinky
       LeftPinky {
         bindings = <
@@ -260,6 +316,20 @@
                                       ___ BLU WHT     ___ BLU WHT 
         >;
         layer-id = <LAYER_Number>;
+      };
+      #endif
+
+      #ifdef LAYER_Magic
+      Magic {
+        bindings = <
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ ___
+          CHU ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+                  ___ ___ ___                                             ___ ___ ___ 
+                                       ___ ___ ___     ___ ___ ___ 
+        >;
+        layer-id = <LAYER_Magic>;
       };
       #endif
 
