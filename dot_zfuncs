@@ -72,3 +72,8 @@ reflash() {
     sudo dd if=/dev/zero of="$1" bs=1M count=100 && sync
     sudo bmaptool copy "$2" "$1"
   }
+
+# When my dictionary changes
+dictionary() {
+    chezmoi re-add $HOME/.config/harper-ls/dictionary.txt
+  }

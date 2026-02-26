@@ -71,6 +71,13 @@ bindkey -M viins '^[[33;5u' sudo-command-line
 
 bindkey '^[[Z' autosuggest-accept # Shift-Tab to accept autosuggestions
 
+copy_last_command() {
+  wl-copy -n <<< "$BUFFER"
+}
+zle -N copy_last_command
+# Ctrl-Shift-Y to copy the current command line to the clipboard
+bindkey '^[[121;6u' copy_last_command
+
 # History
 HISTSIZE=10000
 HISTFILE=~/.zsh_history
