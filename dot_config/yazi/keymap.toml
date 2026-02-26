@@ -3,12 +3,17 @@
 # "$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
 
 [[mgr.prepend_keymap]]
-on   = [ "c", "m" ]
-run  = "plugin chmod"
+on = ["c", "m"]
+run = "plugin chmod"
 desc = "Chmod on selected files"
 
 [[mgr.prepend_keymap]]
-on  = "M"
+on = ["g", "n"]
+run = "cd ~/.netdrive"
+desc = "Go to net drive"
+
+[[mgr.prepend_keymap]]
+on = "M"
 run = "plugin mount"
 
 [[mgr.prepend_keymap]]
@@ -84,6 +89,6 @@ run = "plugin convert -- --extension='webp'"
 desc = "Convert selected files to WebP"
 
 [[mgr.prepend_keymap]]
-on   = [ "R", "s" ]
-run  = "plugin rsync"
+on = ["R", "s"]
+run = "plugin rsync"
 desc = "Copy files using rsync"
