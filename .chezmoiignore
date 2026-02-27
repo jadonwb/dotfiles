@@ -1,5 +1,4 @@
 {{- if eq .machine.type "work" }}
 .config/hypr/hypridle.conf
-.config/hypr/hyprlock.conf
 {{- else}}
 {{- end}}
