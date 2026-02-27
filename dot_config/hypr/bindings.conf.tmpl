@@ -26,8 +26,10 @@ bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
 bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
 
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
-bindd = SUPER SHIFT, RETURN, Browser, exec, omarchy-launch-browser
-bindd = SUPER ALT, RETURN, Browser (private), exec, omarchy-launch-browser --private
+bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux new
+
+bindd = SUPER, B, Browser, exec, omarchy-launch-browser
+bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
 
 workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
 bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
