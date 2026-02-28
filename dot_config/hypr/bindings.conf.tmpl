@@ -3,27 +3,19 @@ $hypr_scripts = /home/jadon/.config/hypr/scripts
 unbind = SUPER, K
 unbind = SUPER, J
 unbind = SUPER, F
+unbind = SUPER CTRL, T
 
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
-
-workspace = name:special:yazi,on-created-empty:omarchy-launch-or-focus-tui yazi
-bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
-
+bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
 bindd = SUPER, I, Toggle window split, togglesplit, # dwindle
-
 bindd = SUPER, H, Move window focus left, movefocus, l
 bindd = SUPER, L, Move window focus right, movefocus, r
 bindd = SUPER, K, Move window focus up, movefocus, u
 bindd = SUPER, J, Move window focus down, movefocus, d
-
 bindd = SUPER SHIFT, H, Swap window to the left, swapwindow, l
 bindd = SUPER SHIFT, L, Swap window to the right, swapwindow, r
 bindd = SUPER SHIFT, K, Swap window up, swapwindow, u
 bindd = SUPER SHIFT, J, Swap window down, swapwindow, d
-
-bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
-
-bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
 
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux new
@@ -31,32 +23,25 @@ bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(om
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
 
+workspace = name:special:yazi,on-created-empty:omarchy-launch-or-focus-tui yazi
 workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
-bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
-
-unbind = SUPER CTRL, T
 workspace = name:special:activity,on-created-empty:omarchy-launch-tui btop
+workspace = name:special:icloud,on-created-empty:omarchy-launch-webapp "https://www.icloud.com/"
+workspace = name:special:music,on-created-empty:omarchy-launch-webapp "https://music.apple.com"
+workspace = name:special:youtube,on-created-empty:omarchy-launch-webapp "https://youtube.com/"
+
+bindd = SUPER, Y, toggle special workspace youtube, togglespecialworkspace, youtube
+bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
 bindd = SUPER CTRL, T, toggle special workspace activity, togglespecialworkspace, activity
+bindd = SUPER, A, toggle special workspace icloud, togglespecialworkspace, icloud
+bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
+bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
 
 {{- if eq .machine.type "personal" }}
 bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
 {{- end}}
 
 bindd = SUPER SHIFT, G, Gamemode, exec, $hypr_scripts/gamemode.sh
-
-# If your web app url contains #, type it as ## to prevent hyperland treat it as comments
-workspace = name:special:icloud,on-created-empty:omarchy-launch-webapp "https://www.icloud.com/"
-bindd = SUPER, A, toggle special workspace icloud, togglespecialworkspace, icloud
-workspace = name:special:music,on-created-empty:omarchy-launch-webapp "https://music.apple.com"
-bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
-
-bindd = SUPER, Y, YouTube, exec, omarchy-launch-webapp "https://youtube.com/"
-
-# toggle cursor
-bind = SUPER, PERIOD, exec, $hypr_scripts/toggle-cursor.sh
-
-# window picker
-# unbind = SUPER, S
-# bind = SUPER, S, exec, pkill walker || omarchy-menu Workspace
+bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
 
 bind = SUPER SHIFT, W, exec, notify-send 'click window to kill' && hyprctl kill
