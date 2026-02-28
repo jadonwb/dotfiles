@@ -18,7 +18,8 @@ bindd = SUPER SHIFT, K, Swap window up, swapwindow, u
 bindd = SUPER SHIFT, J, Swap window down, swapwindow, d
 
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
-bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux new
+bindd = SUPER SHIFT, RETURN, Terminal (scratch), exec, tmux has-session -t scratch 2>/dev/null || tmux new-session -d -s scratch && tmux switch-client -t scratch
+bindd = SUPER ALT SHIFT, RETURN, Tmux, exec, tmux has-session -t scratch 2>/dev/null && uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach-session -t scratch || uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux new-session -s scratch
 
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
