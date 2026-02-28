@@ -6,10 +6,16 @@ unbind = SUPER, F
 unbind = SUPER CTRL, T
 unbind = SUPER, SPACE
 unbind = SUPER ALT, SPACE
+unbind = SUPER, P
+unbind = SUPER, T
+unbind = SUPER, O
 
 bindd = SUPER, SPACE, Omarchy menu, exec, omarchy-menu
 bindd = SUPER ALT, SPACE, Launch apps, exec, omarchy-launch-walker
 
+bindd = SUPER SHIFT, O, Pop window out (float & pin), exec, omarchy-hyprland-window-pop
+bindd = SUPER SHIFT, P, Pseudo window, pseudo,
+bindd = SUPER SHIFT, T, Toggle window floating/tiling, togglefloating,
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
 bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
 bindd = SUPER, I, Toggle window split, togglesplit, # dwindle
@@ -38,7 +44,7 @@ workspace = name:special:youtube,on-created-empty:omarchy-launch-webapp "https:/
 
 bindd = SUPER, Y, toggle special workspace youtube, togglespecialworkspace, youtube
 bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
-bindd = SUPER CTRL, T, toggle special workspace activity, togglespecialworkspace, activity
+bindd = SUPER, T, toggle special workspace activity, togglespecialworkspace, activity
 bindd = SUPER, A, toggle special workspace icloud, togglespecialworkspace, icloud
 bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
