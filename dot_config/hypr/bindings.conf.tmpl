@@ -9,16 +9,24 @@ unbind = SUPER ALT, SPACE
 unbind = SUPER, P
 unbind = SUPER, T
 unbind = SUPER, O
+unbind = SUPER, L
+unbind = SUPER, S
+unbind = SUPER ALT, S
+unbind = SUPER, LEFT
+unbind = SUPER, DOWN
+unbind = SUPER, UP
+unbind = SUPER, RIGHT
 
 bindd = SUPER, SPACE, Omarchy menu, exec, omarchy-menu
 bindd = SUPER ALT, SPACE, Launch apps, exec, omarchy-launch-walker
 
+bindd = SUPER SHIFT, S, Toggle workspace layout, exec, omarchy-hyprland-workspace-layout-toggle
 bindd = SUPER SHIFT, O, Pop window out (float & pin), exec, omarchy-hyprland-window-pop
 bindd = SUPER SHIFT, P, Pseudo window, pseudo,
 bindd = SUPER SHIFT, T, Toggle window floating/tiling, togglefloating,
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
 bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
-bindd = SUPER, I, Toggle window split, togglesplit, # dwindle
+bindd = SUPER SHIFT, I, Toggle window split, layoutmsg, togglesplit
 bindd = SUPER, H, Move window focus left, movefocus, l
 bindd = SUPER, L, Move window focus right, movefocus, r
 bindd = SUPER, K, Move window focus up, movefocus, u
@@ -28,21 +36,18 @@ bindd = SUPER SHIFT, L, Swap window to the right, swapwindow, r
 bindd = SUPER SHIFT, K, Swap window up, swapwindow, u
 bindd = SUPER SHIFT, J, Swap window down, swapwindow, d
 
+bindd = SUPER CTRL, P, Promote (scrolling), layoutmsg, promote
+bindd = SUPER, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
+bindd = SUPER, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
+
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
+bindd = SUPER ALT, RETURN, Terminal with tmux, exec, if tmux has-session 2>/dev/null; then uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach; else uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"; fi
 bindd = SUPER SHIFT, RETURN, Terminal (scratch), exec, tmux has-session -t scratch 2>/dev/null || tmux new-session -d -s scratch && tmux switch-client -t scratch
-bindd = SUPER ALT SHIFT, RETURN, Tmux, exec, tmux has-session -t scratch 2>/dev/null && uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach-session -t scratch || uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux new-session -s scratch
 
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
 
-workspace = name:special:yazi,on-created-empty:omarchy-launch-or-focus-tui yazi
-workspace = name:special:notes,on-created-empty:uwsm-app -- xdg-terminal-exec --dir="$HOME/Documents/notes" --command nvim
-workspace = name:special:activity,on-created-empty:omarchy-launch-tui btop
-workspace = name:special:icloud,on-created-empty:omarchy-launch-webapp "https://www.icloud.com/"
-workspace = name:special:music,on-created-empty:omarchy-launch-webapp "https://music.apple.com"
-workspace = name:special:youtube,on-created-empty:omarchy-launch-webapp "https://youtube.com/"
-workspace = name:special:discord,on-created-empty:vesktop
-
+bindd = SUPER, U, toggle special workspace keyboard, togglespecialworkspace, keyboard
 bindd = SUPER, D, toggle special workspace discord, togglespecialworkspace, discord
 bindd = SUPER, Y, toggle special workspace youtube, togglespecialworkspace, youtube
 bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
@@ -50,12 +55,14 @@ bindd = SUPER, T, toggle special workspace activity, togglespecialworkspace, act
 bindd = SUPER, A, toggle special workspace icloud, togglespecialworkspace, icloud
 bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
 bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
+bindd = SUPER, S, toggle special workspace scratch, togglespecialworkspace, scratch
+bindd = SUPER ALT, S, Move window to scratch, movetoworkspacesilent, special:scratch
 
 {{- if eq .machine.type "personal" }}
-bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
+# bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
 {{- end}}
 
 bindd = SUPER SHIFT, G, Gamemode, exec, $hypr_scripts/gamemode.sh
 bindd = SUPER, Z, Ctrl Z, sendshortcut, CTRL, Z,
 
-bind = SUPER SHIFT, W, exec, notify-send 'click window to kill' && hyprctl kill
+bindd = SUPER SHIFT, W, Kill, exec, notify-send 'click window to kill' && hyprctl kill
