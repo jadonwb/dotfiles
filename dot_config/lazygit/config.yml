@@ -1,3 +1,7 @@
+git:
+  log:
+    order: default
+
 gui:
   nerdFontsVersion: "3"
   theme:
