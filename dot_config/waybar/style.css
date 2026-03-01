@@ -1,6 +1,7 @@
 @import "../../.config/omarchy/current/theme/waybar.css";
 
 * {
+    min-height: 0;
     font-family: 'JetBrainsMono Nerd Font';
     font-size: 12px;
     font-weight: 700;
@@ -12,25 +13,25 @@ window#waybar { background: transparent; }
 #custom-omarchy, #workspaces, #clock, #network, #cpu, #bluetooth, #pulseaudio, 
 #custom-system, #custom-screenrecording-indicator, #custom-idle-indicator, #custom-update, 
 #custom-google-tasks, #custom-google-keep, #custom-expand-icon, #tray, #custom-notification-silencing-indicator {
-    background: alpha(@background, 0.6); 
-    border-radius: 14px;
-    padding: 0px 22px;
-    margin: 4px 3px;
+    background: alpha(@background, 0.7); 
+    border-radius: 13px;
+    padding: 5px 22px;
+    margin: 1px 4px;
 }
 
-#custom-system, #custom-omarchy { color: @magenta; border: 2px solid @magenta; }
+#custom-system, #custom-omarchy { color: @magenta; border: 3px solid @magenta; }
 
-#workspaces { border: 2px solid @blue; padding: 0px 2px; }
-#workspaces button { padding: 0px 12px; color: @cyan; margin: 3px 1px; }
-#workspaces button.active { background: @magenta; color: @background; border-radius: 10px; }
+#workspaces { border: 3px solid @blue; padding: 0px 2px; }
+#workspaces button { padding: 0px 8px; color: @cyan; margin: 2px 3px; }
+#workspaces button.active { background: @magenta; color: @background; border-radius: 18px; }
 #workspaces button.empty { opacity: 0.3; }
 
-#clock { color: @magenta; border: 2px solid @blue; }
-#cpu { color: @yellow; border: 2px solid @yellow; }
-#bluetooth { color: @green; border: 2px solid @green; }
-#network { color: @cyan; border: 2px solid @cyan; }
-#pulseaudio { color: @blue; border: 2px solid @blue; }
-#tray { border: 2px solid @foreground; }
+#clock { color: @magenta; border: 3px solid @blue; }
+#cpu { color: @yellow; border: 3px solid @yellow; }
+#bluetooth { color: @green; border: 3px solid @green; }
+#network { color: @cyan; border: 3px solid @cyan; }
+#pulseaudio { color: @blue; border: 3px solid @blue; }
+#tray { border: 3px solid @foreground; }
 
 #custom-screenrecording-indicator.active,
 #custom-idle-indicator.active,
