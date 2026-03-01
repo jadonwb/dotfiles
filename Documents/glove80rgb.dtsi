@@ -1,0 +1,346 @@
+////////////////////////////////////////////////////////////////
+// TailorKey 4.2j Glove80 - RGB Lighting 
+// Paste this configuration into the Custom Device-tree section
+// For more into, see https://sites.google.com/view/tailorkey
+////////////////////////////////////////////////////////////////
+
+#if __has_include(<dt-bindings/zmk/rgb_colors.h>)
+  //
+  // Color definitions with conflict guard to prevent
+  // accidental redefinition of common abbreviations.
+  //
+  #if defined(RED) || defined(RED_RGB) || \
+      defined(COR) || defined(COR_RGB) || \
+      defined(ORN) || defined(ORN_RGB) || \
+      defined(GDN) || defined(GDN_RGB) || \
+      defined(GOL) || defined(GOL_RGB) || \
+      defined(YLW) || defined(YLW_RGB) || \
+      defined(CHU) || defined(CHU_RGB) || \
+      defined(GRN) || defined(GRN_RGB) || \
+      defined(SPG) || defined(SPG_RGB) || \
+      defined(CYN) || defined(CYN_RGB) || \
+      defined(AZU) || defined(AZU_RGB) || \
+      defined(TEA) || defined(TEA_RGB) || \
+      defined(TUR) || defined(TUR_RGB) || \
+      defined(BLU) || defined(BLU_RGB) || \
+      defined(PUR) || defined(PUR_RGB) || \
+      defined(MAJ) || defined(MAJ_RGB) || \
+      defined(PNK) || defined(PNK_RGB) || \
+      defined(WHT) || defined(WHT_RGB) || \
+      defined(BLK) || defined(BLK_RGB) || \
+      defined(___) || \
+      defined(DUG) || defined(DUG_RGB) || \
+      defined(LAC) || defined(LAC_RGB) || \
+      defined(BSL) || defined(BNL) || defined(BCL) || \
+      defined(SSL) || defined(SNL) || defined(SCL) || \
+      defined(FST) || defined(WRP) || defined(SLO)
+  #error "Naming conflict: 3-letter color abbreviation already defined!"
+  #endif
+
+  //
+  // color definitions from QMK
+  // https://github.com/qmk/qmk_firmware/blob/master/quantum/color.h
+  //
+  #define RED_RGB 0xFF0000 // #FF0000 RED      => RED (red)
+  #define COR_RGB 0xFF7C4D // #FF7C4D CORAL    => COR (coral)
+  #define ORN_RGB 0xFF8000 // #FF8000 ORANGE   => ORN (ornj)
+  #define GDN_RGB 0xD9A521 // #D9A521 GOLDNROD => GDN (gold'nrod)
+  #define GOL_RGB 0xFFD900 // #FFD900 GOLD     => GOL (gold)
+  #define YLW_RGB 0xFFFF00 // #FFFF00 YELLOW   => YLW (yellow)
+  #define CHU_RGB 0x80FF00 // #80FF00 CHARTRSE => CHU (chartreuse)
+  #define GRN_RGB 0x00FF00 // #00FF00 GREEN    => GRN (green)
+  #define SPG_RGB 0x00FF80 // #00FF80 SPRINGRN => SPG (spring green)
+  #define CYN_RGB 0x00FFFF // #00FFFF CYAN     => CYN (sigh-an)
+  #define AZU_RGB 0x99F5FF // #99F5FF AZURE    => AZU (a-zur)
+  #define TEA_RGB 0x008080 // #008080 TEAL     => TEA (teel)
+  #define TUR_RGB 0x476E6A // #476E6A TURQUOIS => TUR (turquoise)
+  #define BLU_RGB 0x0000FF // #0000FF BLUE     => BLU (bloo)
+  #define PUR_RGB 0x7A00FF // #7A00FF PURPLE   => PUR (purp)
+  #define MAJ_RGB 0xFF00FF // #FF00FF MAGENTA  => MAJ (mah-jenta)
+  #define PNK_RGB 0xFF80BF // #FF80BF PINK     => PNK (pink)
+  #define WHT_RGB 0xFFFFFF // #FFFFFF WHITE    => WHT (white)
+  #define BLK_RGB 0x000000 // #000000 BLACK    => BLK (blak)
+
+  //
+  // color definitions from MoErgo
+  // https://github.com/moergo-sc/zmk/blob/aca523dfce9b6447ffd19d833b791d44f1f286de/app/src/rgb_underglow.c#L259-L265
+  //
+  #define DUG_RGB 0x00ff68 // #00ff68 DULL_GRN => DUG (dull green)
+  #define LAC_RGB 0x6b1fce // #6b1fce LILAC    => LAC (lilac)
+
+  //
+  // underglow for the colors above
+  //
+  #define RED &ug RED_RGB
+  #define COR &ug COR_RGB
+  #define ORN &ug ORN_RGB
+  #define GDN &ug GDN_RGB
+  #define GOL &ug GOL_RGB
+  #define YLW &ug YLW_RGB
+  #define CHU &ug CHU_RGB
+  #define GRN &ug GRN_RGB
+  #define SPG &ug SPG_RGB
+  #define CYN &ug CYN_RGB
+  #define AZU &ug AZU_RGB
+  #define TEA &ug TEA_RGB
+  #define TUR &ug TUR_RGB
+  #define BLU &ug BLU_RGB
+  #define PUR &ug PUR_RGB
+  #define MAJ &ug MAJ_RGB
+  #define PNK &ug PNK_RGB
+  #define WHT &ug WHT_RGB
+  #define ___ &ug BLK_RGB
+  #define DUG &ug DUG_RGB
+  #define LAC &ug LAC_RGB
+
+  //
+  // underglow for keyboard locks on the Base layer
+  //
+  #define BSL &ug_sl BLK_RGB RED_RGB // ScrollLock COLOR_OFF COLOR_ON
+  #define BNL &ug_nl BLK_RGB RED_RGB // NumLock    COLOR_OFF COLOR_ON
+  #define BCL &ug_cl BLK_RGB RED_RGB // CapsLock   COLOR_OFF COLOR_ON
+
+
+  //
+  // colors for mouse speed scaling in Mouse layers
+  //
+  #define FST GOL
+  #define WRP CHU
+  #define SLO COR
+
+
+
+  // ==== PER-KEY-RGB <section begins> ====
+  / {
+    underglow-layer {
+      compatible = "zmk,underglow-layer";
+
+   
+      #ifdef LAYER_Base
+      Base {
+        bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+        >;
+        layer-id = <LAYER_Base>;
+      };
+      #endif
+
+  #ifdef LAYER_LeftPinky
+  LeftPinky {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_LeftPinky>;
+  };
+  #endif
+
+  #ifdef LAYER_LeftRingy
+  LeftRingy {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ GRN ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ GRN ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ GRN ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_LeftRingy>;
+  };
+  #endif
+
+  #ifdef LAYER_LeftMiddy
+  LeftMiddy {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ YLW ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ YLW ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ YLW ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_LeftMiddy>;
+  };
+  #endif
+
+  #ifdef LAYER_LeftIndex
+  LeftIndex {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ BLU ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ BLU ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ BLU ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_LeftIndex>;
+  };
+  #endif
+
+  #ifdef LAYER_RightIndex
+  RightIndex {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ BLU ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ BLU ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ BLU ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_RightIndex>;
+  };
+  #endif
+
+  #ifdef LAYER_RightMiddy
+  RightMiddy {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ YLW ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ YLW ___ ___ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ YLW ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_RightMiddy>;
+  };
+  #endif
+
+  #ifdef LAYER_RightRingy
+  RightRingy {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ GRN ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ GRN ___ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ GRN ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_RightRingy>;
+  };
+  #endif
+
+  #ifdef LAYER_RightPinky
+  RightPinky {
+    bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ MAJ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ MAJ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ MAJ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+    >;
+    layer-id = <LAYER_RightPinky>;
+  };
+  #endif
+
+      #ifdef LAYER_Symbol
+      Symbol {
+        bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___     BLU ___ ___     ___ ___ BLU     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+        >;
+        layer-id = <LAYER_Symbol>;
+      };
+      #endif
+
+      #ifdef LAYER_Number
+      Number {
+        bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___     ___ BLU ___     ___ BLU ___     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+        >;
+        layer-id = <LAYER_Number>;
+      };
+      #endif
+
+      #ifdef LAYER_Magic
+      Magic {
+        bindings = <
+          ___ ___ ___ ___ ___                                             ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ ___ ___ ___ ___ ___                                     ___ ___ ___ ___ ___ ___
+          ___ MAJ GRN YLW BLU ___                                     ___ BLU YLW GRN MAJ ___
+          ___ ___ ___ ___ ___ ___     ___ ___ ___     ___ ___ ___     ___ ___ ___ ___ ___ ___
+          CHU ___ ___ ___ ___         ___ ___ ___     ___ ___ ___         ___ ___ ___ ___ ___
+        >;
+        layer-id = <LAYER_Magic>;
+      };
+      #endif
+
+    };
+  };
+  // ==== PER-KEY-RGB <section ends> =====
+
+  #undef RED
+  #undef RED_RGB
+  #undef COR
+  #undef COR_RGB
+  #undef ORN
+  #undef ORN_RGB
+  #undef GDN
+  #undef GDN_RGB
+  #undef GOL
+  #undef GOL_RGB
+  #undef YLW
+  #undef YLW_RGB
+  #undef CHU
+  #undef CHU_RGB
+  #undef GRN
+  #undef GRN_RGB
+  #undef SPG
+  #undef SPG_RGB
+  #undef CYN
+  #undef CYN_RGB
+  #undef AZU
+  #undef AZU_RGB
+  #undef TEA
+  #undef TEA_RGB
+  #undef TUR
+  #undef TUR_RGB
+  #undef BLU
+  #undef BLU_RGB
+  #undef PUR
+  #undef PUR_RGB
+  #undef MAJ
+  #undef MAJ_RGB
+  #undef PNK
+  #undef PNK_RGB
+  #undef WHT
+  #undef WHT_RGB
+  #undef BLK
+  #undef BLK_RGB
+  #undef ___
+  #undef DUG
+  #undef DUG_RGB
+  #undef LAC
+  #undef LAC_RGB
+
+  #undef BSL
+  #undef BNL
+  #undef BCL
+
+  #undef SSL
+  #undef SNL
+  #undef SCL
+
+  #undef FST
+  #undef WRP
+  #undef SLO
+#endif
