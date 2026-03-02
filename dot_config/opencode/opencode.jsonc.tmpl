@@ -15,7 +15,11 @@
             "npm": "@ai-sdk/openai-compatible",
             "name": "llama-server (local)",
             "options": {
+            {{- if eq .machine.type "personal" }}
                 "baseURL": "http://127.0.0.1:8080/v1"
+            {{- else if eq .machine.type "work" }}
+                "baseURL": "http://100.91.30.63:8080/v1"
+            {{- end }}
             },
             "models": {
                 "qwen3-coder:a3b": {
