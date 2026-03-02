@@ -10,8 +10,6 @@ show_learn_menu() {
   *LazyVim*) omarchy-launch-webapp "https://www.lazyvim.org/keymaps" ;;
   *Neovim*) omarchy-launch-webapp "https://neovim.io/" ;;
   *Motions*) omarchy-launch-webapp "https://quickref.me/vim.html" ;;
-  *ChatGPT*) omarchy-launch-webapp "https://chatgpt.com/" ;;
-  *Claude*) omarchy-launch-webapp "https://claude.ai/" ;;
   *Opencode*) omarchy-launch-webapp "https://opencode.ai/docs" ;;
   *Wikipedia*) omarchy-launch-webapp "https://en.wikipedia.org/wiki/Main_Page" ;;
   *) show_main_menu ;;
