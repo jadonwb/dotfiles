@@ -1,7 +1,7 @@
 #!/bin/bash
 
 show_learn_menu() {
-  case $(menu "Learn" "  Keybindings\n  Omarchy\n  Hyprland\n󰣇  Arch\n󰒲  LazyVim\n  Neovim\n󱆃  Bash\n󰻞  ChatGPT\n󰻞  Claude\n  Motions\n󰰕  Opencode\n  Wikipedia") in
+  case $(menu "Learn" "  Keybindings\n  Omarchy\n  Hyprland\n󰣇  Arch\n󰒲  LazyVim\n  Neovim\n󱆃  Bash\n  Motions\n󰰕  Opencode\n  Wikipedia") in
   *Keybindings*) omarchy-menu-keybindings ;;
   *Omarchy*) omarchy-launch-webapp "https://learn.omacom.io/2/the-omarchy-manual" ;;
   *Hyprland*) omarchy-launch-webapp "https://wiki.hypr.land/" ;;
