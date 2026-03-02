@@ -22,7 +22,7 @@
                     "name": "Qwen3.5: 35B-A3B-UD-Q8_K_XL",
                     "limit": {
                         "context": 1048576,
-                        "output": 65536
+                        "output": 262144
                     }
                 }
             }
