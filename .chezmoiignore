@@ -1,4 +1,5 @@
 {{- if eq .machine.type "work" }}
 .config/hypr/hypridle.conf
+.zsh_secrets
 {{- else}}
 {{- end}}
