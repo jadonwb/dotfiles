@@ -19,25 +19,13 @@
             },
             "models": {
                 "qwen3-coder:a3b": {
-                    "name": "Qwen3-Coder: a3b-30b (local)",
+                    "name": "Qwen3.5: 35B-A3B-UD-Q8_K_XL",
                     "limit": {
-                        "context": 128000,
+                        "context": 1048576,
                         "output": 65536
                     }
                 }
             }
         },
-        "vllm": {
-            "npm": "@ai-sdk/openai-compatible",
-            "name": "vLLM (local)",
-            "options": {
-                "baseURL": "http://127.0.0.1:8000/v1"
-            },
-            "models": {
-                "openai/gpt-oss-120b": {
-                    "name": "GPT-OSS-120B (local)"
-                }
-            }
-        }
     }
 }
