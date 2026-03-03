@@ -1,60 +1,37 @@
 $hypr_scripts = /home/jadon/.config/hypr/scripts
 
-unbind = SUPER, K
-unbind = SUPER, J
 unbind = SUPER, F
 unbind = SUPER CTRL, T
 unbind = SUPER, SPACE
 unbind = SUPER ALT, SPACE
-unbind = SUPER, P
 unbind = SUPER, T
 unbind = SUPER, O
-unbind = SUPER, L
 unbind = SUPER, S
 unbind = SUPER ALT, S
-unbind = SUPER, LEFT
-unbind = SUPER, DOWN
-unbind = SUPER, UP
-unbind = SUPER, RIGHT
+unbind = SUPER, SLASH
 
 bindd = SUPER, SPACE, Omarchy menu, exec, omarchy-menu
 bindd = SUPER ALT, SPACE, Launch apps, exec, omarchy-launch-walker
 
-bindd = SUPER SHIFT, S, Toggle workspace layout, exec, omarchy-hyprland-workspace-layout-toggle
 bindd = SUPER SHIFT, O, Pop window out (float & pin), exec, omarchy-hyprland-window-pop
-bindd = SUPER SHIFT, P, Pseudo window, pseudo,
-bindd = SUPER SHIFT, T, Toggle window floating/tiling, togglefloating,
+bindd = SUPER, O, Toggle window floating/tiling, togglefloating,
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
-bindd = SUPER CTRL, K, Show key bindings, exec, omarchy-menu-keybindings
-bindd = SUPER SHIFT, I, Toggle window split, layoutmsg, togglesplit
-bindd = SUPER, H, Move window focus left, movefocus, l
-bindd = SUPER, L, Move window focus right, movefocus, r
-bindd = SUPER, K, Move window focus up, movefocus, u
-bindd = SUPER, J, Move window focus down, movefocus, d
-bindd = SUPER SHIFT, H, Swap window to the left, swapwindow, l
-bindd = SUPER SHIFT, L, Swap window to the right, swapwindow, r
-bindd = SUPER SHIFT, K, Swap window up, swapwindow, u
-bindd = SUPER SHIFT, J, Swap window down, swapwindow, d
 
-bindd = SUPER CTRL, P, Promote (scrolling), layoutmsg, promote
-bindd = SUPER, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
-bindd = SUPER, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
+bindd = SUPER SHIFT, P, Promote (scrolling), layoutmsg, promote
+bindd = SUPER CTRL, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
+bindd = SUPER CTRL, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
 
+bindd = SUPER, SLASH, Passwords, exec, uwsm-app -- 1password
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER ALT, RETURN, Terminal with tmux, exec, if tmux has-session 2>/dev/null; then uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach; else uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"; fi
 bindd = SUPER SHIFT, RETURN, Terminal (scratch), exec, tmux has-session -t scratch 2>/dev/null || tmux new-session -d -s scratch && tmux switch-client -t scratch
-
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
 
 bindd = SUPER, U, toggle special workspace keyboard, togglespecialworkspace, keyboard
-bindd = SUPER, D, toggle special workspace discord, togglespecialworkspace, discord
 bindd = SUPER, Y, toggle special workspace youtube, togglespecialworkspace, youtube
-bindd = SUPER, R, toggle special workspace reddit, togglespecialworkspace, reddit
-bindd = SUPER, N, toggle special workspace notes, togglespecialworkspace, notes
 bindd = SUPER, T, toggle special workspace activity, togglespecialworkspace, activity
-bindd = SUPER, A, toggle special workspace icloud, togglespecialworkspace, icloud
-bindd = SUPER, M, toggle special workspace music, togglespecialworkspace, music
+bindd = SUPER, M, toggle special workspace media, togglespecialworkspace, media
 bindd = SUPER, F, toggle special workspace yazi, togglespecialworkspace, yazi
 bindd = SUPER, S, toggle special workspace scratch, togglespecialworkspace, scratch
 bindd = SUPER ALT, S, Move window to scratch, movetoworkspacesilent, special:scratch
