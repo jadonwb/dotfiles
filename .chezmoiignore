@@ -1,4 +1,5 @@
 {{- if eq .machine.type "work" }}
 .zsh_secrets.age
+.ssh/config
 {{- else}}
 {{- end}}
