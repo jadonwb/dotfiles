@@ -8,7 +8,6 @@ unbind = SUPER, T
 unbind = SUPER, O
 unbind = SUPER, S
 unbind = SUPER ALT, S
-unbind = SUPER, SLASH
 
 bindd = SUPER, SPACE, Omarchy menu, exec, omarchy-menu
 bindd = SUPER ALT, SPACE, Launch apps, exec, omarchy-launch-walker
@@ -21,7 +20,7 @@ bindd = SUPER SHIFT, P, Promote (scrolling), layoutmsg, promote
 bindd = SUPER CTRL, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
 bindd = SUPER CTRL, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
 
-bindd = SUPER, SLASH, Passwords, exec, uwsm-app -- 1password
+bindd = SUPER, PERIOD, Passwords, exec, uwsm-app -- 1password
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER ALT, RETURN, Terminal with tmux, exec, if tmux has-session 2>/dev/null; then uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach; else uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"; fi
 bindd = SUPER SHIFT, RETURN, Terminal (scratch), exec, tmux has-session -t scratch 2>/dev/null || tmux new-session -d -s scratch && tmux switch-client -t scratch
