@@ -99,8 +99,7 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 # Aliases
 alias make='bear -- make'
 alias vim='nvim'
-alias t='tmux'
-alias ta='tmux a'
+alias t='tmux attach || tmux'
 alias c='clear'
 alias q='exit'
 alias fd='fd -H'
@@ -159,11 +158,28 @@ if command -v mise &> /dev/null; then
   eval "$(mise activate zsh)"
 fi
 # lazy load zoxide
-function cd() {
-  unfunction cd
-  eval "$(zoxide init --cmd cd zsh)"
-  cd "$@"
-}
+if command -v zoxide &> /dev/null; then
+  alias cd="zd"
+  zd() {
+    if (( $# == 0 )); then
+      builtin cd ~ || return
+    elif [[ -d $1 ]]; then
+      builtin cd "$1" || return
+    else
+      if ! z "$@"; then
+        echo "Error: Directory not found"
+        return 1
+      fi
+
+      printf "\U000F17A9 "
+      pwd
+    fi
+
+    if [[ -n $TMUX ]]; then
+      tmux rename-window "$(basename "$PWD")"
+    fi
+  }
+fi
 
 # Change tmux window name on directory change
 export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
