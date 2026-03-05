@@ -32,7 +32,6 @@ bindd = SUPER SHIFT, P, Promote (scrolling), layoutmsg, promote
 bindd = SUPER CTRL, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
 bindd = SUPER CTRL, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
 
-bindd = SUPER, PERIOD, Passwords, exec, uwsm-app -- 1password
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
 bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" zsh -c "tmux attach || tmux new -s Work"
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
@@ -47,6 +46,7 @@ bindd = SUPER, S, toggle special workspace scratch, togglespecialworkspace, scra
 bindd = SUPER ALT, S, Move window to scratch, movetoworkspacesilent, special:scratch
 
 {{- if eq .machine.type "personal" }}
+bindd = SUPER, PERIOD, Passwords, exec, uwsm-app -- 1password
 # bindd = SUPER SHIFT, U, Update Status, exec, omarchy-launch-floating-terminal-with-presentation sudo pacfetch -Sy
 {{- end}}
 
