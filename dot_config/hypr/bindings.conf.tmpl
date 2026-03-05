@@ -1,5 +1,8 @@
 $hypr_scripts = /home/jadon/.config/hypr/scripts
 
+unbind = SUPER, K
+unbind = SUPER, J
+unbind = SUPER, L
 unbind = SUPER, F
 unbind = SUPER CTRL, T
 unbind = SUPER, SPACE
@@ -14,7 +17,16 @@ bindd = SUPER ALT, SPACE, Launch apps, exec, omarchy-launch-walker
 
 bindd = SUPER SHIFT, O, Pop window out (float & pin), exec, omarchy-hyprland-window-pop
 bindd = SUPER, O, Toggle window floating/tiling, togglefloating,
+
+bindd = SUPER, H, Move window focus left, movefocus, l
+bindd = SUPER, L, Move window focus right, movefocus, r
+bindd = SUPER, K, Move window focus up, movefocus, u
+bindd = SUPER, J, Move window focus down, movefocus, d
+
 bindd = SUPER SHIFT, F, Full screen, fullscreen, 0
+bindd = SUPER SHIFT, J, Toggle window split, layoutmsg, togglesplit
+bindd = SUPER SHIFT, K, Show key bindings, exec, omarchy-menu-keybindings
+bindd = SUPER SHIFT, L, Toggle workspace layout, exec, omarchy-hyprland-workspace-layout-toggle
 
 bindd = SUPER SHIFT, P, Promote (scrolling), layoutmsg, promote
 bindd = SUPER CTRL, LEFT, Swap column left (scrolling), layoutmsg, swapcol l
