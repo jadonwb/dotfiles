@@ -22,8 +22,7 @@ bindd = SUPER CTRL, RIGHT, Swap column right (scrolling), layoutmsg, swapcol r
 
 bindd = SUPER, PERIOD, Passwords, exec, uwsm-app -- 1password
 bindd = SUPER, RETURN, Terminal, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"
-bindd = SUPER ALT, RETURN, Terminal with tmux, exec, if tmux has-session 2>/dev/null; then uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" tmux attach; else uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"; fi
-bindd = SUPER SHIFT, RETURN, Terminal (scratch), exec, tmux has-session -t scratch 2>/dev/null || tmux new-session -d -s scratch && tmux switch-client -t scratch
+bindd = SUPER ALT, RETURN, Tmux, exec, uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)" zsh -c "tmux attach || tmux new -s Work"
 bindd = SUPER, B, Browser, exec, omarchy-launch-browser
 bindd = SUPER ALT, B, Browser (private), exec, omarchy-launch-browser --private
 
