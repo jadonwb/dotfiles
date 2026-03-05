@@ -16,6 +16,7 @@ setw -g mode-keys vi
 bind-key -n 'M-v' copy-mode
 bind -T copy-mode-vi v send -X begin-selection
 bind -T copy-mode-vi y send -X copy-selection-and-cancel
+bind -T copy-mode-vi Escape send -X cancel
 
 # Tabs (windows) and panes
 bind -n M-1 select-window -t 1
