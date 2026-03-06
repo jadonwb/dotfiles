@@ -75,6 +75,9 @@ bind-key -n 'M-N' swap-window -t +1\; select-window -t +1
 bind-key -n 'M-b' last-window
 bind-key -n 'M-l' run-shell "sesh last"
 
+# Zoom in/out panes
+bind -n 'M-z' resize-pane -Z
+
 set -g default-terminal "tmux-256color"
 set -ag terminal-overrides ",*:RGB"
 set -g status-keys vi
@@ -121,7 +124,7 @@ set -g window-status-separator ""
 # Theme
 set -g status-style "bg=default,fg=default"
 set -g status-left "#[fg=black,bg=blue,bold] #S #[bg=default] "
-set -g status-right "#[fg=blue]#{?client_prefix,PREFIX ,}#[fg=brightblack]#h "
+set -g status-right "#[fg=blue]#{?client_prefix,PREFIX ,}#{?window_zoomed_flag,ZOOM ,}#[fg=brightblack]#h "
 set -g window-status-format "#[fg=brightblack] #I:#W "
 set -g window-status-current-format "#[fg=blue,bold] #I:#W "
 set -g pane-border-style "fg=brightblack"
