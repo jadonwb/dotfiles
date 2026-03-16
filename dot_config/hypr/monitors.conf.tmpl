@@ -18,8 +18,8 @@ monitor=,2560x1440@165,auto,1.67
 {{- else if eq .machine.type "work" }}
 env = GDK_SCALE,1.25
 
-monitor=HDMI-A-1,1920x1080@120,auto,1.25
-monitor=DP-1,1920x1080@144,auto,1.25
+monitor=HDMI-A-1,1920x1080@120,0x0,1.25
+monitor=DP-1,1920x1080@144,1920x0,1.25
 
 workspace=1,monitor:HDMI-A-1,default:true
 workspace=2,monitor:DP-1,default:true
