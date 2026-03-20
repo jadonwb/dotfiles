@@ -3,5 +3,8 @@
     "keybinds": {
         "messages_line_up": "alt+k",
         "messages_line_down": "alt+j",
+        "command_list": "ctrl+space",
+        "history_previous": "ctrl+p",
+        "history_next": "ctrl+n",
     }
 }
