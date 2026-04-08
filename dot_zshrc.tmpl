@@ -20,21 +20,33 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if its not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
-	mkdir -p "$(dirname $ZINIT_HOME)"
-	git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+  mkdir -p "$(dirname $ZINIT_HOME)"
+  git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 
 # Source/load zinit
 source "${ZINIT_HOME}/zinit.zsh"
 
+
+# Add in zsh plugins
 # prompt
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
-# Add in zsh plugins
-zinit light zsh-users/zsh-syntax-highlighting
-zinit light zsh-users/zsh-completions
+# don't wait for these
 zinit light zsh-users/zsh-autosuggestions
 zinit light jeffreytse/zsh-vi-mode
+
+zinit ice wait lucid atload'eval "$(zoxide init --cmd cd zsh)"'
+zinit light ajeetdsouza/zoxide
+zinit ice wait lucid
+zinit light jdx/mise
+zinit ice wait lucid multisrc"shell/{completion,key-bindings}.zsh"
+zinit light junegunn/fzf
+zinit ice wait lucid
+zinit light zsh-users/zsh-syntax-highlighting
+zinit ice wait lucid
+zinit light zsh-users/zsh-completions
+zinit ice wait lucid
 zinit light Aloxaf/fzf-tab
 
 ZVM_SYSTEM_CLIPBOARD_ENABLED=true
@@ -58,13 +70,16 @@ zinit ice wait lucid
 zinit snippet OMZP::command-not-found
 
 # Load completions
-autoload -Uz compinit && compinit -u
+autoload -Uz compinit
+compinit -C
 
 zinit cdreplay -q
 
 # Keybindings
-bindkey '^p' history-search-backward
-bindkey '^n' history-search-forward
+zvm_after_init() {
+  bindkey '^p' history-search-backward
+  bindkey '^n' history-search-forward
+}
 bindkey -r '^s'
 bindkey -r '^q'
 
@@ -78,6 +93,7 @@ HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
+setopt inc_append_history
 setopt appendhistory
 setopt sharehistory
 setopt hist_ignore_space
@@ -132,48 +148,32 @@ deref() {
   done
 }
 
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
-alias ......='cd ../../../../..'
+zd() {
+  if (( $# == 0 )); then
+    builtin cd ~ || return
+  elif [[ -d $1 ]]; then
+    builtin cd "$1" || return
+  else
+    if ! __zoxide_z "$@" 2>/dev/null; then
+      echo "Error: Directory not found"
+      return 1
+    fi
+    printf "\U000F17A9 "
+    pwd
+  fi
+}
+
+alias cd="zd"
+
+alias ..='builtin cd ..'
+alias ...='builtin cd ../..'
+alias ....='builtin cd ../../..'
+alias .....='builtin cd ../../../..'
+alias ......='builtin cd ../../../../..'
 
 # Shell integrations
 if command -v try &> /dev/null; then
   eval "$(try init ~/c/tries)"
-fi
-{{- if eq .machine.type "personal" }}
-if command -v fzf &> /dev/null; then
-  eval "$(fzf --zsh)"
-fi
-{{- end}}
-{{- if eq .machine.type "laptop" }}
-if command -v fzf &> /dev/null; then
-  eval "$(fzf --zsh)"
-fi
-{{- end}}
-if command -v mise &> /dev/null; then
-  eval "$(mise activate zsh)"
-fi
-if command -v zoxide &> /dev/null; then
-  eval "$(zoxide init --cmd cd zsh)"
-
-  zd() {
-    if (( $# == 0 )); then
-      builtin cd ~ || return
-    elif [[ -d $1 ]]; then
-      builtin cd "$1" || return
-    else
-      if ! __zoxide_z "$@"; then
-        echo "Error: Directory not found"
-        return 1
-      fi
-      printf "\U000F17A9 "
-      pwd
-    fi
-  }
-
-  alias cd="zd"
 fi
 
 export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
