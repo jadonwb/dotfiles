@@ -67,8 +67,9 @@ path = "~/AF2-NXP/linux-imx/"
 
 [[session]]
 name = "build-server"
-path = "~"
+path = "~/"
 startup_command = "ssh jadon.brutcher@cs12:~/dms-yocto"
+
 {{- else if eq .machine.type "personal" }}
 [[session]]
 name = "llama-toolboxes"
