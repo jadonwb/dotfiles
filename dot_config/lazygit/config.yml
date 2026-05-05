@@ -3,6 +3,8 @@ git:
     order: default
 
 gui:
+  authorColors:
+    "Jadon Brutcher": "#651CED"
   nerdFontsVersion: "3"
   theme:
     activeBorderColor:
