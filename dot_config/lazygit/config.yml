@@ -4,7 +4,7 @@ git:
 
 gui:
   authorColors:
-    "Jadon Brutcher": "#651CED"
+    "Jadon Brutcher": "#D2C0F0"
   nerdFontsVersion: "3"
   theme:
     activeBorderColor:
