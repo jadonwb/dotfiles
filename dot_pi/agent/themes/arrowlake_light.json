@@ -46,12 +46,12 @@
         "syntaxType": "#be976b",
         "syntaxOperator": "#988d82",
         "syntaxPunctuation": "#877c73",
-        "thinkingOff": "#b3a89c",
-        "thinkingMinimal": "#988d82",
-        "thinkingLow": "#7262cd",
-        "thinkingMedium": "#698bdd",
-        "thinkingHigh": "#b784d8",
-        "thinkingXhigh": "#9a78d8",
+        "thinkingOff": "#40362f",
+        "thinkingMinimal": "#84cbc4",
+        "thinkingLow": "#5a947a",
+        "thinkingMedium": "#d8ac4f",
+        "thinkingHigh": "#cb8c5c",
+        "thinkingXhigh": "#d66f8e",
         "bashMode": "#cb8c5c"
     }
 }
