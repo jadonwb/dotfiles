@@ -11,6 +11,9 @@ bind-key 'C-s' send-prefix
 bind r source-file ~/.tmux.conf \; \
 	display-message "Reloaded the config"
 
+# Extra theme colors
+source-file ~/.config/omarchy/current/theme/tmux.theme
+
 # Vi for copy mode
 setw -g mode-keys vi
 bind-key -n 'M-v' copy-mode
@@ -105,12 +108,12 @@ set -g popup-border-style "fg=blue"
 set -g popup-border-lines 'rounded'
 
 {{- if eq .machine.type "personal" }}
-set -g copy-mode-selection-style "fg=default,bg=#161440"
+set -g copy-mode-selection-style "fg=default,bg=#{@selection_bg}"
 {{- end}}
 set -g mode-style "fg=blue,bg=default"
 set -g message-style "fg=blue,bg=default"
 set -g message-command-style "fg=blue,bg=default"
-set -g pane-border-style "fg=#312e55"
+set -g pane-border-style "fg=brightblack"
 set -g pane-active-border-style "fg=yellow"
 set-option -g pane-border-lines single
 set-option -g pane-border-indicators both
@@ -156,7 +159,7 @@ bind-key -n 'M-s' run-shell "sesh connect \"$(
     --no-sort --ansi --border-label ' Sessions ' --prompt '⚡  ' \
     --header 'CTRL+a all | CTRL+t tmux | CTRL+f find | CTRL+d kill ' \
     --border rounded \
-    --color=border:'#4541e1' \
+    --color=border:$TMUX_ACCENT \
     --bind 'alt-s:abort' \
     --bind 'tab:down,btab:up' \
     --bind 'ctrl-a:change-prompt(⚡  )+reload(sesh list -d --icons)' \
