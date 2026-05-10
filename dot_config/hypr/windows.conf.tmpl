@@ -65,3 +65,29 @@ windowrule {
 }
 
 windowrule = workspace special:media, match:class vesktop
+
+# ────────────────────────────────────────────────────────────
+# Omarchy Screensaver Rules - Disable Animation & Rounding
+# ────────────────────────────────────────────────────────────
+windowrule {
+  name = screensaver-no-anim
+  match:class = ^(org\.omarchy\.screensaver)$
+  no_anim = on
+}
+
+windowrule {
+  name = screensaver-no-rounding
+  match:class = ^(org\.omarchy\.screensaver)$
+  rounding = 0
+}
+
+# ────────────────────────────────────────────────────────────
+# Ghostty Size & Position Fix (Corrected Syntax)
+# ────────────────────────────────────────────────────────────
+# Fixes "Invalid parameters" error bar by using windowrulev2
+windowrule {
+  name = windowrule-1
+  min_size = 960 640
+  center = on
+  match:class = ^(com.mitchellh.ghostty)$
+}
