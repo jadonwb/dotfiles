@@ -28,6 +28,7 @@
         "blue7": "#254365",
         "border": "#0a0a1e",
         "border_highlight": "#3F3BF5",
+        "border_subtle": "#4C4C73",
         "builtin": "#ff007c",
         "comment": "#4C4C73",
         "component": "#5352cd",
@@ -42,6 +43,7 @@
         "diff_change": "#42393b",
         "diff_delete": "#43193a",
         "diff_text": "#254365",
+        "dim": "#6B6996",
         "directory": "#3F3BF5",
         "error": "#E50050",
         "fg": "#c8d3f5",
@@ -82,6 +84,7 @@
         "match": "#5352cd",
         "md_inline": "#FFD888",
         "member": "#807EA6",
+        "muted": "#8F8DA0",
         "operator": "#9AC1E5",
         "orange": "#FAB16D",
         "orange1": "#fb9b00",
@@ -112,6 +115,7 @@
         "success": "#2A8A6B",
         "tag": "#ff007c",
         "teal": "#13BC9B",
+        "terminal_accent": "#3F3BF5",
         "terminal_black": "#312e55",
         "terminal_black_bright": "#312e55",
         "terminal_blue": "#3F3BF5",
@@ -184,7 +188,7 @@
         },
         "backgroundElement": {
             "dark": "bg_highlight",
-            "light": "bg_highlight"
+            "light": "bg_dark"
         },
         "border": {
             "dark": "black",
@@ -232,7 +236,7 @@
         },
         "diffContextBg": {
             "dark": "bg_highlight",
-            "light": "bg_highlight"
+            "light": "bg_dark"
         },
         "diffLineNumber": {
             "dark": "fg_gutter",
