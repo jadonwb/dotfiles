@@ -24,11 +24,13 @@ open = [
 ]
 
 [[plugin.prepend_fetchers]]
+group = ""
 id = "git"
 url = "*"
 run = "git"
 
 [[plugin.prepend_fetchers]]
+group = ""
 id = "git"
 url = "*/"
 run = "git"
