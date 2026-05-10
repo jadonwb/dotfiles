@@ -1,0 +1,2 @@
+set -g @selection_bg "#e0eee1"
+set-environment -g TMUX_ACCENT "#b784d8"
