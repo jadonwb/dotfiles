@@ -236,7 +236,7 @@
         },
         "diffContextBg": {
             "dark": "bg_highlight",
-            "light": "bg_highlight"
+            "light": "bg_dark"
         },
         "diffLineNumber": {
             "dark": "fg_gutter",
