@@ -1,3 +1,6 @@
+-- Add new environment variable
+-- hl.env("ENV_VAR", "value")
+
 {{- if eq .machine.type "work" }}
 hl.env("NVD_BACKEND","direct")
 hl.env("WLR_NO_HARDWARE_CURSORS","1")
