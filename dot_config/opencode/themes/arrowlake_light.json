@@ -10,10 +10,10 @@
         "bg_dimmed": "#ece2d4",
         "bg_float": "#ddd1bf",
         "bg_highlight": "#dce7d7",
-        "bg_hover": "#efd8d1",
+        "bg_hover": "#eed7cf",
         "bg_menu_sel": "#dce7d7",
         "bg_popup": "#e7dccb",
-        "bg_search": "#efd8d1",
+        "bg_search": "#eed7cf",
         "bg_search_current": "#cddfd0",
         "bg_sidebar": "#e7dccb",
         "bg_statusline": "#e7dccb",
@@ -45,11 +45,11 @@
         "dark7": "#6c6159",
         "diff_add": "#dce6d3",
         "diff_change": "#e0e6d9",
-        "diff_delete": "#eed5ce",
+        "diff_delete": "#ecd4cc",
         "diff_text": "#40362f",
         "dim": "#988d82",
         "directory": "#7262cd",
-        "error": "#c35676",
+        "error": "#bb4f67",
         "fg": "#40362f",
         "fg_dark": "#918579",
         "fg_darker": "#776b62",
@@ -61,7 +61,7 @@
         "functions": "#b784d8",
         "git_add": "#60c89c",
         "git_change": "#84cbc4",
-        "git_delete": "#d16b84",
+        "git_delete": "#c96579",
         "git_ignore": "#b3a89c",
         "green": "#5a947a",
         "green1": "#48ab86",
@@ -104,16 +104,16 @@
         "rainbow_3": "#b784d8",
         "rainbow_4": "#5a947a",
         "rainbow_5": "#67bcab",
-        "rainbow_6": "#d66f8e",
+        "rainbow_6": "#cf6781",
         "rainbow_7": "#9a78d8",
         "rainbow_8": "#cb8c5c",
-        "red": "#d66f8e",
-        "red1": "#c35676",
+        "red": "#cf6781",
+        "red1": "#bb4f67",
         "regexp": "#67bcab",
         "scope": "#7262cd",
         "special": "#d1a35d",
         "statement": "#9a78d8",
-        "string": "#d2797d",
+        "string": "#ce7474",
         "string_doc": "#be976b",
         "string_escape": "#b784d8",
         "success": "#48ab86",
@@ -130,8 +130,8 @@
         "terminal_green_bright": "#49a680",
         "terminal_magenta": "#b784d8",
         "terminal_magenta_bright": "#c98eef",
-        "terminal_red": "#d66f8e",
-        "terminal_red_bright": "#eb789b",
+        "terminal_red": "#cf6781",
+        "terminal_red_bright": "#e66e8d",
         "terminal_white": "#918579",
         "terminal_white_bright": "#40362f",
         "terminal_yellow": "#d8ac4f",
@@ -271,8 +271,8 @@
             "light": "teal"
         },
         "markdownCode": {
-            "dark": "green",
-            "light": "green"
+            "dark": "md_inline",
+            "light": "md_inline"
         },
         "markdownBlockQuote": {
             "dark": "comment",
@@ -315,36 +315,36 @@
             "light": "comment"
         },
         "syntaxKeyword": {
-            "dark": "purple",
-            "light": "purple"
+            "dark": "keyword",
+            "light": "keyword"
         },
         "syntaxFunction": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "functions",
+            "light": "functions"
         },
         "syntaxVariable": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "variable",
+            "light": "variable"
         },
         "syntaxString": {
-            "dark": "green",
-            "light": "green"
+            "dark": "string",
+            "light": "string"
         },
         "syntaxNumber": {
-            "dark": "orange",
-            "light": "orange"
+            "dark": "constant",
+            "light": "constant"
         },
         "syntaxType": {
-            "dark": "blue1",
-            "light": "blue1"
+            "dark": "type",
+            "light": "type"
         },
         "syntaxOperator": {
-            "dark": "blue5",
-            "light": "blue5"
+            "dark": "operator",
+            "light": "operator"
         },
         "syntaxPunctuation": {
-            "dark": "fg_dark",
-            "light": "fg_dark"
+            "dark": "punctuation",
+            "light": "punctuation"
         }
     }
 }
