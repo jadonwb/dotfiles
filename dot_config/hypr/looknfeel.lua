@@ -1,70 +1,102 @@
--- Change the default Omarchy look'n'feel.
-
--- https://wiki.hypr.land/Configuring/Basics/Variables/#general
 hl.config({
   general = {
-    -- No gaps between windows or borders.
-    gaps_in = 3,
-    gaps_out = 5,
     border_size = 3,
-
-    -- Change to niri-like side-scrolling layout.
-    layout = "scrolling",
+    gaps_in = 4,
+    gaps_out = 6,
   },
-})
 
--- https://wiki.hypr.land/Configuring/Basics/Variables/#decoration
-hl.config({
   decoration = {
     rounding = 14,
     shadow = {
-        enabled = true,
-        range = 15,
-        render_power = 5,
-        -- color = rgba(0a0a1eee), -- #0a0a1e ee
-        -- offset = 0 0,
+      enabled = true,
+      range = 15,
+      render_power = 5,
+      color = "rgba(0a0a1eee)",
+      offset = { 0, 0 },
     },
 
     blur = {
-        enabled = true,
-        size = 2,
-        passes = 3,
-        contrast = 1.1,
-        brightness = 1.1,
-        vibrancy = 0.2,
-        vibrancy_darkness = 0.2,
-        noise = 0.03,
-        ignore_opacity = true,
-        -- new_optimizations = on
+      enabled = true,
+      size = 2,
+      passes = 3,
+      contrast = 1.1,
+      brightness = 1.1,
+      vibrancy = 0.2,
+      vibrancy_darkness = 0.2,
+      noise = 0.03,
+      ignore_opacity = true,
+      new_optimizations = true,
     },
 
     active_opacity = 0.95,
     inactive_opacity = 0.93,
     fullscreen_opacity = 1.0,
   },
-})
 
--- https://wiki.hypr.land/Configuring/Basics/Variables/#animations
-hl.config({
   animations = {
-    -- Disable all animations.
     enabled = true,
+  },
+
+  scrolling = {
+    direction = "right",
+    column_width = 0.9,
   },
 })
 
--- https://wiki.hypr.land/Configuring/Basics/Variables/#layout
+-- Uncomment to avoid overly wide single-window layouts on wide screens.
 -- hl.config({
 --   layout = {
---     -- Avoid overly wide single-window layouts on wide screens.
 --     single_window_aspect_ratio = { 1, 1 },
 --   },
 -- })
 
--- https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/
-hl.config({
-  scrolling = {
-    -- See only one column per screen instead of two.
-    direction = "right",
-    column_width = 0.97,
-  },
+hl.curve("calm", {
+  type = "bezier",
+  points = { { 0.25, 0.9 }, { 0.35, 1.0 } },
+})
+
+hl.curve("settle", {
+  type = "bezier",
+  points = { { 0.3, 1.1 }, { 0.8, 1.02 } },
+})
+
+hl.animation({ leaf = "windows", enabled = true, speed = 4, bezier = "calm" })
+hl.animation({ leaf = "windowsIn", enabled = true, speed = 4, bezier = "calm" })
+hl.animation({ leaf = "windowsOut", enabled = true, speed = 1, bezier = "calm" })
+hl.animation({ leaf = "windowsMove", enabled = true, speed = 4, bezier = "calm" })
+
+hl.animation({ leaf = "fade", enabled = true, speed = 3.5, bezier = "calm" })
+hl.animation({ leaf = "fadeIn", enabled = true, speed = 3.5, bezier = "calm" })
+hl.animation({ leaf = "fadeOut", enabled = true, speed = 2.5, bezier = "calm" })
+
+hl.animation({ leaf = "layers", enabled = true, speed = 3.5, bezier = "calm" })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 3.5, bezier = "calm" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 2.5, bezier = "calm" })
+
+hl.animation({ leaf = "workspacesIn", enabled = true, speed = 4.5, bezier = "settle", style = "slide top" })
+hl.animation({ leaf = "workspacesOut", enabled = true, speed = 4.5, bezier = "settle", style = "slide top" })
+hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 4.5, bezier = "settle", style = "slide bottom" })
+hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 4, bezier = "settle", style = "slide top" })
+
+hl.layer_rule({
+  match = { namespace = "walker" },
+  blur = true,
+  ignore_alpha = 0,
+})
+
+hl.layer_rule({
+  match = { namespace = "waybar" },
+  blur = true,
+  ignore_alpha = 0.1,
+})
+
+hl.layer_rule({
+  match = { namespace = "notifications" },
+  blur = true,
+  ignore_alpha = 0,
+})
+
+hl.layer_rule({
+  match = { namespace = "swayosd" },
+  blur = true,
 })
