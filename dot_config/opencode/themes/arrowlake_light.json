@@ -44,7 +44,7 @@
         "dark6": "#877c73",
         "dark7": "#6c6159",
         "diff_add": "#dce6d3",
-        "diff_change": "#e0e6d9",
+        "diff_change": "#dbd8d7",
         "diff_delete": "#ecd4cc",
         "diff_text": "#40362f",
         "dim": "#988d82",
@@ -60,7 +60,7 @@
         "fold_bg": "#e7dccb",
         "functions": "#b784d8",
         "git_add": "#60c89c",
-        "git_change": "#84cbc4",
+        "git_change": "#848fbe",
         "git_delete": "#c96579",
         "git_ignore": "#b3a89c",
         "green": "#5a947a",
@@ -240,7 +240,7 @@
         },
         "diffContextBg": {
             "dark": "bg_highlight",
-            "light": "bg_dark"
+            "light": "diff_change"
         },
         "diffLineNumber": {
             "dark": "fg_gutter",
