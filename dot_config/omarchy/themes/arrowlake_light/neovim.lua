@@ -6,7 +6,6 @@ return {
 		"LazyVim/LazyVim",
 		opts = {
 			colorscheme = "arrowlake-light",
-			transparent = true,
 		},
 	},
 }
