@@ -5,6 +5,7 @@ set -euo pipefail
 YAZI_DIR="$HOME/c/yazi"
 WALKER_DIR="$HOME/c/walker"
 ELEPHANT_DIR="$HOME/c/elephant"
+MAKO_DIR="$HOME/c/mako"
 ELEPHANT_PROVIDERS_DIR="$HOME/.config/elephant/providers"
 
 update_repo() {
@@ -38,7 +39,7 @@ build_elephant() {
   cd "$ELEPHANT_DIR"
   mkdir -p "$ELEPHANT_PROVIDERS_DIR"
 
-  if compgen -G "$ELEPHANT_PROVIDERS_DIR/*.so" > /dev/null; then
+  if compgen -G "$ELEPHANT_PROVIDERS_DIR/*.so" >/dev/null; then
     while IFS= read -r provider_path; do
       providers+=("$(basename "$provider_path" .so)")
     done < <(printf '%s\n' "$ELEPHANT_PROVIDERS_DIR"/*.so | sort)
@@ -61,6 +62,13 @@ build_elephant() {
   done
 }
 
+build_mako() {
+  printf '\n==> Building mako\n'
+  cd "$MAKO_DIR"
+  meson setup --reconfigure build
+  ninja -C build install
+}
+
 main() {
   printf '==> Updating Rust toolchain\n'
   rustup update
@@ -68,10 +76,12 @@ main() {
   update_repo "$YAZI_DIR"
   update_repo "$WALKER_DIR"
   update_repo "$ELEPHANT_DIR"
+  update_repo "$MAKO_DIR"
 
   build_yazi
   build_walker
   build_elephant
+  build_mako
 
   printf '\nDone. Consider restarting Walker and Elephant services.\n'
   printf 'systemctl --user restart elephant.service app-walker@autostart.service\n'
