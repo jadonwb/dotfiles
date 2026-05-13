@@ -1,9 +1,9 @@
-@define-color selected-text #84cbc4;
-@define-color text #40362f;
-@define-color base #f4ecde;
-@define-color border #b784d8;
-@define-color foreground #40362f;
-@define-color background #f4ecde;
+@define-color selected-text #65aca6;
+@define-color text #54473f;
+@define-color base #ebe0cf;
+@define-color border #a96fd1;
+@define-color foreground #54473f;
+@define-color background #ebe0cf;
 
 window .search-container,
 window .search {

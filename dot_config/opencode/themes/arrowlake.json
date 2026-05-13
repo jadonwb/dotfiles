@@ -52,6 +52,7 @@
         "fg_float": "#c8d3f5",
         "fg_gutter": "#312e55",
         "fg_sidebar": "#8F8DA0",
+        "focused_ui": "#fb9b00",
         "fold": "#3F3BF5",
         "fold_bg": "#312e55",
         "functions": "#3F3BF5",
@@ -236,7 +237,7 @@
         },
         "diffContextBg": {
             "dark": "bg_highlight",
-            "light": "bg_dark"
+            "light": "diff_change"
         },
         "diffLineNumber": {
             "dark": "fg_gutter",
@@ -267,8 +268,8 @@
             "light": "teal"
         },
         "markdownCode": {
-            "dark": "green",
-            "light": "green"
+            "dark": "md_inline",
+            "light": "md_inline"
         },
         "markdownBlockQuote": {
             "dark": "comment",
@@ -311,36 +312,36 @@
             "light": "comment"
         },
         "syntaxKeyword": {
-            "dark": "purple",
-            "light": "purple"
+            "dark": "keyword",
+            "light": "keyword"
         },
         "syntaxFunction": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "functions",
+            "light": "functions"
         },
         "syntaxVariable": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "variable",
+            "light": "variable"
         },
         "syntaxString": {
-            "dark": "green",
-            "light": "green"
+            "dark": "string",
+            "light": "string"
         },
         "syntaxNumber": {
-            "dark": "orange",
-            "light": "orange"
+            "dark": "constant",
+            "light": "constant"
         },
         "syntaxType": {
-            "dark": "blue1",
-            "light": "blue1"
+            "dark": "type",
+            "light": "type"
         },
         "syntaxOperator": {
-            "dark": "blue5",
-            "light": "blue5"
+            "dark": "operator",
+            "light": "operator"
         },
         "syntaxPunctuation": {
-            "dark": "fg_dark",
-            "light": "fg_dark"
+            "dark": "punctuation",
+            "light": "punctuation"
         }
     }
 }
