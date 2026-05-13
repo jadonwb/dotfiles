@@ -3,3 +3,4 @@
 .ssh/config
 {{- else}}
 {{- end}}
+.config/hypr/stylua.toml
