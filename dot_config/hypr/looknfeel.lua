@@ -1,8 +1,7 @@
 hl.config({
   general = {
     border_size = 3,
-    gaps_in = 4,
-    gaps_out = 6,
+    layout = "scrolling",
   },
 
   decoration = {
@@ -39,7 +38,7 @@ hl.config({
 
   scrolling = {
     direction = "right",
-    column_width = 0.9,
+    column_width = 0.97,
   },
 })
 
