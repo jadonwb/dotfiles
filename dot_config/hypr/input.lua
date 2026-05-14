@@ -43,6 +43,9 @@ hl.config({
       -- drag_3fg = 1,
     },
   },
+  cursor = {
+    warp_on_change_workspace = 1,
+  },
 })
 
 -- Scroll nicely in the terminal.
