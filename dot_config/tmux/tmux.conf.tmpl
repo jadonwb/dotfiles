@@ -31,18 +31,21 @@ bind -n M-6 select-window -t 6
 bind -n M-7 select-window -t 7
 bind -n M-8 select-window -t 8
 bind -n M-9 select-window -t 9
-bind -n M-x kill-pane
-bind -n M-X kill-window
+bind -n M-w kill-pane
+bind -n M-W kill-window
 bind -n M-t new-window
 bind -n M-T new-session
 bind -n M-r command-prompt -p "Rename window:" "rename-window '%%'"
 bind -n M-R command-prompt -p "Rename session:" "rename-session '%%'"
 
 # Splits bindings
-bind -n 'M-|' split-window -h -c "#{pane_current_path}"
-bind -n 'M-\' split-window -v -c "#{pane_current_path}"
+bind -n M-Enter split-window -v -c "#{pane_current_path}"
+bind -n M-S-Enter split-window -h -c "#{pane_current_path}"
 unbind '"'
 unbind %
+
+# Keybinding help
+bind ? display-popup -E -w 80% -h 70% -T "Tmux keybindings" "omarchy-menu-tmux-keybindings --print | less -R"
 
 # Helper
 is_vim="ps -o state= -o comm= -t '#{pane_tty}' | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
