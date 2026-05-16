@@ -1,19 +1,11 @@
-{{- if eq .machine.type "work" }}
 hl.window_rule({
   name = "chromium-browser-opacity",
   match = { tag = "chromium-based-browser" },
   opacity = "0.95 override 0.9 override",
 })
-{{- else }}
-hl.window_rule({
-  name = "chromium-browser-opacity",
-  match = { tag = "chromium-based-browser" },
-  opacity = "0.87 0.83",
-})
-{{- end }}
 
 hl.window_rule({
-  name = "yazi-special",
+  name = "yazi",
   match = { class = "org.omarchy.yazi" },
   float = true,
   center = true,
