@@ -1,5 +1,3 @@
-local home = os.getenv("HOME") or ""
-local hypr_scripts = home .. "/.config/hypr/scripts"
 local machine = require("hypr.host")
 
 local function bind(keys, dispatcher, description)
@@ -65,6 +63,4 @@ if machine.is_personal then
   bind("SUPER + PERIOD", hl.dsp.exec_cmd("uwsm-app -- 1password"), "Passwords")
 end
 
-bind("SUPER + SHIFT + G", hl.dsp.exec_cmd(hypr_scripts .. "/gamemode.sh"), "Gamemode")
-bind("SUPER + Z", hl.dsp.send_shortcut({ mods = "CTRL", key = "Z" }), "Ctrl Z")
 bind("SUPER + SHIFT + W", hl.dsp.exec_cmd([[notify-send 'click window to kill' && hyprctl kill]]), "Kill")
