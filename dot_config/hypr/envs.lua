@@ -19,6 +19,7 @@ end
 hl.env(
   "PATH",
   join_path(
+    os.getenv("HOME") .. "/.local/bin",
     os.getenv("HOME") .. "/.local/share/omarchy/bin",
     os.getenv("HOME") .. "/.nix-profile/bin",
     "/nix/var/nix/profiles/default/bin",
