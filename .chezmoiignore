@@ -2,6 +2,7 @@
 .zsh_secrets.age
 .ssh/config
 {{- else}}
+.local/bin/quickshell
 c/update_source.sh
 {{- end}}
 .config/hypr/stylua.toml
