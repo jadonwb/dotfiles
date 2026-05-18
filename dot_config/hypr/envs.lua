@@ -3,6 +3,29 @@
 
 local machine = require("hypr.host")
 
+local function join_path(...)
+  local segments = {}
+
+  for i = 1, select("#", ...) do
+    local value = select(i, ...)
+    if value and value ~= "" then
+      table.insert(segments, value)
+    end
+  end
+
+  return table.concat(segments, ":")
+end
+
+hl.env(
+  "PATH",
+  join_path(
+    os.getenv("HOME") .. "/.local/share/omarchy/bin",
+    os.getenv("HOME") .. "/.nix-profile/bin",
+    "/nix/var/nix/profiles/default/bin",
+    os.getenv("PATH") or "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  )
+)
+
 if machine.is_work then
   hl.env("NVD_BACKEND", "direct")
   hl.env("WLR_NO_HARDWARE_CURSORS", "1")
