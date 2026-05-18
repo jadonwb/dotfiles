@@ -1,0 +1,197 @@
+#!/bin/bash
+
+set -euo pipefail
+
+self_path=$(readlink -f "$0")
+stock_selector="$HOME/.local/share/omarchy/default/quickshell/select-by-image.qml"
+cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/quickshell"
+
+find_real_quickshell() {
+  local candidate
+  mapfile -t candidates < <(type -P -a quickshell 2>/dev/null || true)
+
+  for candidate in "${candidates[@]}"; do
+    [[ -n $candidate ]] || continue
+
+    if [[ $(readlink -f "$candidate") != "$self_path" ]]; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+  done
+
+  if [[ -x $HOME/.nix-profile/bin/quickshell ]]; then
+    printf '%s\n' "$HOME/.nix-profile/bin/quickshell"
+  fi
+}
+
+real_quickshell=$(find_real_quickshell)
+
+if [[ -z $real_quickshell ]]; then
+  printf 'Unable to locate the real quickshell binary\n' >&2
+  exit 1
+fi
+
+build_selector_fallback() {
+  local source_qml="$1"
+  local fallback_qml="$cache_root/select-by-image-software.qml"
+
+  mkdir -p "$cache_root"
+
+  if [[ ! -f $fallback_qml || $source_qml -nt $fallback_qml ]]; then
+    python3 - "$source_qml" "$fallback_qml" <<'PY'
+from pathlib import Path
+import sys
+
+src = Path(sys.argv[1])
+dst = Path(sys.argv[2])
+text = src.read_text()
+
+text = text.replace('import QtQuick.Effects\n', '')
+text = text.replace('  property int skewOffset: 28\n', '  property int skewOffset: 0\n')
+
+mask_block = '''            Item {
+              id: maskShape
+              anchors.fill: parent
+              visible: false
+              layer.enabled: true
+
+              Shape {
+                anchors.fill: parent
+                antialiasing: true
+                preferredRendererType: Shape.CurveRenderer
+                ShapePath {
+                  fillColor: "white"
+                  strokeColor: "transparent"
+                  startX: item.topLeft; startY: 0
+                  PathLine { x: item.topRight; y: 0 }
+                  PathLine { x: item.bottomRight; y: item.height }
+                  PathLine { x: item.bottomLeft; y: item.height }
+                  PathLine { x: item.topLeft; y: 0 }
+                }
+              }
+            }
+
+'''
+
+effect_block = '''              layer.effect: MultiEffect {
+                maskEnabled: true
+                maskSource: maskShape
+                maskThresholdMin: 0.3
+                maskSpreadAtMin: 0.3
+              }
+'''
+
+text = text.replace(mask_block, '')
+text = text.replace(effect_block, '')
+
+dst.write_text(text)
+PY
+  fi
+
+  printf '%s\n' "$fallback_qml"
+}
+
+build_selector_gpu_runtime() {
+  local runtime_dir="$cache_root/host-nvidia-egl"
+  local vendor_json="$runtime_dir/10_nvidia.json"
+  local target
+  local gbm_candidate
+  local -a required_libs=(
+    /lib/x86_64-linux-gnu/libEGL_nvidia.so.0
+    /lib/x86_64-linux-gnu/libEGL_nvidia.so.595.58.03
+    /lib/x86_64-linux-gnu/libnvidia-glsi.so.595.58.03
+    /lib/x86_64-linux-gnu/libnvidia-eglcore.so.595.58.03
+    /lib/x86_64-linux-gnu/libnvidia-egl-wayland.so.1
+    /lib/x86_64-linux-gnu/libnvidia-egl-wayland.so.1.1.21
+    /lib/x86_64-linux-gnu/libnvidia-egl-wayland2.so.1
+    /lib/x86_64-linux-gnu/libnvidia-egl-wayland2.so.1.0.1
+    /lib/x86_64-linux-gnu/libnvidia-gpucomp.so.595.58.03
+    /lib/x86_64-linux-gnu/libnvidia-tls.so.595.58.03
+  )
+  local gbm_path=""
+
+  for gbm_candidate in /usr/lib/x86_64-linux-gnu/gbm /lib/x86_64-linux-gnu/gbm; do
+    if [[ -d $gbm_candidate && -f $gbm_candidate/nvidia-drm_gbm.so ]]; then
+      gbm_path="$gbm_candidate"
+      break
+    fi
+  done
+
+  [[ -n $gbm_path ]] || return 1
+
+  mkdir -p "$runtime_dir"
+
+  for target in "${required_libs[@]}"; do
+    [[ -e $target ]] || return 1
+    ln -sfn "$target" "$runtime_dir/${target##*/}"
+  done
+
+  python3 - "$vendor_json" "$runtime_dir/libEGL_nvidia.so.0" <<'PY'
+from pathlib import Path
+import json
+import sys
+
+Path(sys.argv[1]).write_text(json.dumps({
+    "file_format_version": "1.0.0",
+    "ICD": {"library_path": sys.argv[2]},
+}) + "\n")
+PY
+
+  printf '%s\t%s\t%s\n' "$runtime_dir" "$vendor_json" "$gbm_path"
+}
+
+activate_selector_software_fallback() {
+  local i
+
+  for i in "${!args[@]}"; do
+    if [[ ${args[i]} == "$stock_selector" ]]; then
+      args[i]=$(build_selector_fallback "$stock_selector")
+    fi
+  done
+
+  if [[ -z ${QT_QUICK_BACKEND:-} ]]; then
+    export QT_QUICK_BACKEND=software
+  fi
+}
+
+args=("$@")
+selector_mode=false
+selector_launch_mode=${OMARCHY_QUICKSHELL_SELECTOR_MODE:-gpu}
+gpu_runtime=""
+gpu_libdir=""
+gpu_vendor_json=""
+gpu_gbm_path=""
+
+for i in "${!args[@]}"; do
+  if [[ ${args[i]} == "$stock_selector" ]]; then
+    selector_mode=true
+  fi
+done
+
+if [[ $selector_mode == true ]]; then
+  if [[ $selector_launch_mode != "software" && -z ${QT_QUICK_BACKEND:-} ]]; then
+    gpu_runtime=$(build_selector_gpu_runtime || true)
+  fi
+
+  if [[ -n $gpu_runtime ]]; then
+    IFS=$'\t' read -r gpu_libdir gpu_vendor_json gpu_gbm_path <<<"$gpu_runtime"
+
+    if [[ -z ${GBM_BACKENDS_PATH:-} ]]; then
+      export GBM_BACKENDS_PATH="$gpu_gbm_path"
+    fi
+
+    if [[ -z ${__EGL_VENDOR_LIBRARY_FILENAMES:-} ]]; then
+      export __EGL_VENDOR_LIBRARY_FILENAMES="$gpu_vendor_json"
+    fi
+
+    if [[ -z ${LD_LIBRARY_PATH:-} ]]; then
+      export LD_LIBRARY_PATH="$gpu_libdir"
+    elif [[ :$LD_LIBRARY_PATH: != *":$gpu_libdir:"* ]]; then
+      export LD_LIBRARY_PATH="$gpu_libdir:$LD_LIBRARY_PATH"
+    fi
+  else
+    activate_selector_software_fallback
+  fi
+fi
+
+exec "$real_quickshell" "${args[@]}"
