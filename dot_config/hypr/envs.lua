@@ -16,18 +16,18 @@ local function join_path(...)
   return table.concat(segments, ":")
 end
 
-hl.env(
-  "PATH",
-  join_path(
-    os.getenv("HOME") .. "/.local/bin",
-    os.getenv("HOME") .. "/.local/share/omarchy/bin",
-    os.getenv("HOME") .. "/.nix-profile/bin",
-    "/nix/var/nix/profiles/default/bin",
-    os.getenv("PATH") or "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-  )
-)
-
 if machine.is_work then
+  hl.env(
+    "PATH",
+    join_path(
+      os.getenv("HOME") .. "/.local/bin",
+      os.getenv("HOME") .. "/.local/share/omarchy/bin",
+      os.getenv("HOME") .. "/.nix-profile/bin",
+      "/nix/var/nix/profiles/default/bin",
+      os.getenv("PATH") or "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    )
+  )
+
   hl.env("NVD_BACKEND", "direct")
   hl.env("WLR_NO_HARDWARE_CURSORS", "1")
   hl.env("GBM_BACKEND", "nvidia-drm")
