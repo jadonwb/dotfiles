@@ -6,3 +6,4 @@
 c/update_source.sh
 {{- end}}
 .config/hypr/stylua.toml
+.config/rmux/rmux.conf
