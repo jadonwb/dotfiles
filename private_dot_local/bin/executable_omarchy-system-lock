@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# omarchy:summary=Lock the computer and turn off the display
+# omarchy:group=system
+# omarchy:name=lock
+# omarchy:examples=omarchy system lock
+
+touch /home/jadon/c/FLAG_FILE
+
+if ! pidof hyprlock >/dev/null; then
+  (
+    hyprlock
+    omarchy-system-wake
+  ) &
+fi
+
+# Set keyboard layout to default (first layout)
+hyprctl switchxkblayout all 0 >/dev/null 2>&1
+
+# Avoid running screensaver when locked
+pkill -f org.omarchy.screensaver
+
+if [[ ${OMARCHY_LOCK_ONLY:-false} != "true" ]]; then
+  (
+    sleep 3
+    pidof hyprlock >/dev/null || exit 0
+    omarchy-brightness-keyboard off
+    omarchy-brightness-display off
+  ) &
+fi
