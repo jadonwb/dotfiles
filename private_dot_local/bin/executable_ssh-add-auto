@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"
+
+for key in ~/.ssh/*; do
+    [ -f "$key" ] || continue
+
+    case "$key" in
+        *.pub|known_hosts|authorized_keys|config)
+            continue
+            ;;
+    esac
+
+    if ssh-keygen -y -P "" -f "$key" >/dev/null 2>&1; then
+        ssh-add "$key" >/dev/null 2>&1 || true
+    fi
+done

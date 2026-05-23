@@ -1,0 +1,11 @@
+[Unit]
+Description=Auto-add SSH keys
+After=ssh-agent.service
+Requires=ssh-agent.socket
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/ssh-add-auto
+
+[Install]
+WantedBy=default.target
