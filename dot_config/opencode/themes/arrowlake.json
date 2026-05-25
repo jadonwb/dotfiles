@@ -2,99 +2,66 @@
     "$schema": "https://opencode.ai/theme.json",
     "defs": {
         "ai": "#13BC9B",
+        "attention": "#ff007c",
         "bg": "#0D0C25",
-        "bg_active_parameter": "#110f30",
+        "bg_active_parameter": "#161440",
         "bg_dark": "#0a091c",
-        "bg_dark1": "#080818",
         "bg_darker": "#080818",
         "bg_dimmed": "#0b0a1f",
-        "bg_float": "#080818",
-        "bg_highlight": "#141238",
+        "bg_float": "#0a091c",
+        "bg_highlight": "#161440",
         "bg_hover": "#312e55",
-        "bg_menu_sel": "#2a274b",
+        "bg_menu_sel": "#161440",
         "bg_popup": "#0a091c",
         "bg_search": "#312e55",
-        "bg_search_current": "#ff007c",
+        "bg_search_current": "#ca0369",
         "bg_sidebar": "#0a091c",
         "bg_statusline": "#0a091c",
         "bg_visual": "#161440",
         "black": "#0a0a1e",
         "blue": "#3F3BF5",
-        "blue0": "#242068",
-        "blue1": "#5352cd",
-        "blue2": "#6A57FA",
-        "blue5": "#9AC1E5",
-        "blue6": "#9AC1E5",
-        "blue7": "#254365",
         "border": "#0a0a1e",
-        "border_highlight": "#3F3BF5",
+        "border_color": "#3F3BF5",
         "border_subtle": "#4C4C73",
-        "builtin": "#ff007c",
         "comment": "#4C4C73",
-        "component": "#5352cd",
         "constant": "#FAB16D",
         "constructor": "#C24EBA",
         "cyan": "#58E2CB",
-        "dark3": "#4C4C73",
-        "dark5": "#6B6996",
-        "dark6": "#5B6B84",
-        "dark7": "#807EA6",
         "diff_add": "#0f3338",
         "diff_change": "#42393b",
         "diff_delete": "#43193a",
         "diff_text": "#254365",
-        "dim": "#6B6996",
-        "directory": "#3F3BF5",
         "error": "#E50050",
         "fg": "#c8d3f5",
         "fg_dark": "#8F8DA0",
         "fg_darker": "#807E98",
-        "fg_float": "#c8d3f5",
         "fg_gutter": "#312e55",
         "fg_sidebar": "#8F8DA0",
-        "focused_ui": "#fb9b00",
-        "fold": "#3F3BF5",
-        "fold_bg": "#312e55",
+        "focus": "#FB9B00",
         "functions": "#3F3BF5",
         "git_add": "#17BE7B",
         "git_change": "#FFD888",
         "git_delete": "#E53E78",
         "git_ignore": "#4C4C73",
         "green": "#2A8A6B",
-        "green1": "#19986F",
-        "green2": "#17BE7B",
         "hint": "#13BC9B",
-        "identifier": "#C24EBA",
-        "info": "#6A57FA",
-        "inlay_hint_bg": "#0f122b",
+        "info": "#5352CD",
+        "inlay_hint_bg": "#0b0a1f",
         "inlay_hint_fg": "#4C4C73",
-        "interactive": "#ff007c",
-        "interactive_secondary": "#6A57FA",
-        "interface": "#7679d9",
         "keyword": "#B34EC2",
-        "keyword_function": "#C24EBA",
-        "label": "#3F3BF5",
         "link": "#13BC9B",
-        "list": "#9AC1E5",
-        "list_checked": "#19986F",
-        "list_unchecked": "#3F3BF5",
         "macro": "#58E2CB",
         "magenta": "#C24EBA",
-        "magenta2": "#ff007c",
         "markup": "#FAB16D",
-        "match": "#5352cd",
+        "match": "#5352CD",
         "md_inline": "#FFD888",
-        "member": "#807EA6",
+        "member": "#807E98",
         "muted": "#8F8DA0",
         "operator": "#9AC1E5",
         "orange": "#FAB16D",
-        "orange1": "#fb9b00",
-        "param": "#FFD888",
         "parameter": "#FFD888",
-        "prompt": "#FAB16D",
-        "property": "#807E98",
+        "primary": "#3F3BF5",
         "punctuation": "#5B6B84",
-        "punctuation_special": "#9AC1E5",
         "purple": "#B34EC2",
         "rainbow_1": "#3F3BF5",
         "rainbow_2": "#FFD888",
@@ -105,18 +72,13 @@
         "rainbow_7": "#B34EC2",
         "rainbow_8": "#FAB16D",
         "red": "#ff007c",
-        "red1": "#E50050",
-        "regexp": "#9AC1E5",
-        "scope": "#5352cd",
-        "special": "#4544ab",
-        "statement": "#C24EBA",
+        "secondary": "#5352CD",
+        "selection": "#161440",
         "string": "#19986F",
         "string_doc": "#FFD888",
         "string_escape": "#C24EBA",
         "success": "#2A8A6B",
-        "tag": "#ff007c",
         "teal": "#13BC9B",
-        "terminal_accent": "#3F3BF5",
         "terminal_black": "#312e55",
         "terminal_black_bright": "#312e55",
         "terminal_blue": "#3F3BF5",
@@ -134,10 +96,10 @@
         "terminal_yellow": "#FFD888",
         "terminal_yellow_bright": "#ffe8c2",
         "title": "#3F3BF5",
-        "todo": "#3F3BF5",
+        "todo": "#5352CD",
         "trace": "#B34EC2",
-        "type": "#5352cd",
-        "type_builtin": "#4544ab",
+        "type": "#5352CD",
+        "type_builtin": "#4241a3",
         "variable": "#c8d3f5",
         "warning": "#FAB16D",
         "yellow": "#FFD888"
@@ -156,8 +118,8 @@
             "light": "orange"
         },
         "error": {
-            "dark": "red1",
-            "light": "red1"
+            "dark": "error",
+            "light": "error"
         },
         "warning": {
             "dark": "yellow",
@@ -168,8 +130,8 @@
             "light": "green"
         },
         "info": {
-            "dark": "blue2",
-            "light": "blue2"
+            "dark": "info",
+            "light": "info"
         },
         "text": {
             "dark": "fg",
@@ -188,7 +150,7 @@
             "light": "bg_dark"
         },
         "backgroundElement": {
-            "dark": "bg_highlight",
+            "dark": "bg_dark",
             "light": "bg_dark"
         },
         "border": {
@@ -196,20 +158,20 @@
             "light": "black"
         },
         "borderActive": {
-            "dark": "border_highlight",
-            "light": "border_highlight"
+            "dark": "border_color",
+            "light": "border_color"
         },
         "borderSubtle": {
-            "dark": "dark3",
-            "light": "dark3"
+            "dark": "border_subtle",
+            "light": "border_subtle"
         },
         "diffAdded": {
-            "dark": "green1",
-            "light": "green1"
+            "dark": "success",
+            "light": "success"
         },
         "diffRemoved": {
-            "dark": "red1",
-            "light": "red1"
+            "dark": "error",
+            "light": "error"
         },
         "diffContext": {
             "dark": "fg_dark",
@@ -236,7 +198,7 @@
             "light": "diff_delete"
         },
         "diffContextBg": {
-            "dark": "bg_highlight",
+            "dark": "diff_change",
             "light": "diff_change"
         },
         "diffLineNumber": {
@@ -288,8 +250,8 @@
             "light": "fg_gutter"
         },
         "markdownListItem": {
-            "dark": "blue5",
-            "light": "blue5"
+            "dark": "operator",
+            "light": "operator"
         },
         "markdownListEnumeration": {
             "dark": "orange",
