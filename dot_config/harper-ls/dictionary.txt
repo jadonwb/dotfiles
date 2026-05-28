@@ -7,5 +7,6 @@ bitbake
 gstreamer
 ivi
 lsp
+minicom
 psplash
 xdg
