@@ -11,8 +11,10 @@
 
 [protocol "file"]
 	allow = always
+{{- if eq .machine.type "personal" }}
 [url "git@github.com:"]
 	insteadOf = https://github.com/
+{{- end}}
 [rebase]
 	autoStash = true
 [merge]
