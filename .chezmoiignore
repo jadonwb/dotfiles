@@ -2,6 +2,7 @@
 .zsh_secrets.age
 .ssh/config
 {{- else if eq .machine.type "laptop" }}
+.zsh_secrets.age
 .ssh/config
 {{- else}}
 .local/bin/quickshell
