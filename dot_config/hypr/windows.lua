@@ -44,7 +44,7 @@ hl.window_rule({
 
 hl.window_rule({
   name = "screensaver",
-  match = { class = "^(org\\.omarchy\\.screensaver)$" },
+  match = { class = "org.omarchy.screensaver" },
   no_anim = true,
   rounding = 0,
 })
