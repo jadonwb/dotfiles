@@ -1,9 +1,10 @@
 {{- if eq .machine.type "work" }}
 .zsh_secrets.age
 .ssh/config
+{{- else if eq .machine.type "laptop" }}
+.ssh/config
 {{- else}}
 .local/bin/quickshell
 c/update_source.sh
 {{- end}}
 .config/hypr/stylua.toml
-.config/rmux/rmux.conf
