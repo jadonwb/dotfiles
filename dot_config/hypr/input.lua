@@ -18,10 +18,7 @@ hl.config({
     numlock_by_default = true,
 
     -- Increase sensitivity for mouse/trackpad (default: 0).
-    sensitivity = 0.25,
-
-    -- Increase scroll speed
-    scroll_factor = 0.9,
+    sensitivity = 0.35,
 
     -- Turn off mouse acceleration (default: adaptive).
     -- accel_profile = "flat",
@@ -49,8 +46,8 @@ hl.config({
 })
 
 -- Scroll nicely in the terminal.
-hl.window_rule({ match = { class = "(Alacritty|kitty|foot)" }, scroll_touchpad = 1.5 })
-hl.window_rule({ match = { class = "com.mitchellh.ghostty" }, scroll_touchpad = 0.2 })
+o.window("(Alacritty|kitty|foot)", { scroll_touchpad = 1.5 })
+o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.2 })
 
 -- Enable touchpad gestures for changing workspaces.
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
