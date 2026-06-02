@@ -37,12 +37,6 @@ hl.window_rule({
 })
 
 hl.window_rule({
-  name = "vesktop-media",
-  match = { class = "vesktop" },
-  workspace = "special:media",
-})
-
-hl.window_rule({
   name = "screensaver",
   match = { class = "org.omarchy.screensaver" },
   no_anim = true,
