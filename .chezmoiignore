@@ -4,6 +4,8 @@
 {{- else if eq .machine.type "laptop" }}
 .zsh_secrets.age
 .ssh/config
+.local/bin/quickshell
+c/update_source.sh
 {{- else}}
 .local/bin/quickshell
 c/update_source.sh
