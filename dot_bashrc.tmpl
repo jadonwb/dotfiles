@@ -14,3 +14,7 @@ fi
 [[ -f /usr/share/omarchy-zsh/shell/all ]] && source /usr/share/omarchy-zsh/shell/all
 
 # Add your own exports, aliases, and functions below.
+
+{{- if eq .machine.type "work" }}
+umask 007
+{{- end}}
