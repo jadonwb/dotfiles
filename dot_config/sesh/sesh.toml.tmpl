@@ -46,29 +46,37 @@ startup_command = "nvim"
 
 {{- if eq .machine.type "work" }}
 [[session]]
+name = "Work"
+path = "~/Work/"
+
+[[session]]
 name = "bitbake"
-path = "~/AF2-NXP/dms-yocto/"
+path = "~/Work/fusion2/dms-yocto/"
 
 [[session]]
 name = "fusion"
-path = "~/AF2-NXP/Fusion_2s_i.MX/"
+path = "~/Work/Fusion_2s_i.MX/"
 
 [[session]]
 name = "update-server"
-path = "~/AF2-NXP/af2_update_manager/"
+path = "~/Work/ota/af2_update_manager/"
 
 [[session]]
-name = "uboot"
-path = "~/AF2-NXP/uboot-imx/"
+name = "uboot-imx"
+path = "~/Work/fusion2/uboot-imx/"
 
 [[session]]
-name = "linux"
-path = "~/AF2-NXP/linux-imx/"
+name = "linux-imx"
+path = "~/Work/fusion2/linux-imx/"
 
 [[session]]
 name = "build-server"
 path = "~/"
 startup_command = "ssh jadon.brutcher@cs12"
+
+[[session]]
+name = "radar ctrl"
+path = "~/Work/radar/"
 
 {{- else if eq .machine.type "personal" }}
 [[session]]
