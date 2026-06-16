@@ -9,9 +9,10 @@ touch /home/jadon/c/FLAG_FILE
 
 if ! pidof hyprlock >/dev/null; then
   (
-    hyprlock
+    hyprlock --immediate-render
     omarchy-system-wake
   ) &
+  sleep 0.3
 fi
 
 # Set keyboard layout to default (first layout)
