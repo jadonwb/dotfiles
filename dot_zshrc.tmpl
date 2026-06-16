@@ -112,7 +112,6 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
 alias vim='nvim'
-alias t='tmux attach || tmux new'
 alias c='clear'
 alias q='exit'
 alias fd='fd -H'
@@ -120,11 +119,9 @@ alias sg='rg --hidden'
 alias ls='eza --long --no-user --header --icons --git --group-directories-first'
 alias lsu='eza --long --header --icons --git --group-directories-first'
 alias lsg='eza --long --group --header --icons --git --group-directories-first'
-alias lsa='eza --long --no-user --header --icons --git --all --group-directories-first'
-alias lt='eza --long --no-user --header --icons --git --group-directories-first --tree'
-alias lta='eza --long --no-user --header --icons --git --all --group-directories-first --tree'
-alias lg="lazygit"
-alias vlg="nvim +'lua Snacks.lazygit()'"
+alias lsa='ls --all'
+alias lt='ls --tree'
+alias lta='lt --all'
 alias oc="opencode"
 alias dots="chezmoi"
 
