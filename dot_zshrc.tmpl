@@ -10,6 +10,7 @@ eval "$(fzf --zsh)"
 stty -ixon < /dev/tty
 
 # exports for interactive shell
+export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"
 export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --ansi --color=16"
 export _ZO_EXCLUDE_DIRS="/net/*:/media/*:/tmp/*"
 export MANPAGER='nvim +Man!'
