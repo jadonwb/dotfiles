@@ -11,6 +11,48 @@ dictionary() {
   }
 
 restore_hyprlock() {
-    hyprctl --instance 0 eval 'hl.config({ misc = { allow_session_lock_restore = true } })'
-    hyprctl --instance 0 dispatch 'hl.dsp.exec_cmd("hyprlock")'
+    local instance="${1:-0}"
+    local target_tty="${2}"
+
+    if [[ -z "$target_tty" ]]; then
+        local pid
+        pid=$(pgrep -x Hyprland | head -1)
+        if [[ -z "$pid" ]]; then
+            echo "restore_hyprlock: Hyprland not running" >&2
+            return 1
+        fi
+        target_tty=$(ps -o tty= -p "$pid" | sed 's/tty//')
+    fi
+    if [[ -z "$target_tty" ]]; then
+        echo "restore_hyprlock: could not determine Hyprland TTY" >&2
+        return 1
+    fi
+
+    local rc
+    rc=$(hyprctl --instance "$instance" eval 'hl.config({ misc = { allow_session_lock_restore = true } })' 2>&1)
+    if [[ "$rc" != "ok" ]]; then
+        echo "restore_hyprlock: eval failed ($rc) — killing existing hyprlock" >&2
+        killall -9 hyprlock 2>/dev/null
+    fi
+
+    rc=$(hyprctl --instance "$instance" dispatch 'hl.dsp.exec_cmd("hyprlock")' 2>&1)
+    if [[ "$rc" != "ok" ]]; then
+        echo "restore_hyprlock: dispatch failed ($rc) — killing and retrying" >&2
+        killall -9 hyprlock 2>/dev/null
+        sleep 0.2
+        hyprctl --instance "$instance" dispatch 'hl.dsp.exec_cmd("hyprlock")' 2>&1
+    fi
+
+    local tries=0
+    while ! pgrep -x hyprlock >/dev/null 2>&1; do
+        ((tries++ > 30)) && {
+            echo "restore_hyprlock: hyprlock never started" >&2
+            return 1
+        }
+        sleep 0.1
+    done
+    sleep 0.3
+
+    chvt "$target_tty"
+    exit
     }
