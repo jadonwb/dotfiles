@@ -38,7 +38,6 @@ if machine.is_work then
   hl.env("__GL_GSYNC_ALLOWED", "1")
   hl.env("__GL_VRR_ALLOWED", "1")
   hl.env("OGL_DEDICATED_HW_STATE_PER_CONTEXT", "ENABLE_ROBUST")
-  hl.env("WLR_DRM_NO_ATOMIC", "1")
 else
   hl.env(
     "PATH",
