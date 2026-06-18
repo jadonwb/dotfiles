@@ -1,6 +1,4 @@
-{{- if eq .machine.type "work" }}
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/gcr/ssh"
-{{- end}}
 
 {{- if eq .machine.type "work" }}
 export NVM_DIR="$HOME/.nvm"
