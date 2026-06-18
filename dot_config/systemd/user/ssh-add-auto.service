@@ -1,11 +1,12 @@
 [Unit]
 Description=Auto-add SSH keys
-After=ssh-agent.service
-Requires=ssh-agent.socket
+After=gcr-ssh-agent.service
+Requires=gcr-ssh-agent.socket
 
 [Service]
 Type=oneshot
 ExecStart=%h/.local/bin/ssh-add-auto
+Environment=SSH_AUTH_SOCK=%t/gcr/ssh
 
 [Install]
 WantedBy=default.target

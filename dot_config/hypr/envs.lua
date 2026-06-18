@@ -16,7 +16,7 @@ local function join_path(...)
   return table.concat(segments, ":")
 end
 
-hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/ssh-agent.socket")
+hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/gcr/ssh")
 
 if machine.is_work then
   hl.env(
