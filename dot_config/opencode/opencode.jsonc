@@ -5,10 +5,34 @@
         "opencode-working-memory",
     ],
     "theme": "arrowlake_light",
+    "model": "deepseek/deepseek-v4-pro",
+    "small_model": "deepseek/deepseek-v4-flash",
+    "default_agent": "orchestrate",
     "tui": {
         "scroll_acceleration": {
             "enabled": true
         },
         "diff_style": "auto"
     },
+    "agent": {
+        "build": {
+            "disable": true
+        },
+        "plan": {
+            "disable": true
+        },
+        "general": {
+            "disable": true
+        },
+        "explore": {
+            "disable": true
+        },
+        "scout": {
+            "disable": true
+        }
+    },
+    "compaction": {
+        "auto": true,
+        "tail_turns": 15
+    }
 }
