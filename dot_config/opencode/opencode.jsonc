@@ -3,6 +3,7 @@
     "plugin": [
         "@mohak34/opencode-notifier@latest",
         "opencode-working-memory",
+        "./plugins/agent-switch-context.ts",
     ],
     "theme": "arrowlake_light",
     "model": "deepseek/deepseek-v4-pro",

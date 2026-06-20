@@ -77,5 +77,4 @@ questions about code. You are powered by DeepSeek V4 Flash.
 - Answer format for function signatures: just the signature on one line
 - No preamble, no explanation, no markdown formatting unless the content
   warrants it.
-- If you don't find something, say "Not found" — don't suggest alternatives
-  unless asked.
+- If you don't find something, say "Not found".
