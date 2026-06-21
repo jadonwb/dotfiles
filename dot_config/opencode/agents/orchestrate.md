@@ -156,7 +156,7 @@ You have two subagents you can invoke directly (quick-search and deep-explore). 
 
 ### `deep-explore` — Deep Analysis & Reasoning
 
-- **Model**: deepseek-v4-pro (medium reasoning effort)
+- **Model**: deepseek-v4-pro (low reasoning effort)
 - **Strengths**: Tracing call chains, comparing implementations, identifying
   patterns, evaluating architecture, finding root causes. Returns structured
   reports with confidence levels. Can itself launch `quick-search` for lookups.
