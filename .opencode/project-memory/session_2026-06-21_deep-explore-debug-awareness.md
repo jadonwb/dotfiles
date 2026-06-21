@@ -42,3 +42,22 @@ Applied all 7 edits via coder agent in 2 batches. Review found 2 findings (both 
 - Debug System Awareness section cleanly placed between Your Role and Analysis Methodology
 - Cross-reference "the Debug System Awareness section above" in Phase 5 resolves correctly
 - orchestrator's model description now consistently says "low reasoning effort"
+
+---
+
+### Continuation: 2026-06-21 — Anti-Spin Guardrails
+
+#### Summary
+Added hard structural guardrails to deep-explore to prevent endless spinning: reduced step cap from 45→25, added 7-file hard limit, added "Stop or continue?" decision to every read, strengthened Stop Condition with MUST language and 3 explicit exit triggers. Added orchestrator rule to route incomplete deep-explore results to `[debug]` instead of re-launching.
+
+#### Changes
+- `deep-explore.md` — +33/-15: steps 45→25, 7-file limit in Phase 1, stop/continue in Phase 2, HARD RULES stop condition
+- `orchestrate.md` — +4/-0: new bullet — incomplete deep-explore → produce `[debug]` task
+
+#### Review Findings
+- Low: Phase 2 "5+ files" line lacked debug cross-reference → fixed (added `(or suggest a [debug] task per Phase 1)`)
+- Informational: edge case noted where debug may be asked to do pure reading — no fix needed
+
+#### Design Decisions
+- Flash model rejected after research — architecture correctly assigns pro to all reasoning roles
+- Three-layer defense: (1) 25-step hard cap, (2) 7-file hard limit, (3) MUST-stop at ~15 steps with debug escape hatch

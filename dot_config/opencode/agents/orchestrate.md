@@ -129,6 +129,10 @@ coordinate.
   to deep-explore with the findings as context.
 - If a subagent's finding is unclear or contradictory, ask the subagent to
   clarify rather than trying to verify it yourself.
+- **When deep-explore returns incomplete** (low confidence, step-limit hit,
+  debug suggestions present): produce a `[debug]` task from its findings
+  rather than re-launching deep-explore. Debug can test hypotheses and
+  reproduce issues that static reading missed.
 - Give subagents clear direction, not tight constraints: state what you're
   looking for and why. Provide starting file paths when you know them, but let
   subagents (especially `deep-explore`) explore beyond exact boundaries —

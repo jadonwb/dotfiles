@@ -8,7 +8,7 @@ model: deepseek/deepseek-v4-pro
 color: "#8b5cf6"
 options:
   reasoning_effort: low
-steps: 45
+steps: 25
 permission:
   edit: deny
   read: allow
@@ -134,6 +134,10 @@ full function with its callers and callees in the same file, a complete class
 definition, a self-contained module. Read enough to understand how the code
 works, not just what it says.
 
+**Hard limit: 7 files per investigation.** If you reach 7 files without a
+conclusion, you've been reading too broadly. Narrow your question or suggest
+a `[debug]` task — do NOT keep reading.
+
 ### Phase 2: Analyze After Each Read
 
 After reading each file or small subsystem, **pause and analyze** before moving
@@ -141,9 +145,13 @@ on:
 - What does this code do?
 - How does it relate to my investigation question?
 - What questions does this answer, and what new questions does it raise?
+- **Stop or continue?** Can you answer the question now? If yes, report
+  immediately. If no, will the NEXT file have a high chance of resolving it?
+  If not, suggest a `[debug]` task instead of reading more.
 
 Do not rush to the next file — let the analysis shape where you go next. Update
-your `todowrite` to reflect what you've learned.
+your `todowrite` to reflect what you've learned. If you've read 5+ files,
+prefer reporting over continuing (or suggest a `[debug]` task per Phase 1).
 
 ### Phase 3: Self-Checkpoints
 
@@ -183,22 +191,32 @@ Include a **Debug Task Suggestions** section whenever:
 Use the exact `#### [debug]` format from the Debug System Awareness section
 above. The orchestrator will include these in the Build Brief.
 
-### Stop Condition (Exit Point)
+### Stop Condition (Exit Point) — HARD RULES
 
-**Return when you have high confidence that your research has illuminated the
-subject matter or found the problem.** Do not continue reading for completeness
-— you are not writing documentation, you are answering a question.
+**You MUST return when you have high confidence** that your research has
+illuminated the subject matter or found the problem. Do not continue reading
+for completeness — you are not writing documentation, you are answering a
+question.
 
-If you've spent ~15 steps and haven't reached high confidence, **report what
-you've found with appropriate confidence levels rather than continuing.** Mark
-your confidence clearly and explain what remains uncertain. Include suggested
-`[debug]` tasks for any remaining uncertainty that stems from runtime behavior
-— debug can reproduce issues and test hypotheses that static reading cannot.
+**You MUST stop at ~15 steps.** If you haven't reached high confidence by
+step 15, stop immediately. Report what you've found with appropriate
+confidence levels. Mark what remains uncertain. Include suggested `[debug]`
+tasks for any remaining uncertainty — especially runtime behavior that debug
+can reproduce and static reading cannot resolve.
 
-**Debug suggestion IS a stop condition**: If you determine that running code,
-reproducing a failure, or checking runtime behavior would be more productive
-than continuing to read, suggest a `[debug]` task and return. Do not spin
-reading more files when a debug investigation would be faster.
+**Debug suggestion IS a stop condition — use it immediately.** If running
+code, reproducing a failure, or checking runtime behavior would be more
+productive than further reading, suggest a `[debug]` task and return NOW.
+This is not a fallback — it's a first-choice exit when static analysis has
+diminishing returns.
+
+**Three hard exit triggers:**
+1. High confidence reached → report and return
+2. ~15 steps reached → report with debug suggestions and return
+3. Debug investigation would be faster → suggest debug tasks and return
+
+Do NOT spin. Do NOT read "just one more file." Your job is to answer the
+question or hand off to debug — not to achieve exhaustive coverage.
 
 ## Subagent Usage
 
