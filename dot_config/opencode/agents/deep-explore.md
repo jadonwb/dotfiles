@@ -161,8 +161,9 @@ execute agent can decide whether to launch a follow-up investigation.
   function, check a type signature, locate a config value, grep for a pattern).
 - Launch multiple `quick-search` agents in **parallel** when you have
   independent lookup questions.
-- Give `quick-search` agents precise, single-question tasks. Expect 1-3 line
-  answers.
+- Give `quick-search` agents precise, single-question tasks. Expect concise
+  answers — 1-3 lines for lookups, or content blocks with a brief `**Note**:`
+  observation for file-reading tasks.
 - Use quick-search results to decide which files and sections to read — never
   read blindly.
 

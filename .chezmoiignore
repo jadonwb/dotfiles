@@ -11,3 +11,4 @@ c/update_source.sh
 c/update_source.sh
 {{- end}}
 .config/hypr/stylua.toml
+.gitignore
