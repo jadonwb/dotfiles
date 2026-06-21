@@ -4,6 +4,7 @@ description:
   the execute agent via an approved Build Brief. Use ONLY for executing specific
   code modifications that the user has explicitly approved.
 mode: subagent
+disable: true
 model: deepseek/deepseek-v4-flash
 color: "#10b981"
 steps: 20
