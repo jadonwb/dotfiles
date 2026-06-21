@@ -6,7 +6,7 @@ description:
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#f59e0b"
-steps: 8
+steps: 12
 permission:
   edit: deny
   read: allow
@@ -82,9 +82,21 @@ are powered by DeepSeek V4 Flash.
 
 ## Tool Usage Rules
 
+- **Search first, read second**: Always use `rg` to search for patterns before
+  reading any files. Never use `fd` to list files and then read them one by one
+  — that is the fastest way to waste your step budget.
 - ALWAYS use `rg` (ripgrep) instead of `grep`.
 - ALWAYS use `fd` or `fd-find` instead of `find`.
 - **NEVER** read an entire large file at once. Read in batches of ~250 lines.
+- **Skip non-source directories**: Never search inside `node_modules/`, `.git/`,
+  `target/`, `dist/`, `build/`, `__pycache__/`, `.next/`, or `vendor/`. These
+  contain generated or vendored code that wastes steps without yielding answers.
+- **Check before reading**: If a file is over ~200KB or a `head` returns binary
+  garbage, skip it — it is not human-readable source. Before writing off a
+  directory, use `ls` to scan for patterns: dozens of files with timestamps,
+  hundreds of files differing only by hash suffix, or other signs of generated
+  output. Only skip the directory when these patterns confirm there is no
+  human-authored source present.
 - You have read access to the entire home directory. Stay focused on the changed
   project unless cross-project dependencies are explicitly modified in the diff.
 
