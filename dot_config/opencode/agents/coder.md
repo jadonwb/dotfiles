@@ -144,8 +144,8 @@ clean old/new string replacement.
 ### Observer Note (Required)
 
 After your final summary, add a brief **Observer Note** (max 3 sentences). This
-is a purely informational observation for the execute agent — you are NOT
-suggesting changes, just reporting what you noticed:
+is a purely informational observation for the execute agent — you are just
+reporting what you noticed:
 
 - How does your change interact with surrounding code?
 - Did you notice any patterns, conventions, or structural quirks in the file?
