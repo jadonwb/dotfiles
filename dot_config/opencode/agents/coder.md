@@ -13,6 +13,7 @@ permission:
   glob: allow
   grep: allow
   bash:
+    "*": deny
     "rg *": allow
     "fd *": allow
     "fd-find *": allow
@@ -31,9 +32,9 @@ permission:
     "cp *": allow
     "sed *": allow
     "awk *": allow
-    "*": deny
   external_directory:
     "/tmp/**": allow
+    # Intentionally restricted to project directory — coder operates within $PWD only
     "$PWD/**": allow
   webfetch: deny
   websearch: deny

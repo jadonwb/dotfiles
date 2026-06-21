@@ -23,6 +23,7 @@ permission:
     "git log *": allow
     "git show *": allow
     "git diff *": allow
+    "git status *": allow
     "git branch *": allow
     "git blame *": allow
     "git stash list *": allow

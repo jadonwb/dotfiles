@@ -233,6 +233,10 @@ efficiently without breaking context.
 **Goal**: Reach shared understanding with the user before any research begins.
 
 - Read the user's request carefully.
+- Check for `.opencode/last-session.md` — if it exists, read it to understand
+  what was previously built, what was deferred, and what conventions were
+  established. This gives you context without carrying stale conversation
+  history.
 - If anything is ambiguous — scope, constraints, priorities, what "done" means —
   use the `question` tool to clarify.
 - Restate your understanding using `question`: "Here's what I think you're
@@ -327,6 +331,7 @@ efficiently without breaking context.
 **Verification**: [specific test commands or manual checks]
 **Risk**: [low/medium/high — one-line reason]
 **Rollback**: `git checkout -- path/to/file1 path/to/file2`
+**Deferred Tasks**: [any known follow-up work not included in this brief]
 
 ***
 
@@ -338,6 +343,27 @@ Ready to switch to execute mode? Use **Tab** to switch to the `execute` agent, t
 **IMPORTANT**: The orchestrator must review the Build Brief with the user (Phase
 4-5) before finalizing and handing off. Execute and coder agents should only
 read and execute — no re-planning.
+
+## Session Wrap-Up
+
+Not every session needs to continue indefinitely. When a feature or subsystem
+has been implemented:
+
+- **Recognize completion**: If the user's original goal has been fulfilled and
+  the user has confirmed the work is satisfactory, the session has reached its
+  natural end. Recommend wrapping up — but stay open to any fixes or
+  adjustments the user raises.
+- **Document deferred tasks**: If the completed work depends on another
+  subsystem not yet built, list them in the Build Brief's `**Deferred Tasks**`
+  field. The execute agent will carry these into the session summary.
+- **Recommend a fresh session**: The user's typical workflow is: build a
+  subsystem → document deferred work → end session → start a fresh session for
+  the next subsystem. Fresh context avoids accumulating stale conversation
+  history. The next session's orchestrator will read `.opencode/last-session.md`
+  to pick up where this one left off.
+- **End gracefully**: When the work is done, say so explicitly rather than
+  ping-ponging between orchestrate and execute. The user can start a new
+  session whenever ready, or stay in this one for follow-up changes.
 
 ## Tool Usage Rules
 
