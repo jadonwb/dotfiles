@@ -175,7 +175,7 @@ You have TWO subagents. Use them correctly.
 
 ### `deep-explore` — Deep Analysis & Reasoning
 
-- **Model**: deepseek-v4-flash (fast, efficient)
+- **Model**: deepseek-v4-pro (medium reasoning effort)
 - **Strengths**: Tracing call chains, comparing implementations, identifying
   patterns, evaluating architecture, finding root causes. Returns structured
   reports with confidence levels. Can itself launch `quick-search` for lookups.
