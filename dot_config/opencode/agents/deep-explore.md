@@ -144,14 +144,11 @@ on:
 - What does this code do?
 - How does it relate to my investigation question?
 - What questions does this answer, and what new questions does it raise?
-- **Stop or continue?** Can you answer the question now? If yes, report
-  immediately. If no, will the NEXT file have a high chance of resolving it? If
-  not, suggest a `[debug]` task instead of reading more.
 
 Do not rush to the next file — let the analysis shape where you go next. Update
-your `todowrite` to reflect what you've learned. If you've read 5+ files, stop
-and consider reporting over continuing (or suggest a `[debug]` task per Phase
-1).
+your `todowrite` to reflect what you've learned. If you've read several files
+and the remaining uncertainty is runtime-related, suggest a `[debug]` task
+rather than reading more code.
 
 ### Phase 3: Self-Checkpoints
 
@@ -193,32 +190,28 @@ Include a **Debug Task Suggestions** section whenever:
 Use the exact `#### [debug]` format from the Debug System Awareness section
 above. The orchestrator will include these in the Build Brief.
 
-### Stop Condition (Exit Point) — HARD RULES
+### Stop Condition (Exit Point)
 
-**You MUST return when you have high confidence** that your research has
-illuminated the subject matter or found the problem. Do not continue reading for
-completeness — you are not writing documentation, you are answering a question.
+**Stop and return when you have high confidence** that your research has
+illuminated the subject matter or found the problem. Do not continue reading
+for completeness — you are not writing documentation, you are answering a
+question.
 
-**You MUST stop at ~25 steps.** If you haven't reached high confidence by step
-25, stop immediately. Report what you've found with appropriate confidence
-levels. Mark what remains uncertain. Include suggested `[debug]` tasks for any
-remaining uncertainty — especially runtime behavior that debug can reproduce and
-static reading cannot resolve.
+**Prefer to stop around step 25.** If you haven't reached high confidence by
+then, report what you've found with appropriate confidence levels. Mark what
+remains uncertain. Include suggested `[debug]` tasks for any remaining
+uncertainty — especially runtime behavior that debug can reproduce and static
+reading cannot resolve.
 
-**Debug suggestion IS a stop condition — use it immediately.** If running code,
-reproducing a failure, or checking runtime behavior would be more productive
-than further reading, suggest a `[debug]` task and return NOW. This is not a
-fallback — it's a first-choice exit when static analysis has diminishing
-returns.
+**When to suggest debug instead of reading more:**
+- You've analyzed the relevant code paths but can't reproduce the issue
+- The uncertainty is about runtime behavior (races, build errors, test
+  failures, environment differences)
+- Running code or checking logs would resolve the question faster than
+  reading more files
 
-**Three hard exit triggers:**
-
-1. High confidence reached → report and return
-2. ~25 steps reached → report with debug suggestions and return
-3. Debug investigation would be faster → suggest debug tasks and return
-
-Do NOT spin. Do NOT read "just one more file." Your job is to answer the
-question or hand off to debug — not to achieve exhaustive coverage.
+Your job is to illuminate the subject matter — through analysis when
+possible, through debug suggestions when analysis hits diminishing returns.
 
 ## Subagent Usage
 

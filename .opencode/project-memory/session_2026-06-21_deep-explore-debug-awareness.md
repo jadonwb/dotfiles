@@ -61,3 +61,22 @@ Added hard structural guardrails to deep-explore to prevent endless spinning: re
 #### Design Decisions
 - Flash model rejected after research — architecture correctly assigns pro to all reasoning roles
 - Three-layer defense: (1) 25-step hard cap, (2) 7-file hard limit, (3) MUST-stop at ~15 steps with debug escape hatch
+
+---
+
+### Continuation: 2026-06-21 — Coder Removal + Anti-Spin Walkback
+
+#### Summary
+Removed the coder agent entirely — execute now applies all file edits directly via the `edit` tool. Emphasized debug delegation for test/build failures. Added Brief Quality Checklist to orchestrator to prevent lax Briefs. Added no-auto-commit rules (execute and orchestrator both know to wait for user to mention committing). Walked back deep-explore's aggressive HARD RULES/MUST language that was scaring agents into using quick-search instead.
+
+#### Changes
+- `coder.md` — +1: `disable: true`
+- `execute.md` — major rewrite: all 19 coder references removed, direct editing flow, debug emphasis, no-auto-commit rule
+- `orchestrate.md` — Brief Quality Checklist (7 items), coder refs removed, no-auto-commit note
+- `deep-explore.md` — softened: removed HARD RULES, MUST, Three hard exit triggers, per-read Stop/continue. Kept debug awareness, steps:30, reasoning_effort:low
+- `review.md` — fixed 2 stale coder references
+
+#### Design Decisions
+- Coder removed because the indirection (execute→coder→edit) added latency without benefit for this workflow
+- Anti-spin walkback: the aggressive language worked TOO well — agents stopped using deep-explore entirely. Softer guidance preserves focus without avoidance
+- Commit policy: agents stage freely but only commit when user explicitly says "commit" or equivalent

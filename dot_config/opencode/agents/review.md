@@ -59,7 +59,7 @@ are powered by DeepSeek V4 Pro with medium reasoning effort.
   (orphaned callers, leftover imports). Tier 2 (only if diff is >50 lines or
   touches public APIs): check docs and test coverage. Be fast — surface obvious
   issues, do not exhaustively audit.
-- **Context**: The execute agent invokes you after the coder has applied changes.
+- **Context**: The execute agent invokes you after changes have been applied.
   You receive the git diff or change summary as context. You have read access to
   the entire home directory. Focus on the changed project — only check related
   projects if the diff explicitly modifies cross-project dependencies (shared
@@ -156,7 +156,7 @@ responsibilities:
   documentation, change `**Status**` to `archived`. Do NOT delete archived
   files.
 - **Prune stale sections**: Within an active session file, you may remove
-  individual `### Coder Observations` or `### Review Notes` sections that are
+  individual `### Review Notes` sections that are
   fully resolved, replacing with `[Pruned: resolved]`.
 - **Report for session memory**: After reviewing, tell the execute agent which
   findings should be recorded in the active session file under `### Review
