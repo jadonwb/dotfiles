@@ -1,5 +1,6 @@
 # Session: 2026-06-21 — Deep-Explore Debug Awareness
-**Status**: active
+**Status**: completed
+**Note**: SUPERSEDED 2026-06-21 — deep-explore rewritten to dossier-based model; Debug System Awareness, Phase methodology, 7-file limit, and HARD RULES sections removed in the quick-search/deep-explore rework session.
 
 ## Summary
 Made deep-explore aware of the `[debug]` task system and lowered its reasoning_effort from `medium` to `low`. Deep-explore can now suggest `[debug]` tasks at checkpoints and at its stop condition — debug suggestion IS now a valid exit condition.
