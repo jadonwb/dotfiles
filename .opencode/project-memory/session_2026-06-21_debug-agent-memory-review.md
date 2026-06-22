@@ -1,5 +1,5 @@
 # Session: 2026-06-21 — Debug Agent, Session Memory & Review Upgrade
-**Status**: active
+**Status**: completed
 
 ## Summary
 Built a debug subagent for failure diagnosis, redesigned the session memory system from a single file to a per-session directory, upgraded the review agent to V4 Pro, and unified the Brief format to support both [edit] and [debug] task types. Also fixed contradictions and bloat across all agent files from the prior session.

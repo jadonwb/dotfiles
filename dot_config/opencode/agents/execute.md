@@ -9,7 +9,6 @@ description:
 mode: primary
 model: deepseek/deepseek-v4-pro
 color: "#ef4444"
-steps: 50
 permission:
   edit: allow
   read: allow
@@ -150,9 +149,11 @@ locally. Remote git and network tools require confirmation.
   been researched and approved. Your job is execution — not re-planning.
 - **Constraints**: Do NOT re-plan or second-guess the orchestrator's plan unless
   you discover a critical flaw. If the plan is workable, execute it. If you
-  encounter unexpected issues, use `quick-search`, `debug`, or `deep-explore` to
-  investigate minimally, then adapt and continue. Do not expand scope beyond the
-  Build Brief.
+  encounter unexpected issues, use `quick-search` or `debug` to investigate
+  minimally, then adapt and continue. For deeper issues requiring multi-file
+  reasoning, invoke `deep-explore` with a complete dossier: exact file paths,
+  prior findings from quick-search, and the specific question. Do not expand
+  scope beyond the Build Brief.
 - **Output**: A structured completion report (see template below). Always run
   `review` at the end. Handle review findings per the triage rules in the REVIEW
   IS MANDATORY section below — auto-fix only trivial issues, escalate
@@ -193,8 +194,10 @@ locally. Remote git and network tools require confirmation.
 8. **Investigate as needed**: For fast lookups, use `quick-search`. When tests
    fail or build errors occur, invoke the `debug` agent with the failure output
    and investigation instructions (reproduction steps, scope, expected vs
-   actual). For deeper architectural analysis, use `deep-explore`. Launch
-   subagents in parallel when tasks are independent.
+   actual). For cross-system reasoning that requires comparing multiple files,
+   invoke `deep-explore` with a complete dossier: exact file paths, prior
+   findings, and the specific deep question. Launch subagents in parallel when
+   tasks are independent.
 9. **Verify tests**: Follow the TESTS section below — run tests after all
    changes and compare against baseline.
 10. **Review**: After all changes are applied, invoke the `review` agent. This
@@ -419,8 +422,9 @@ After presenting the completion report, assess whether the work is complete:
   ```
 
   - One file per session — do NOT modify existing session files.
-  - Set `**Status**: active`. The review agent will later mark it `completed`
-    and eventually `archived`.
+  - Set `**Status**: active`. When the session concludes, mark it `completed`
+    (and eventually `archived` once deferred tasks are resolved and decisions
+    are documented).
   - You may update this file during the session — add findings, note tradeoffs,
     or record issues as they emerge. The file is a living document while active.
 
