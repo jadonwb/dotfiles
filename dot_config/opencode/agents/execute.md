@@ -4,9 +4,8 @@ description:
   in [edit], [debug], or [test] modes. Divides multi-file edits among worker
   subagents. Handles debugging via the debug cycle
   (log→build→test→diagnose→fix). Reports results back — does not write session
-  memory, run review, or wrap up sessions. Invoke via the task tool or directly
-  for quick tasks.
-mode: all
+  memory, run review, or wrap up sessions. Invoked by orchestrator only.
+mode: subagent
 model: deepseek/deepseek-v4-pro
 color: "#ef4444"
 permission:
@@ -108,6 +107,7 @@ permission:
   task:
     "*": deny
     search: allow
+    researcher: allow
     worker: allow
   external_directory:
     "/tmp/**": allow
@@ -214,8 +214,8 @@ determines your behavior:
 3. **Read output**: Trace the failure through the log output. Identify where
    expected behavior diverges from actual.
 4. **Diagnose**: Form a hypothesis. For simple failures, reason directly. For
-   complex multi-file failures, invoke `search` in `[research]` mode with the
-   failure context and specific question.
+   complex multi-file failures, invoke `researcher` in `[research]` mode with
+   the failure context and specific question.
 5. **Apply fix**: Apply the fix directly or delegate to `worker`. For fixes
    requiring >10 lines or >2 files, prefer delegation.
 6. **Remove logging**: Clean up ALL temporary logging added in step 1.
@@ -280,6 +280,9 @@ iteration.
   orchestrator handles all of that. Report what you did and stop.
 - **PARALLEL WHEN POSSIBLE.** Independent operations (worker launches, file
   reads, bash commands) launch in parallel — not sequentially.
+- **SEARCH IS FOR DEBUGGING ONLY.** You may invoke `researcher` in `[research]`
+  mode during the debug cycle (step 4). Never use `search` to review your own
+  changes — the orchestrator handles review.
 - **TRUST THE BRIEF.** The orchestrator researched and approved every change.
   Find/Replace strings are exact. If one doesn't match, the file changed since
   the Brief was written — report the mismatch, don't guess.

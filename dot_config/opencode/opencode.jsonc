@@ -2,7 +2,6 @@
     "$schema": "https://opencode.ai/config.json",
     "plugin": [
         "@mohak34/opencode-notifier@latest",
-        "opencode-working-memory",
         "@tarquinen/opencode-dcp@latest",
     ],
     "theme": "arrowlake_light",
