@@ -147,7 +147,7 @@ determines your behavior:
 | --------- | --------------------------------------------- | ---------------------------------------------- |
 | `[edit]`  | Apply file edits from a Build Brief           | Orchestrator sends approved Find/Replace pairs |
 | `[debug]` | Diagnose and fix failures via the debug cycle | Tests fail, builds break, behavior is wrong    |
-| `[test]`  | Run tests and report results (future)         | Reserved for test-automation tasks             |
+| `[test]`  | Run tests and report results                  | Use to verify behavior before/after changes    |
 
 ---
 
@@ -168,9 +168,11 @@ determines your behavior:
 
 1. **Count the edits**. If the orchestrator sent 3 or fewer total edits across
    all files, apply them directly using the `edit` tool.
-2. **If >3 edits**: Delegate. Group edits by file. For each file, launch one
-   `worker` subagent with ALL edits for that file. Launch all workers in
-   PARALLEL in a single message.
+2. **If >3 edits**: Delegate. Group edits by file. **Cap at 5 edits per
+   worker.** If a single file has more than 5 edits, split into batches of up to
+   5 each, assigning each batch to a separate worker. Workers for different
+   files launch in PARALLEL. Workers for the **same file** (batched) must run
+   SEQUENTIALLY — launch the next batch only after the previous one finishes.
 3. **Handle worker failures**: If any worker reports a Find string not found or
    ambiguous, diagnose the mismatch yourself — do NOT re-delegate to a worker.
 4. **Verify**: After all edits apply, run `git diff --stat` to confirm every
@@ -219,8 +221,13 @@ determines your behavior:
 5. **Apply fix**: Apply the fix directly or delegate to `worker`. For fixes
    requiring >10 lines or >2 files, prefer delegation.
 6. **Remove logging**: Clean up ALL temporary logging added in step 1.
-7. **Re-test**: Run the reproduction command again. Confirm the fix.
+7. **Re-test**: Run the reproduction command again. If the fix works, proceed to
+   report. If it fails, you may repeat steps 1–7 up to **2 more times** (3
+   cycles total). After 3 total cycles without resolution, **STOP** — report the
+   unresolved failure to the orchestrator with what you tried. Do NOT loop
+   indefinitely.
 8. **Report**: Present diagnosis, root cause, fix applied, and test results.
+   Include the cycle count in your report.
 
 **Output format:**
 
@@ -235,7 +242,7 @@ determines your behavior:
 
 ---
 
-## Mode: `[test]` — Test Execution (Future)
+## Mode: `[test]` — Test Execution
 
 **When you see `### [test]` in your task:**
 
@@ -252,8 +259,8 @@ determines your behavior:
 3. If tests fail, note which tests and their error messages.
 4. Do NOT attempt to fix failures — only report them.
 
-**This mode is a stub.** Full test-automation workflows are planned for a future
-iteration.
+**This mode is functional.** Run the specified test command and report results.
+Do NOT attempt to fix failures.
 
 **Output format:**
 
@@ -280,12 +287,25 @@ iteration.
   orchestrator handles all of that. Report what you did and stop.
 - **PARALLEL WHEN POSSIBLE.** Independent operations (worker launches, file
   reads, bash commands) launch in parallel — not sequentially.
-- **SEARCH IS FOR DEBUGGING ONLY.** You may invoke `researcher` in `[research]`
+- **RESEARCHER FOR DEBUG USE ONLY.** You may invoke `researcher` in `[research]`
   mode during the debug cycle (step 4). Never use `search` to review your own
   changes — the orchestrator handles review.
 - **TRUST THE BRIEF.** The orchestrator researched and approved every change.
   Find/Replace strings are exact. If one doesn't match, the file changed since
   the Brief was written — report the mismatch, don't guess.
+- **FAILURES SURFACE UP, NOT SIDEWAYS.** If your `[edit]` mode changes cause
+  test failures, build errors, or unexpected behavior, report the failures to
+  the orchestrator. Do NOT attempt to diagnose or fix — that is the
+  orchestrator's decision, not yours. Only `[debug]` mode handles failure
+  diagnosis and fixes.
+- **DEBUG CYCLES ARE BOUNDED.** The debug cycle (log → test → diagnose → fix →
+  re-test) runs at most **3 times**. After 3 cycles without resolution, STOP
+  and report the unresolved failure to the orchestrator. Do not iterate
+  indefinitely.
+- **VERIFY AND RETURN.** Once all edits are applied and verified (git diff
+  confirms expected changes), report back to the orchestrator immediately. Do
+  NOT run additional tests, checks, explorations, or follow-up commands unless
+  the task explicitly instructs you to. Your job is done — return control.
 
 ## Tool Usage Rules
 

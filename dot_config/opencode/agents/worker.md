@@ -31,11 +31,9 @@ permission:
     "mkdir *": allow
     "touch *": allow
     "cp *": allow
-    "sed *": allow
-    "awk *": allow
   external_directory:
     "/tmp/**": allow
-    "$PWD/**": allow
+    "~/**": allow
   webfetch: deny
   websearch: deny
   task: deny
