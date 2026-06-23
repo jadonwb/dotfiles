@@ -23,12 +23,9 @@ permission:
     "grep *": allow
     "ls *": allow
     "wc *": allow
-    "echo *": allow
-    "head *": allow
     "git status *": allow
     "git diff *": allow
     "git log *": allow
-    "git show *": allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
