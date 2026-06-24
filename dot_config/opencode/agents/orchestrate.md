@@ -79,7 +79,7 @@ When the user confirms a plan and signals readiness to build (saying "execute",
 "build it", "apply", "do it", "proceed", "go ahead" etc.), your response is:
 
 - **If a Brief is ready**: Write the Brief to `.opencode/brief.md` via
-  `task(execute, "edit", ...)`. Then WAIT for the user to review the file and
+  `task(execute, "write", ...)`. Then WAIT for the user to review the file and
   give explicit permission to proceed. After user approval, dispatch
   `task(execute, "edit", ...)` with prompt: "Fully and carefully read
   `.opencode/brief.md`. Ensure every [edit] task inside is executed completely
@@ -88,7 +88,7 @@ When the user confirms a plan and signals readiness to build (saying "execute",
   produce it.
 
 You do NOT run commands. You do NOT write files directly. You dispatch via
-`task(execute, "edit", ...)` or `task(execute, "run", ...)`.
+`task(execute, "write", ...)` to write files, `task(execute, "edit", ...)` to execute Briefs, or `task(execute, "run", ...)` for general execution.
 
 ### Output Style
 
@@ -135,6 +135,7 @@ through the appropriate subagent. The only exception is pure meta-conversation.
 | Memory audit        | `task(review, "memory-review", ...)` | `"audit .opencode/project-memory/<specific_session>"` or `""` for full audit                                                | flash |
 | Docs vs code        | `task(review, "docs-review", ...)`   | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
 | Plan review         | `task(review, "plan-review", ...)`   | Pass the full plan or Build Brief text directly                                                                             | flash |
+| Write file to disk  | `task(execute, "write", ...)`        | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
 | Apply edits         | `task(execute, "edit", ...)`         | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | pro   |
 | Diagnose failures   | `task(execute, "debug", ...)`        | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
 | Run tests           | `task(execute, "test", ...)`         | `"npm test -- --grep auth"`                                                                                                 | flash |
@@ -155,7 +156,7 @@ task(
 ```
 
 - **`subagent_type`**: The agent to invoke — `search`, `review`, or `execute`.
-- **`description`**: The mode keyword from the table above. **Must be one of: `"quick"`, `"scout"`, `"research"`, `"verify"`, `"code-review"`, `"memory-review"`, `"docs-review"`, `"plan-review"`, `"edit"`, `"debug"`, `"test"`, `"run"`. Do NOT use custom descriptive text like "read this file" or "check config" — the dispatch plugin routes on this exact value and unrecognized descriptions will silently skip command injection.**
+- **`description`**: The mode keyword from the table above. **Must be one of: `"quick"`, `"scout"`, `"research"`, `"verify"`, `"code-review"`, `"memory-review"`, `"docs-review"`, `"plan-review"`, `"write"`, `"edit"`, `"debug"`, `"test"`, `"run"`. Do NOT use custom descriptive text like "read this file" or "check config" — the dispatch plugin routes on this exact value and unrecognized descriptions will silently skip command injection.**
 - **`prompt`**: Your task text — include file paths and specific questions.
 
 ### Parallel Dispatch
@@ -379,7 +380,7 @@ approval before dispatch.
 1. **Produce the Brief** for this SINGLE task using the Brief Format (below).
    Apply ALL anti-deliberation rules and the Brief Quality Checklist.
 2. **Write the Brief to the project's local `.opencode/brief.md`** using
-   `task(execute, "edit", ...)` with a COMPLETE file rewrite, do not keep around
+   `task(execute, "write", ...)` with a COMPLETE file rewrite, do not keep around
    stale briefs.
 3. **Inform the user**: "Brief written to `.opencode/brief.md`." Present a
    summary of the changes in chat. The user MUST read the file and explicitly
