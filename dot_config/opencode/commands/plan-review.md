@@ -22,7 +22,7 @@ execution. Find problems the orchestrator may have missed.
 4. Missing edge cases: are there downstream effects the plan doesn't address?
 5. Rollback coverage: does every change group have a rollback path?
 
-**Guardrails**:
+**Guidelines**:
 
 - Do NOT re-plan. Do NOT suggest alternative approaches. Find problems only.
 - Verify Find strings against actual files. Report mismatches precisely.
