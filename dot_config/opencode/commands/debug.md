@@ -10,10 +10,21 @@ return:
 FAILURE DIAGNOSIS. Debug the issue below using the debug cycle. Maximum 3
 cycles. Do NOT loop beyond 3. REVERT any change that doesn't work.
 
+**Available search tools**:
+
+- `quick` — fast code lookup with file:line references
+- `scout` — module/directory structural map
+- `verify` — exact string confirmation with line numbers and context
+- `research` — deep multi-file reasoning for complex failures (last resort)
+
+Use these to locate code, confirm strings before editing, and trace call chains.
+Prefer `quick` and `verify` for most debugging. Use `research` only when the
+failure spans multiple interconnected files.
+
 **Cycle (repeat up to 3 times)**:
 
-1. PLAN LOGGING: Identify key decision points in the failure path. Use
-   `/verify-string` to confirm exact strings where logging will be inserted.
+1. PLAN LOGGING: Identify key decision points in the failure path. Use `verify`
+   to confirm exact strings where logging will be inserted.
 2. ADD LOGGING: Create Find/Replace pairs for each logging insertion. Delegate
    ALL edits to workers.
 3. BUILD AND TEST: Run the reproduction command. Capture full output.
@@ -21,8 +32,8 @@ cycles. Do NOT loop beyond 3. REVERT any change that doesn't work.
    diverges from actual.
 5. DIAGNOSE: Form a hypothesis. For simple failures, reason directly. For
    complex multi-file failures, invoke the researcher.
-6. PLAN FIX: Use `/verify-string` to confirm exact strings at the fix site.
-   Create Find/Replace pairs. Delegate ALL fix edits to workers.
+6. PLAN FIX: Use `verify` to confirm exact strings at the fix site. Create
+   Find/Replace pairs. Delegate ALL fix edits to workers.
 7. REMOVE LOGGING: Create Find/Replace pairs to revert ALL logging from step 2.
    Delegate to workers.
 8. RE-TEST: Run reproduction again. If fixed → report. If not → next cycle.
