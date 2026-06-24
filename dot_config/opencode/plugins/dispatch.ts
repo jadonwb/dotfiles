@@ -13,6 +13,7 @@ const DESC_TO_FILE: Record<string, string> = {
   scout: "scout-search",
   research: "deep-research",
   verify: "verify-string-search",
+  write: "execute-write",
   edit: "execute-edit",
   debug: "execute-debug",
   test: "execute-test",
@@ -45,7 +46,7 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
       const jsonSchema = output.jsonSchema;
       if (jsonSchema?.properties?.description) {
         jsonSchema.properties.description.anyOf = [
-          { enum: ["quick", "scout", "research", "verify", "code-review", "memory-review", "docs-review", "plan-review", "edit", "debug", "test", "run"] },
+          { enum: ["quick", "scout", "research", "verify", "code-review", "memory-review", "docs-review", "plan-review", "write", "edit", "debug", "test", "run"] },
           { type: "string" }
         ];
         jsonSchema.properties.description.description =
