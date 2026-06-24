@@ -3,7 +3,7 @@ description:
   General-purpose search agent. Handles fast lookups, module mapping, string
   verification, and deep multi-file reasoning. Answers the question, stays in
   scope, stops when done.
-mode: all
+mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#3b82f6"
 steps: 40
