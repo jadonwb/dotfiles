@@ -8,13 +8,14 @@ return:
     locations.
 ---
 
-BUILD BRIEF EXECUTION. The task below contains Find/Replace edits. Delegate ALL
-edits to workers. Never apply edits directly except as noted below.
+BUILD BRIEF EXECUTION. Read `.opencode/brief.md` to retrieve the Build Brief,
+then execute all Find/Replace edits within. Delegate ALL edits to workers. Never
+apply edits directly except as noted below.
 
 **Worker delegation rules**:
 
-- Parse the Build Brief. Extract every `[edit]` task with its file path, Find
-  string, and Replace string.
+- Read `.opencode/brief.md`. Parse the Build Brief. Extract every `[edit]` task
+  with its file path, Find string, and Replace string.
 - Delegate EVERY edit to a worker. One worker per file.
 - Workers for DIFFERENT files: launch in PARALLEL.
 - Workers for the SAME file (batched): run SEQUENTIALLY. Cap at 5 per worker.
