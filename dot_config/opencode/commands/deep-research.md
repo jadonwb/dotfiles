@@ -5,9 +5,10 @@ model: deepseek/deepseek-v4-pro
 return:
   - Examine the research findings above. Synthesize the key conclusions and
     present them to the user with evidence from the provided files. State your
-    confidence level (high/medium/low) and propose concrete next steps based
-    on the findings.
+    confidence level (high/medium/low) and propose concrete next steps based on
+    the findings.
 ---
+
 DEEP MULTI-FILE REASONING. Read EVERY file in the dossier below. Do NOT skip
 any.
 
@@ -21,6 +22,7 @@ any.
 - Take up to 40 steps. Do NOT pad — stop when you can answer fully.
 
 **Output**:
+
 ```
 ## Research Answer: [question]
 
