@@ -16,9 +16,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "quick", arguments: args.task },
+            body: { command: "quick-search", arguments: args.task },
           })
-          return `Dispatched /quick: ${args.task.substring(0, 120)}`
+          return `Dispatched /quick-search: ${args.task.substring(0, 120)}`
         },
       }),
       scout: tool({
@@ -34,9 +34,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "scout", arguments: args.task },
+            body: { command: "scout-search", arguments: args.task },
           })
-          return `Dispatched /scout: ${args.task.substring(0, 120)}`
+          return `Dispatched /scout-search: ${args.task.substring(0, 120)}`
         },
       }),
       research: tool({
@@ -52,9 +52,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "research", arguments: args.task },
+            body: { command: "deep-research", arguments: args.task },
           })
-          return `Dispatched /research: ${args.task.substring(0, 120)}`
+          return `Dispatched /deep-research: ${args.task.substring(0, 120)}`
         },
       }),
       verify: tool({
@@ -70,9 +70,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "verify", arguments: args.task },
+            body: { command: "verify-string-search", arguments: args.task },
           })
-          return `Dispatched /verify: ${args.task.substring(0, 120)}`
+          return `Dispatched /verify-string-search: ${args.task.substring(0, 120)}`
         },
       }),
       "code-review": tool({
@@ -154,9 +154,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "edit", arguments: args.task },
+            body: { command: "execute-edit", arguments: args.task },
           })
-          return `Dispatched /edit: ${args.task.substring(0, 120)}`
+          return `Dispatched /execute-edit: ${args.task.substring(0, 120)}`
         },
       }),
       debug: tool({
@@ -172,9 +172,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "debug", arguments: args.task },
+            body: { command: "execute-debug", arguments: args.task },
           })
-          return `Dispatched /debug: ${args.task.substring(0, 120)}`
+          return `Dispatched /execute-debug: ${args.task.substring(0, 120)}`
         },
       }),
       test: tool({
@@ -188,9 +188,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "test", arguments: args.task },
+            body: { command: "execute-test", arguments: args.task },
           })
-          return `Dispatched /test: ${args.task.substring(0, 120)}`
+          return `Dispatched /execute-test: ${args.task.substring(0, 120)}`
         },
       }),
       run: tool({
@@ -204,9 +204,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "run", arguments: args.task },
+            body: { command: "execute-run", arguments: args.task },
           })
-          return `Dispatched /run: ${args.task.substring(0, 120)}`
+          return `Dispatched /execute-run: ${args.task.substring(0, 120)}`
         },
       }),
     },
