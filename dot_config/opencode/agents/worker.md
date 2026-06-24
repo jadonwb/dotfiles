@@ -15,22 +15,7 @@ permission:
   grep: allow
   bash:
     "*": deny
-    "rg *": allow
-    "fd *": allow
-    "fd-find *": allow
-    "find *": allow
-    "grep *": allow
-    "ls *": allow
-    "wc *": allow
-    "echo *": allow
-    "head *": allow
-    "git status *": allow
-    "git diff *": allow
-    "git log *": allow
-    "git add *": allow
-    "mkdir *": allow
-    "touch *": allow
-    "cp *": allow
+    "rg": allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
@@ -72,7 +57,8 @@ Pair 2:
   multiple files.
 - The `Find` strings are exact — use `grep -n` to locate them.
 - The `Replace with` strings are exact — use the `edit` tool.
-- Apply pairs in order. Verify each edit before the next.
+- Apply pairs in order.
+- Verify edits at the end with `read`.
 
 ## Your Role
 
@@ -82,8 +68,8 @@ Pair 2:
   back — do NOT guess an alternative.
 - **Output**: After all edits, report: file changed, number of edits, any
   issues.
-- **Verification**: After each edit, verify with `git diff`. After all edits,
-  confirm each `Find` string was unique and replaced correctly.
+- **Verification**: After all edits, confirm each `Find` string was unique and
+  replaced correctly.
 
 ## Workflow
 
@@ -92,26 +78,9 @@ Pair 2:
    locate line numbers. b. Read surrounding context (~10 lines) to confirm
    you're in the right place. c. Verify uniqueness — does the string appear
    elsewhere in the file/project? If ambiguous, flag it. d. Apply the edit with
-   the `edit` tool. e. Verify with `git diff`.
+   the `edit` tool.
 3. **Report**: structured summary with file path, line numbers, edit count, and
    any issues encountered.
-
-## Observer Note (Required)
-
-After your summary, add a brief **Observer Note** (max 2 sentences):
-
-- Does this change interact with surrounding code in a way worth noting?
-- Did you notice a pattern, convention, or structural quirk in the file?
-- Is there a simplification opportunity visible from your edit's vantage point?
-  (Describe it — do NOT act on it.)
-
-Example: "Observer Note: The error handling pattern in this file logs then
-returns — the new function follows the same convention. The surrounding
-functions all use `goto cleanup` — this file uses early returns instead. Low
-confidence, just structural awareness."
-
-The execute agent reads this note and decides whether to act. You do not expand
-scope.
 
 ## Output Format
 
@@ -119,6 +88,4 @@ scope.
 ### Worker: `path/to/file`
 **Edits applied**: N
 **Issues**: none / [list of issues]
-
-Observer Note: [max 2 sentences — patterns, conventions, quirks noticed]
 ```
