@@ -8,7 +8,7 @@ description:
   implementation.
 mode: primary
 model: deepseek/deepseek-v4-pro
-color: "#3F3BF5"
+color: "#3f3bf5"
 options:
   reasoning_effort: max
 permission:
