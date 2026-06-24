@@ -109,6 +109,74 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
           return `Dispatched /docs: ${args.task.substring(0, 120)}`
         },
       }),
+      edit: tool({
+        description:
+          "Apply file edits from a Build Brief. Delegates all Find/Replace edits to workers. Uses execute agent with pro model.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe(
+              "Task description — the Build Brief with Find/Replace pairs"
+            ),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "edit", arguments: args.task },
+          })
+          return `Dispatched /edit: ${args.task.substring(0, 120)}`
+        },
+      }),
+      debug: tool({
+        description:
+          "Diagnose and fix failures via the debug cycle (max 3 cycles). Delegates all changes to workers using verify-string for target strings. Uses execute agent with pro model.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe(
+              "Task description — reproduction command, scope, expected vs actual"
+            ),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "debug", arguments: args.task },
+          })
+          return `Dispatched /debug: ${args.task.substring(0, 120)}`
+        },
+      }),
+      test: tool({
+        description:
+          "Run a test command and report results. Read-only — does not fix or diagnose. Uses execute agent with flash model.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe("Task description — the exact test command to run"),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "test", arguments: args.task },
+          })
+          return `Dispatched /test: ${args.task.substring(0, 120)}`
+        },
+      }),
+      run: tool({
+        description:
+          "Execute shell commands the orchestrator cannot run directly — git commits, curl, wget, file operations. Uses execute agent with flash model. Only when user explicitly requests.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe("Task description — the exact command to run, verbatim"),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "run", arguments: args.task },
+          })
+          return `Dispatched /run: ${args.task.substring(0, 120)}`
+        },
+      }),
     },
   }
 }
