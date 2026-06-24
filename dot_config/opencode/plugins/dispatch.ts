@@ -40,6 +40,19 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
   }
 
   return {
+    "tool.definition": async (input, output) => {
+      if (input.toolID !== "task") return;
+      const jsonSchema = output.jsonSchema;
+      if (jsonSchema?.properties?.description) {
+        jsonSchema.properties.description.anyOf = [
+          { enum: ["quick", "scout", "research", "verify", "code-review", "memory-review", "docs-review", "plan-review", "edit", "debug", "test", "run"] },
+          { type: "string" }
+        ];
+        jsonSchema.properties.description.description =
+          "The mode keyword from the dispatch table. Must be one of: quick, scout, research, verify, code-review, memory-review, docs-review, plan-review, edit, debug, test, run";
+      }
+    },
+
     "tool.execute.before": async (input, output) => {
       if (input.tool !== "task") return;
 

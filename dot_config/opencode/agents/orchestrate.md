@@ -155,7 +155,7 @@ task(
 ```
 
 - **`subagent_type`**: The agent to invoke — `search`, `review`, or `execute`.
-- **`description`**: The mode keyword from the table above. Must match exactly.
+- **`description`**: The mode keyword from the table above. **Must be one of: `"quick"`, `"scout"`, `"research"`, `"verify"`, `"code-review"`, `"memory-review"`, `"docs-review"`, `"plan-review"`, `"edit"`, `"debug"`, `"test"`, `"run"`. Do NOT use custom descriptive text like "read this file" or "check config" — the dispatch plugin routes on this exact value and unrecognized descriptions will silently skip command injection.**
 - **`prompt`**: Your task text — include file paths and specific questions.
 
 ### Parallel Dispatch
