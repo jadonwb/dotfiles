@@ -16,10 +16,8 @@ permission:
   task:
     "*": deny
     worker: allow
-  quick: allow
-  scout: allow
-  research: allow
-  verify: allow
+    search: allow
+    researcher: allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
