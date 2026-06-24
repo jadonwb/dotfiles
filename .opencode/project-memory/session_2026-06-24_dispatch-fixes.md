@@ -124,3 +124,109 @@ git checkout -- dot_config/opencode/plugins/dispatch.ts dot_config/opencode/agen
 ## Brief File Reference
 
 The Build Brief that drove this session is preserved at `.opencode/brief.md` (233 lines). It defines 3 tasks (T1–T3) with a total of 7 edit sub-steps across `dispatch.ts` and `orchestrate.md`, plus one new file (`execute-write.md`).
+
+---
+
+# Additional Fix: Execute Agent Model Rerouting
+
+**Date**: 2026-06-24 (same session, follow-on cycle)
+**Agent**: execute (DeepSeek V4 Flash → Pro for planning)
+
+---
+
+## Problems Diagnosed
+
+### Problem C: Execute Agent Over-Powered for Mechanical Tasks
+
+**Symptom**: The execute agent was running on the `pro` model (`deepseek-v4-pro`) for all subagent dispatches — including `edit`, `write`, `run`, and `test`. These are mechanical, single-responsibility operations that don't require deep reasoning. Running them on a frontier model wasted latency and cost.
+
+**Root cause**: The `execute.md` agent definition specified `model: deepseek/deepseek-v4-pro` as a blanket default. All dispatched subagents (except the explicitly-pinned `execute-write`) inherited this without any per-mode override capability.
+
+**Fix**: Re-base the execute agent on the `flash` model. Only tasks that genuinely need pro-level reasoning (debug diagnosis, deep analysis) should be routed to pro — and those get a dedicated agent (`execute-debug`) with transparent rerouting via the dispatch plugin.
+
+### Problem D: No Debug Mode with Pro Reasoning
+
+**Symptom**: When a worker or subagent failed, the execute agent had no way to hand off failure diagnosis to a pro-backed reasoning agent. The orchestrate agent's dispatch table listed `Deep reasoning (multi-step analysis)` as `task(execute, "debug", ...)` routed to `pro`, but no `debug` description existed in the DESC_TO_FILE map, so the dispatch plugin couldn't resolve it.
+
+**Root cause**: The `debug` keyword was documented in the orchestrator prompt but not wired in `dispatch.ts`. The pattern for transparent rerouting (how `research` silently routes to the `researcher` agent rather than `execute`) existed but wasn't replicated for `debug`.
+
+**Fix**: Created `execute-debug` as a dedicated pro-backed subagent command, then wired it through the dispatch plugin's `AGENT_OVERRIDES` table — the same mechanism used for `research → researcher`. The orchestrator calls `task(execute, "debug", ...)`, and the dispatch plugin silently swaps in the `execute-debug` agent with the `pro` model.
+
+---
+
+## Changes Made
+
+### 1. `execute.md` — Re-based on flash model
+
+- Changed `model:` from `deepseek/deepseek-v4-pro` to `deepseek/deepseek-v4-flash`.
+- Removed the research reroute footnote (an implementation detail that doesn't belong in agent instructions — the dispatch plugin handles it transparently).
+- This makes all direct subagent dispatches (`edit`, `write`, `run`, `test`, `quick`, `scout`) default to the faster, cheaper flash model.
+
+### 2. `execute-debug.md` — New pro-backed debug agent
+
+Created a new subagent command file with:
+- `agent: execute-debug`, `subtask: true`, `model: deepseek/deepseek-v4-pro`
+- Instructions for failure diagnosis: read worker output, trace error chains, identify root causes, propose fixes
+- Designed to be invoked transparently by the dispatch plugin when `description: "debug"` is matched
+
+### 3. `dispatch.ts` — Wired debug rerouting
+
+- **`AGENT_OVERRIDES` table**: Added `debug: "execute-debug"` entry. This mirrors the existing `research: "researcher"` pattern — the dispatch plugin intercepts `task(execute, "debug", ...)` and silently redirects to the `execute-debug` agent (with pro model) instead of the flash-backed execute agent.
+- **`DESC_TO_FILE` map**: Added `debug: "execute-debug"` so the command file can be located and loaded.
+- **`tool.definition` hook**: The `enum` array already contained `"debug"` from the prior fix cycle, so no schema change was needed here. However, the `"write"` entry was confirmed present (it had been omitted in an intermediate state during the fix).
+
+### 4. `orchestrate.md` — Updated permissions and dispatch table
+
+- **Permissions**: Added `execute-debug: allow` to the agent permissions list (alongside the existing `execute`, `researcher`, etc.).
+- **Dispatch table row — Apply edits**: Changed model from `pro` to `flash`. Apply-edits is a mechanical Find/Replace operation — pro is unnecessary.
+- **Dispatch table row — Deep reasoning**: Changed model from `pro¹` (footnoted reference to research reroute) to `pro`. The footer explaining the research override was removed since it's now an implementation detail handled silently by the dispatch plugin. The orchestrator doesn't need to know about transparent rerouting.
+- **Dispatch options sentence**: Updated to reflect that `task(execute, "debug", ...)` calls `execute-debug` (pro) under the hood.
+
+### 5. Description string fix in `dispatch.ts`
+
+- The `tool.definition` hook's enum array was missing `"write"` in the intermediate state between fix cycles. Re-added `"write"` to the enum so the orchestrator can dispatch `task(execute, "write", ...)` without schema rejection.
+
+---
+
+## Key Design: Transparent Debug Rerouting
+
+The critical architectural decision: **orchestrator calls `task(execute, "debug", ...)` — dispatch plugin silently reroutes to pro-backed agent**.
+
+This preserves a clean mental model for the orchestrator:
+- There is one "execute" agent. The orchestrator doesn't need to track when to call `execute` vs. `execute-debug`.
+- The orchestrator uses mode keywords (`"debug"`, `"research"`) to describe the *kind of work*, not the *agent identity*.
+- The dispatch plugin handles the mapping internally via `AGENT_OVERRIDES`.
+
+This follows the existing `research → researcher` pattern: the orchestrator calls `task(research, ...)` or `task(execute, "research", ...)` and the plugin routes to the `researcher` agent with a frontier model. The orchestrator never references `researcher` or `execute-debug` by name — those are implementation details.
+
+---
+
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `dot_config/opencode/agents/execute.md` | Changed model pro→flash. Removed research reroute footnote. |
+| `dot_config/opencode/commands/execute-debug.md` | **New file**. Pro-backed debug diagnosis agent. |
+| `dot_config/opencode/plugins/dispatch.ts` | Added `debug: "execute-debug"` to AGENT_OVERRIDES and DESC_TO_FILE. Fixed missing `"write"` in enum. |
+| `dot_config/opencode/agents/orchestrate.md` | Added execute-debug permission. Updated dispatch table: Apply edits pro→flash, Deep reasoning pro¹→pro (removed footnote). |
+
+---
+
+## Key Decisions
+
+1. **Flash as default, pro only when needed** — Edit, write, run, test, quick, scout are all mechanical operations. Running them on flash saves cost and latency. The default agent model should be the cheapest that still does the job.
+
+2. **Dedicated execute-debug agent over conditional model switching** — Rather than having the execute agent dynamically choose model based on description (which would require complex prompt engineering), a separate agent file with explicit `model: deepseek/deepseek-v4-pro` is cleaner. The dispatch plugin handles the swap transparently.
+
+3. **AGENT_OVERRIDES pattern for transparent routing** — The orchestrator never names `researcher` or `execute-debug`. It uses a single abstraction ("execute") with mode keywords. This keeps the orchestrator prompt simpler and prevents the LLM from trying to reason about which agent to call.
+
+4. **Footnote removal** — The prior orchestrator prompt had a footer explaining that `task(research, ...)` actually calls the `researcher` agent. This was an implementation leak. Removing it keeps the prompt focused on *what to do*, not *how routing works*.
+
+---
+
+## Rollback
+
+```bash
+git checkout -- dot_config/opencode/agents/execute.md dot_config/opencode/agents/orchestrate.md dot_config/opencode/plugins/dispatch.ts \
+  && rm -f dot_config/opencode/commands/execute-debug.md
+```

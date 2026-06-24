@@ -23,6 +23,7 @@ permission:
     researcher: allow
     review: allow
     execute: allow
+    execute-debug: allow
   compress: allow
   external_directory:
     "/tmp/**": allow
@@ -129,21 +130,17 @@ through the appropriate subagent. The only exception is pure meta-conversation.
 | ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----- |
 | Fast code lookup    | `task(search, "quick", ...)`         | `"in src/foo.ts, find the handleClick function and report its signature"`                                                   | flash |
 | Directory mapping   | `task(search, "scout", ...)`         | `"map src/components/ — categorize files by purpose and export surface"`                                                    | flash |
-| Deep reasoning      | `task(search, "research", ...)`      | `"Question: What calls init() and what are the downstream effects?\nFiles: src/main.ts, src/init.ts, src/config.ts"`        | pro¹  |
+| Deep reasoning      | `task(search, "research", ...)`      | `"Question: What calls init() and what are the downstream effects?\nFiles: src/main.ts, src/init.ts, src/config.ts"`        | pro   |
 | String verification | `task(search, "verify", ...)`        | `"in src/foo.ts, confirm: function handleClick(event:"`                                                                     | flash |
 | Code audit          | `task(review, "code-review", ...)`   | `"Review src/foo.ts src/bar.ts. Check for stale references, regressions, bugs"`                                             | flash |
 | Memory audit        | `task(review, "memory-review", ...)` | `"audit .opencode/project-memory/<specific_session>"` or `""` for full audit                                                | flash |
 | Docs vs code        | `task(review, "docs-review", ...)`   | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
 | Plan review         | `task(review, "plan-review", ...)`   | Pass the full plan or Build Brief text directly                                                                             | flash |
 | Write file to disk  | `task(execute, "write", ...)`        | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
-| Apply edits         | `task(execute, "edit", ...)`         | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | pro   |
+| Apply edits         | `task(execute, "edit", ...)`         | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | flash |
 | Diagnose failures   | `task(execute, "debug", ...)`        | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
 | Run tests           | `task(execute, "test", ...)`         | `"npm test -- --grep auth"`                                                                                                 | flash |
 | General execution   | `task(execute, "run", ...)`          | `"1. mkdir -p dir\n2. write file\n3. verify"`                                                                               | flash |
-
-¹ The plugin automatically reroutes `task(search, "research", ...)` to
-`task(researcher, ...)` for pro model. You only need to use
-[search|review|execute].
 
 ### Usage Syntax
 
