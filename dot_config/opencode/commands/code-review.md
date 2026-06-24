@@ -8,10 +8,13 @@ return:
     and a suggested fix. If the review is clean, confirm and move on.
 ---
 
-CODE CHANGE REVIEW. The changed files are specified below. Read them directly
-and look for regressions, stale references, and bugs.
+CODE CHANGE REVIEW. Read `.opencode/brief.md` first to understand the intended
+changes. The changed files are specified below. Read them and look for
+regressions, stale references, and bugs.
 
-- Read each changed file. Focus on the changed sections.
+- Read `.opencode/brief.md` first — understand what changes were intended.
+- Read each changed file. Focus on the changed sections. Verify changes match
+  the Brief.
 - Look for: stale references (renamed/deleted symbols still referenced), broken
   imports, dead code, logic errors (missing edge cases, inverted conditions).
 - If changes touch public interfaces, check callers for compatibility.
