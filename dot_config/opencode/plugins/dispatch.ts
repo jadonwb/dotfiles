@@ -5,6 +5,7 @@ import { join } from "path";
 // Descriptions that route to a different subagent for model override
 const AGENT_OVERRIDES: Record<string, string> = {
   research: "researcher",
+  debug: "execute-debug",
 };
 
 // Map short description names to command file names
@@ -50,7 +51,7 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
           { type: "string" }
         ];
         jsonSchema.properties.description.description =
-          "The mode keyword from the dispatch table. Must be one of: quick, scout, research, verify, code-review, memory-review, docs-review, plan-review, edit, debug, test, run";
+          "The mode keyword from the dispatch table. Must be one of: quick, scout, research, verify, code-review, memory-review, docs-review, plan-review, write, edit, debug, test, run";
       }
     },
 
