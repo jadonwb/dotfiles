@@ -16,9 +16,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "quick-lookup", arguments: args.task },
+            body: { command: "quick", arguments: args.task },
           })
-          return `Dispatched /quick-lookup: ${args.task.substring(0, 120)}`
+          return `Dispatched /quick: ${args.task.substring(0, 120)}`
         },
       }),
       scout: tool({
@@ -52,9 +52,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "deep-research", arguments: args.task },
+            body: { command: "research", arguments: args.task },
           })
-          return `Dispatched /deep-research: ${args.task.substring(0, 120)}`
+          return `Dispatched /research: ${args.task.substring(0, 120)}`
         },
       }),
       verify: tool({
@@ -70,9 +70,9 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "verify-string", arguments: args.task },
+            body: { command: "verify", arguments: args.task },
           })
-          return `Dispatched /verify-string: ${args.task.substring(0, 120)}`
+          return `Dispatched /verify: ${args.task.substring(0, 120)}`
         },
       }),
       "code-review": tool({
@@ -93,20 +93,52 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
           return `Dispatched /code-review: ${args.task.substring(0, 120)}`
         },
       }),
-      docs: tool({
+      "memory-review": tool({
         description:
-          "Audit .opencode/project-memory/ for stale sessions, orphaned references, and consistency issues. Uses review agent with flash model.",
+          "Audit .opencode/project-memory/ for stale sessions, orphaned references, and inconsistencies. Uses review agent with flash model.",
         args: {
           task: tool.schema
             .string()
-            .describe("Task description — any specific focus for the audit"),
+            .describe("Task description — specific session file(s) or empty for all"),
         },
         async execute(args, context) {
           await client.session.command({
             path: { id: context.sessionID },
-            body: { command: "docs", arguments: args.task },
+            body: { command: "memory-review", arguments: args.task },
           })
-          return `Dispatched /docs: ${args.task.substring(0, 120)}`
+          return `Dispatched /memory-review: ${args.task.substring(0, 120)}`
+        },
+      }),
+      "docs-review": tool({
+        description:
+          "Compare documentation against actual code. Find factual mismatches — wrong paths, outdated signatures, missing features. Uses review agent with flash model.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe("Task description — documentation file(s) to verify"),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "docs-review", arguments: args.task },
+          })
+          return `Dispatched /docs-review: ${args.task.substring(0, 120)}`
+        },
+      }),
+      "plan-review": tool({
+        description:
+          "Review a Build Brief or proposed plan for issues before execution — stale references, incomplete scope, inconsistent Find strings, missing rollbacks. Uses review agent with flash model.",
+        args: {
+          task: tool.schema
+            .string()
+            .describe("Task description — the plan or Build Brief text to review"),
+        },
+        async execute(args, context) {
+          await client.session.command({
+            path: { id: context.sessionID },
+            body: { command: "plan-review", arguments: args.task },
+          })
+          return `Dispatched /plan-review: ${args.task.substring(0, 120)}`
         },
       }),
       edit: tool({
@@ -129,7 +161,7 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
       }),
       debug: tool({
         description:
-          "Diagnose and fix failures via the debug cycle (max 3 cycles). Delegates all changes to workers using verify-string for target strings. Uses execute agent with pro model.",
+          "Diagnose and fix failures via the debug cycle (max 3 cycles). Delegates all changes to workers using verify for target strings. Uses execute agent with pro model.",
         args: {
           task: tool.schema
             .string()
