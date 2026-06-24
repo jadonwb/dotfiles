@@ -50,9 +50,12 @@ export const DispatchPlugin: Plugin = async ({ client }) => {
       const body = bodies[filename];
       if (!body) return;
 
-      // Prepend command instructions to the prompt
+      // Prepend command instructions to the prompt (idempotent — guard against
+      // the hook firing multiple times per task() call)
       const prompt = (output.args?.prompt as string) || "";
-      output.args.prompt = body + "\n\n" + prompt;
+      if (!prompt.startsWith(body)) {
+        output.args.prompt = body + "\n\n" + prompt;
+      }
 
       // Reroute subagent for model overrides
       if (AGENT_OVERRIDES[desc]) {
