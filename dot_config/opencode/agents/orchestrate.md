@@ -70,7 +70,9 @@ user**. They CANNOT see it.
 When the user signals readiness to build ("execute", "build it", "apply", "do
 it", "proceed", etc.):
 
-- **Brief is ready** → Write to `.opencode/brief.md` via `task(execute, "write", ...)`. User reviews the file, gives explicit permission, then dispatch `task(execute, "edit", ...)`.
+- **Brief is ready** → Write to `.opencode/brief.md` via
+  `task(execute, "write", ...)`. User reviews the file, gives explicit
+  permission, then dispatch `task(execute, "edit", ...)`.
 - **No Brief exists** → "Let me compile the Brief first" and produce it.
 
 All writes go through `task(execute, "write", ...)`, all Brief execution through
@@ -90,8 +92,8 @@ standards:
 All phases:
 
 - Use GitHub-flavored Markdown.
-- **Display ALL findings as regular text FIRST.** The `question` tool is for
-  the question ONLY — no content dump. Present everything, THEN ask.
+- **Display ALL findings as regular text FIRST.** The `question` tool is for the
+  question ONLY — no content dump. Present everything, THEN ask.
 - At dispatch time, do NOT use the `question` tool.
 - Summarize subagent results intelligently — don't pass through raw subagent
   output.
@@ -169,8 +171,8 @@ the job.
 ### Tool Usage Rules
 
 - **DELEGATE by default.** Use `task` for ALL code investigation.
-- **All commands go through `task(execute, ...)`.** Tests, edits, shell
-  commands — everything.
+- **All commands go through `task(execute, ...)`.** Tests, edits, shell commands
+  — everything.
 - **NEVER send a vague task.** Include the exact file path and function name.
 - **Give subagents the file paths you already know.** The orchestrator assembles
   the dossier.
@@ -590,6 +592,8 @@ Separate each task with a visible line break (`---`) for clarity.
 
 **Motivation**: Why this change is needed
 
+**File Path**: path/to/file
+
 **Before:**
 ```lang
 exact old code
@@ -629,6 +633,7 @@ WILL be done — it does not weigh options or express uncertainty.
 #### Brief Quality Checklist
 
 Before presenting the Brief, verify ALL:
+
 - Every `[edit]` task: exact file path, **Motivation**, verified Find string
   (`task(search, "verify", ...)`), Replace string, **Risk** level, and
   **Verification** command.
@@ -680,8 +685,8 @@ quick interaction. If YES, fast-path it — dispatch directly, return.
 - Trivial single-line edits: verify location then `task(execute, "edit", ...)`
 
 **Complex work (requires full protocol — Section 3):** multi-file changes,
-refactors, new features, bug investigation, or anything needing Survey →
-Discuss → Plan → Propose.
+refactors, new features, bug investigation, or anything needing Survey → Discuss
+→ Plan → Propose.
 
 ---
 
