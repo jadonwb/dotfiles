@@ -7,7 +7,11 @@ return:
     test with its full error message. Do NOT attempt to fix.
 ---
 
-TEST EXECUTION. Run the test command below and report results. Nothing more.
+# EXECUTE TEST
+
+Run the test command below and report results. Nothing more.
+
+## PROCEDURE
 
 - Run the specified command. Capture full output.
 - Report pass/fail with the exact command that was run.
@@ -23,5 +27,7 @@ TEST EXECUTION. Run the test command below and report results. Nothing more.
 **Command**: [exact command run]
 **Output**: [summary, with full error messages for failures]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

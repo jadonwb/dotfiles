@@ -8,8 +8,12 @@ return:
     discrepancies.
 ---
 
-DOCUMENTATION AUDIT. Compare the documentation below against the actual code.
-Find factual mismatches — claims in the docs that don't match reality.
+# DOCUMENTATION AUDIT
+
+Compare the documentation below against the actual code. Find factual mismatches
+and claims in the docs that don't match reality.
+
+## PROCEDURE
 
 **Methodology**:
 
@@ -42,5 +46,7 @@ Find factual mismatches — claims in the docs that don't match reality.
 ### Could Not Verify
 - [claims that couldn't be checked within step limit, with reason]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

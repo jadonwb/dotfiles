@@ -8,13 +8,16 @@ return:
     and a suggested fix. If the review is clean, confirm and move on.
 ---
 
-CODE CHANGE REVIEW. Read `.opencode/brief.md` first to understand the intended
-changes. The changed files are specified below. Read them and look for
-regressions, stale references, and bugs.
+# CODE REVIEW.
 
-- Read `.opencode/brief.md` first — understand what changes were intended.
-- Read each changed file. Focus on the changed sections. Verify changes match
-  the Brief.
+Read `.opencode/brief.md` first to understand the intended changes. The changed
+files are specified below. Read them and look for regressions, stale references,
+and bugs.
+
+## PROCEDURE
+
+- Read each changed file. Focus on the changed sections. QUICKLY verify changes
+  match the Brief.
 - Look for: stale references (renamed/deleted symbols still referenced), broken
   imports, dead code, logic errors (missing edge cases, inverted conditions).
 - If changes touch public interfaces, check callers for compatibility.
@@ -52,5 +55,7 @@ regressions, stale references, and bugs.
 ### Recommended Actions
 1. [Actionable step]
 ```
+
+## CONTEXT
 
 $ARGUMENTS
