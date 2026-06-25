@@ -3,20 +3,21 @@ agent: execute
 subtask: true
 model: deepseek/deepseek-v4-pro
 return:
-  - Review the edit results above. Confirm all expected files changed via git
-    diff. If any Find strings failed, note the specific mismatches and their
-    locations.
+  - Review the edit results above. Confirm all expected files changed. If any
+    Find strings failed, note the specific mismatches and their locations.
 ---
 
-BUILD BRIEF EXECUTION. Read `.opencode/brief.md` to retrieve the Build Brief,
-then execute all Find/Replace edits within. Delegate ALL edits to workers. Never
-apply edits directly except as noted below.
+# BRIEF EXECUTION.
+
+Read `.opencode/brief.md` to retrieve the Build Brief, then execute all
+Find/Replace edits within. Delegate ALL edits to workers. Never apply edits
+directly except as noted below.
 
 **Worker delegation rules**:
 
 - Read `.opencode/brief.md`. Parse the Build Brief. Extract every `[edit]` task
   with its file path, Find string, and Replace string.
-- Delegate EVERY edit to a worker. One worker per file.
+- Delegate all edits to a worker.
 - Workers for DIFFERENT files: launch in PARALLEL.
 - Workers for the SAME file (batched): run SEQUENTIALLY. Cap at 5 per worker.
 - Workers expect EXACT Find/Replace pairs. Pass them verbatim from the Brief.
@@ -29,11 +30,6 @@ apply edits directly except as noted below.
   what you changed.
 - For ANYTHING beyond a single line: STOP. Report the mismatch to the
   orchestrator. Do NOT guess.
-
-**After ALL edits apply**:
-
-- Run `git diff --stat`. Confirm every expected file changed.
-- Report immediately. Do NOT run tests. Do NOT run extra checks.
 
 **Output**:
 
