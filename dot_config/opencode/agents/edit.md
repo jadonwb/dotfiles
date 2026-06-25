@@ -4,7 +4,7 @@ description:
   via worker subagents. Delegates all edits — never applies multi-file changes
   directly. Diagnoses worker failures and applies trivial single-line fixes.
 mode: subagent
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-v4-flash
 color: "#ef4444"
 steps: 30
 permission:
