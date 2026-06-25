@@ -1,1 +1,3 @@
-.opencode/brief.md
+.opencode/
+.venv/
+.ruff_cache/
