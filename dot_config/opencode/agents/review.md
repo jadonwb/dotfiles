@@ -62,11 +62,10 @@ you. Read them carefully. You are read-only.
 
 ## Tool Usage
 
-- Use `git diff --stat` / `git diff --name-only` to scope changes when relevant.
-- Batch `git grep` searches in parallel:
-  `git grep "symA" & git grep "symB" & wait`.
-- Prefer `rg` and `fd` fallback to `grep`, `find` and `glob`
 - Use `read` tool to read files.
+- Prefer `rg` and `fd`, fallback to `grep`, `find` and `glob`
+- Utilize read-only `git *` commands, if project is source controlled, and it
+  helps review changes.
 - Never read entire large files — read in ~200 line batches.
 - Skip non-source directories: `node_modules/`, `.git/`, `target/`, `dist/`,
   `build/`, `__pycache__/`, `.next/`, `vendor/`.
