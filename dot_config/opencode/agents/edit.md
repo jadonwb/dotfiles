@@ -4,7 +4,7 @@ description:
   via worker subagents. Delegates all edits — never applies multi-file changes
   directly. Diagnoses worker failures and applies trivial single-line fixes.
 mode: subagent
-model: deepseek/deepseek-v4-flash
+model: deepseek/deepseek-v4-pro
 color: "#ef4444"
 steps: 30
 permission:
@@ -20,7 +20,6 @@ permission:
   external_directory:
     "/tmp/**": allow
     "~/**": allow
-  get_brief_path: allow
 ---
 
 # EDIT
@@ -33,8 +32,9 @@ fixes only.
 
 **Worker delegation rules**:
 
-- Read the brief file at the provided path. Parse the Build Brief. Extract every
-  `[edit]` task with its file path, Find string, and Replace string.
+- The brief path is provided in your task — read that file. Parse the Build
+  Brief. Extract every `[edit]` task with its file path, Find string, and
+  Replace string.
 - Delegate all edits to a worker.
 - Workers for DIFFERENT files: launch in PARALLEL.
 - Workers for the SAME file (batched): run SEQUENTIALLY. Cap at 5 per worker.
