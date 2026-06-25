@@ -123,7 +123,7 @@ through the appropriate subagent. The only exception is pure meta-conversation.
 | Docs vs code        | `task(review, "docs-review", ...)` | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
 | Plan review         | `task(review, "plan-review", ...)` | Pass the full plan or Build Brief text directly                                                                             | flash |
 | Write file to disk  | `task(execute, "write", ...)`      | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
-| Apply edits         | `task(execute, "edit", ...)`       | `"Call get_brief_path for the brief filepath. Read that file and execute the Build Brief within"`                           | flash |
+| Apply edits         | `task(execute, "edit", ...)`       | `"Fully and carefully read the brief file at the provided path. Ensure every [edit] task inside is executed completely and correctly."`                                                              | flash |
 | Diagnose failures   | `task(execute, "debug", ...)`      | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
 | Run tests           | `task(execute, "test", ...)`       | `"npm test -- --grep auth"`                                                                                                 | flash |
 | General execution   | `task(execute, "run", ...)`        | `"1. mkdir -p dir\n2. write file\n3. verify"`                                                                               | flash |
@@ -534,10 +534,7 @@ required here — the Brief is the authoritative document.
    summary of the changes in chat. The user MUST read the Brief file before
    approving. Wait for explicit approval ("yes", "go", "execute", "proceed",
    "build it"). This gate is non-negotiable.
-3. **After user approval**, dispatch via `task(execute, "edit", ...)` with the
-   prompt: "Call get_brief_path for the brief filepath. Fully and carefully read
-   that file. Ensure every [edit] task inside is executed completely and
-   correctly."
+3. **After user approval**, call `get_brief_path` for the brief filepath, then dispatch via `task(execute, "edit", ...)` passing the resolved path in the prompt: "Fully and carefully read [resolved path]. Ensure every [edit] task inside is executed completely and correctly."
 4. **When execute returns**, immediately run `task(review, "code-review", ...)`.
    Review the changed code for correctness, regressions, and clarity. Provide
    the Brief at the path from get_brief_path as context — it describes the
