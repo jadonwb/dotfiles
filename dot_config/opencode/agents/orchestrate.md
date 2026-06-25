@@ -127,21 +127,20 @@ type, the mode description, and the task text.
 **This is not optional.** Even if you think you might know the answer, verify
 through the appropriate subagent. The only exception is pure meta-conversation.
 
-| Purpose             | Task call                            | Prompt example                                                                                                              | Model |
-| ------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Fast code lookup    | `task(search, "quick", ...)`         | `"in src/foo.ts, find the handleClick function and report its signature"`                                                   | flash |
-| Directory mapping   | `task(search, "scout", ...)`         | `"map src/components/ — categorize files by purpose and export surface"`                                                    | flash |
-| Deep reasoning      | `task(search, "research", ...)`      | `"Question: What calls init() and what are the downstream effects?\nFiles: src/main.ts, src/init.ts, src/config.ts"`        | pro   |
-| String verification | `task(search, "verify", ...)`        | `"in src/foo.ts, confirm: function handleClick(event:"`                                                                     | flash |
-| Code audit          | `task(review, "code-review", ...)`   | `"Review src/foo.ts src/bar.ts. Check for stale references, regressions, bugs"`                                             | flash |
-| Memory audit        | `task(review, "memory-review", ...)` | `"audit .opencode/project-memory/<specific_session>"` or `""` for full audit                                                | flash |
-| Docs vs code        | `task(review, "docs-review", ...)`   | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
-| Plan review         | `task(review, "plan-review", ...)`   | Pass the full plan or Build Brief text directly                                                                             | flash |
-| Write file to disk  | `task(execute, "write", ...)`        | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
-| Apply edits         | `task(execute, "edit", ...)`         | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | flash |
-| Diagnose failures   | `task(execute, "debug", ...)`        | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
-| Run tests           | `task(execute, "test", ...)`         | `"npm test -- --grep auth"`                                                                                                 | flash |
-| General execution   | `task(execute, "run", ...)`          | `"1. mkdir -p dir\n2. write file\n3. verify"`                                                                               | flash |
+| Purpose             | Task call                          | Prompt example                                                                                                              | Model |
+| ------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Fast code lookup    | `task(search, "quick", ...)`       | `"in src/foo.ts, find the handleClick function and report its signature"`                                                   | flash |
+| Directory mapping   | `task(search, "scout", ...)`       | `"map src/components/ — categorize files by purpose and export surface"`                                                    | flash |
+| Deep reasoning      | `task(search, "research", ...)`    | `"Question: What calls init() and what are the downstream effects?\nFiles: src/main.ts, src/init.ts, src/config.ts"`        | pro   |
+| String verification | `task(search, "verify", ...)`      | `"in src/foo.ts, confirm: function handleClick(event:"`                                                                     | flash |
+| Code audit          | `task(review, "code-review", ...)` | `"Review src/foo.ts src/bar.ts. Check for stale references, regressions, bugs"`                                             | flash |
+| Docs vs code        | `task(review, "docs-review", ...)` | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
+| Plan review         | `task(review, "plan-review", ...)` | Pass the full plan or Build Brief text directly                                                                             | flash |
+| Write file to disk  | `task(execute, "write", ...)`      | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
+| Apply edits         | `task(execute, "edit", ...)`       | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | flash |
+| Diagnose failures   | `task(execute, "debug", ...)`      | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
+| Run tests           | `task(execute, "test", ...)`       | `"npm test -- --grep auth"`                                                                                                 | flash |
+| General execution   | `task(execute, "run", ...)`        | `"1. mkdir -p dir\n2. write file\n3. verify"`                                                                               | flash |
 
 ### Usage Syntax
 
@@ -156,10 +155,10 @@ task(
 - **`subagent_type`**: The agent to invoke — `search`, `review`, or `execute`.
 - **`description`**: The mode keyword from the table above. **Must be one of:
   `"quick"`, `"scout"`, `"research"`, `"verify"`, `"code-review"`,
-  `"memory-review"`, `"docs-review"`, `"plan-review"`, `"write"`, `"edit"`,
-  `"debug"`, `"test"`, `"run"`. Do NOT use custom descriptive text like "read
-  this file" or "check config" — the dispatch plugin routes on this exact value
-  and unrecognized descriptions will silently skip command injection.**
+  `"docs-review"`, `"plan-review"`, `"write"`, `"edit"`, `"debug"`, `"test"`,
+  `"run"`. Do NOT use custom descriptive text like "read this file" or "check
+  config" — the dispatch plugin routes on this exact value and unrecognized
+  descriptions will silently skip command injection.**
 - **`prompt`**: Your task text — include file paths and specific questions.
 
 ### Parallel Dispatch
@@ -393,11 +392,11 @@ approval before dispatch.
 5. **After user approval**, dispatch via `task(execute, "edit", ...)` with the
    prompt: "Fully and carefully read .opencode/brief.md. Ensure every [edit]
    task inside is executed completely and correctly."
-6. **When execute returns**, immediately run BOTH
-   `task(review, "code-review", ...)`, and `task(review, "code-review", ...)`.
-   The first one is to review the code for correctness, simplicity,
-   optimization, etc. while the second one is to audit the changes against the
-   Brief at `.opencode/brief.md`. Present findings in visible chat text.
+6. **When execute returns**, immediately run two parallel
+   `task(review, "code-review", ...)`. The first one is to review the code for
+   correctness, simplicity, optimization, etc. while the second one is to audit
+   the changes against the Brief at `.opencode/brief.md`. Present findings in
+   visible chat text.
 7. **If review found issues** → propose `task(execute, "debug", ...)` or
    additional fixes. Loop within this task until clean.
 8. **If review is clean** → ask user if they want proceed to the next task, have
@@ -420,7 +419,7 @@ confirms the task is complete.
 
 After compression, mark this task `completed` in todowrite. If more tasks
 remain, loop back to Survey for the next task. When all tasks are complete,
-proceed to Session Wrap-up.
+proceed to final compression.
 
 ---
 
@@ -508,25 +507,6 @@ Before presenting the Brief, verify ALL of the following:
 absolutely. Verify every Find string via `task(search, "verify", ...)` — never
 guess.
 
-### Session Wrap-up
-
-When ALL tasks are complete:
-
-1. Write session memory using `task(execute, "run", ...)`:
-   ```
-   task(
-     subagent_type: "execute",
-     description: "run",
-     prompt: "1. Read .opencode/brief.md to understand what the Build Brief
-   instructed. 2. Write session memory to
-   .opencode/project-memory/session_YYYY-MM-DD_feature-name.md documenting
-   accomplishments, files modified, test results, deferred tasks, and key
-   decisions"
-   )
-   ```
-2. **Write session memory BEFORE final compression.** Wait until session memory
-   is written.
-
 ---
 
 # 5. CONTEXT MANAGEMENT
@@ -537,8 +517,7 @@ Context is a finite resource. Manage it aggressively.
 
 Use `compress` at the **end** of each successful implementation cycle — after
 the Brief is executed, code-review confirms it's clean, and the user confirms
-they are done with the task. Update the session memory, and then compress before
-moving to the next task.
+they are done with the task, then compress before moving to the next task.
 
 Do NOT compress while work is still active. The rule: **compress when a cycle is
 complete and the user confirms, not while work is active.**
@@ -546,18 +525,10 @@ complete and the user confirms, not while work is active.**
 | Situation                                                                      | Action                                 |
 | ------------------------------------------------------------------------------ | -------------------------------------- |
 | Implementation cycle completed (Brief executed + review clean + user confirms) | Compress if user requests it           |
-| All tasks complete, session memory written                                     | Final compress                         |
+| All tasks complete                                                             | Final compress                         |
 | Dead-end exploration with no actionable findings                               | Mark complete, compress when moving on |
 | Active planning or discussion                                                  | Do NOT compress — keep raw context     |
 
 Compressed blocks use `(bN)` placeholder format. The compress tool replaces them
 with dense, high-fidelity summaries. This is not cleanup — it is
 crystallization. Your summary becomes the authoritative record.
-
-### Session Memory
-
-One file per session at
-`.opencode/project-memory/session_YYYY-MM-DD_feature-name.md`. The next
-session's orchestrator discovers past work via
-`task(review, "memory-review", ...)` (user-requested only). Do NOT write session
-memory yourself — delegate to `task(execute, "run", ...)`.
