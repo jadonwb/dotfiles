@@ -9,8 +9,11 @@ return:
     text at that location might be.
 ---
 
-EXACT STRING VERIFICATION. Find the string in the file. Confirm it. Report it
-exactly.
+# EXACT STRING VERIFICATION
+
+Find the string in the file. Confirm it. Report it exactly.
+
+## PROCEDURE
 
 - Use `grep` with the EXACT target string. Confirm line numbers. Use `read` for
   surrounding context.
@@ -41,5 +44,7 @@ exactly.
 ```
 
 ```
+
+## CONTEXT
 
 $ARGUMENTS

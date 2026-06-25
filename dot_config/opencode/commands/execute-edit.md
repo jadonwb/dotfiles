@@ -7,11 +7,13 @@ return:
     Find strings failed, note the specific mismatches and their locations.
 ---
 
-# BRIEF EXECUTION.
+# EXECUTE BRIEF EDITS.
 
 Read `.opencode/brief.md` to retrieve the Build Brief, then execute all
 Find/Replace edits within. Delegate ALL edits to workers. Never apply edits
 directly except as noted below.
+
+## PROCEDURE
 
 **Worker delegation rules**:
 
@@ -43,5 +45,7 @@ directly except as noted below.
 |------|-------|--------|
 | path/to/file | +N/-M | worker name |
 ```
+
+## CONTEXT
 
 $ARGUMENTS

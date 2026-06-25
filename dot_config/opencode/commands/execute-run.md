@@ -7,7 +7,11 @@ return:
     which step and the error. Do NOT retry without explicit instruction.
 ---
 
-GENERAL TASK EXECUTION. Execute the series of steps below sequentially.
+# EXECUTE GENERAL TASKS
+
+Execute the series of steps below sequentially.
+
+## PROCEDURE
 
 - Execute each step in order. Report results as you go.
 - If a step fails, STOP and report the failure. Do NOT retry unless told to.
@@ -26,5 +30,7 @@ GENERAL TASK EXECUTION. Execute the series of steps below sequentially.
 **Failed** (if any):
 - Step X: [what failed and the error]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

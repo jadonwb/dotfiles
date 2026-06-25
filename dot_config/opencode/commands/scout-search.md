@@ -9,8 +9,12 @@ return:
     which files to investigate deeper next.
 ---
 
-MODULE MAPPING. Survey the directories or project scope specified in the task
-below. Produce a structural map the orchestrator can navigate.
+# SCOUT SEARCH AND MAPPING
+
+Survey the directories or project scope specified in the task below. Produce a
+structural map the orchestrator can navigate.
+
+## PROCEDURE
 
 - Use `glob` FIRST to inventory all relevant files in the target scope. Then
   `read` the top ~30 lines of each to classify them.
@@ -38,5 +42,7 @@ below. Produce a structural map the orchestrator can navigate.
 ### Unclassified
 - [Any files you couldn't fully categorize with a one-line reason]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

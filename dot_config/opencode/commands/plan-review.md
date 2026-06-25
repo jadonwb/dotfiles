@@ -8,8 +8,12 @@ return:
     If the plan is sound, confirm and move on.
 ---
 
-PLAN REVIEW. Review the proposed plan or Build Brief below for issues before
-execution. Find problems the orchestrator may have missed.
+# PLAN REVIEW
+
+Review the proposed plan or Build Brief below for issues before execution. Find
+problems the orchestrator may have missed.
+
+## PROCEDURE
 
 **What to check**:
 
@@ -51,5 +55,7 @@ execution. Find problems the orchestrator may have missed.
 ### Assessment
 [Sound / Needs revision — one-line reason]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

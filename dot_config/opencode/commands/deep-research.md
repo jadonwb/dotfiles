@@ -9,12 +9,15 @@ return:
     the findings.
 ---
 
-DEEP MULTI-FILE REASONING. Read EVERY file in the dossier below. Do NOT skip
-any.
+# DEEP RESEARCH
+
+Read EVERY file in the dossier below. Do NOT skip any.
+
+## PROCEDURE
 
 - Load each file with `read`. Use `grep` aggressively to trace call chains,
   symbol definitions, and cross-file references.
-- Use `git log` or `git show` if version history illuminates the question.
+- Use `git log` or `git show` ONLY if version history illuminates the question.
 - Map data flow end-to-end. Identify every assumption and every downstream
   effect of the proposed change.
 - Stay dossier-bound. Self-discover a missing dependency ONLY if you cannot
@@ -28,10 +31,12 @@ any.
 
 **Answer**: [concise, direct answer — no hedging]
 **Evidence**: [specific file:line references with reasoning]
-**Confidence**: high / medium / low — [one-line justification]
+**Confidence**: high / medium / low — [brief justification]
 **Impact summary** (if applicable):
 - File A: [exactly what breaks and why]
 - File B: [exactly what breaks and why]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

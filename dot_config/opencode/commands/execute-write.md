@@ -7,8 +7,12 @@ return:
     report to the orchestrator with the file path and size.
 ---
 
-FULL FILE WRITE. Write the provided content to the specified file path. Do NOT
-read existing files. Do NOT delegate to workers. Just write the file.
+# EXECUTE FULL FILE WRITE
+
+Write the provided content to the specified file path. Do NOT read existing
+files. Do NOT delegate to workers. Just write the file.
+
+## PROCEDURE
 
 - Extract the target file path and content from the prompt.
 - Create parent directories if they do not exist (`mkdir -p`).
@@ -25,5 +29,7 @@ read existing files. Do NOT delegate to workers. Just write the file.
 **File**: [absolute path]
 **Size**: [bytes]
 ```
+
+## CONTEXT
 
 $ARGUMENTS

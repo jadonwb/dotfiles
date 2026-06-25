@@ -9,7 +9,11 @@ return:
     and consider a broader scout or deeper research.
 ---
 
-FAST FOCUSED LOOKUP. Find the answer quickly and report it immediately.
+## QUICK SEARCH LOOKUP
+
+Find the answer quickly and report it immediately.
+
+## PROCEDURE
 
 - Use `grep` FIRST to locate relevant files and patterns. Then `read` the
   relevant sections with appropriate context.
@@ -21,5 +25,7 @@ FAST FOCUSED LOOKUP. Find the answer quickly and report it immediately.
 - Answer concisely with file:line references. No fluff.
 
 **Output**: **Answer**: [concise answer with file:line references]
+
+## CONTEXT
 
 $ARGUMENTS
