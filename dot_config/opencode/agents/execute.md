@@ -18,7 +18,6 @@ permission:
     worker: allow
     search: allow
     researcher: allow
-  get_brief_path: allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow

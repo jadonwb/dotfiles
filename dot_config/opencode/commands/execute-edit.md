@@ -9,7 +9,7 @@ return:
 
 # EXECUTE BRIEF EDITS.
 
-Call get_brief_path for the brief filepath, then read that file to retrieve the Build Brief, then execute all
+Read the brief file at the provided path to retrieve the Build Brief, then execute all
 Find/Replace edits within. Delegate ALL edits to workers. Never apply edits
 directly except as noted below.
 
@@ -17,7 +17,7 @@ directly except as noted below.
 
 **Worker delegation rules**:
 
-- Call get_brief_path for the brief filepath. Read that file. Parse the Build Brief. Extract every `[edit]` task
+- Read the brief file at the provided path. Parse the Build Brief. Extract every `[edit]` task
   with its file path, Find string, and Replace string.
 - Delegate all edits to a worker.
 - Workers for DIFFERENT files: launch in PARALLEL.
