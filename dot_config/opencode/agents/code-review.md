@@ -43,7 +43,6 @@ permission:
   websearch: deny
   task: deny
   question: deny
-  get_brief_path: allow
 ---
 
 # CODE REVIEW
@@ -53,7 +52,7 @@ references, and bugs. Read-only. Report findings with severity and fixes.
 
 ## PROCEDURE
 
-- If provided, read the brief file at the provided path first to understand the
+- The brief path is provided in your task — read that file first to understand the
   intended changes. The changed files are specified in your task.
 - Read each changed file. Focus on the changed sections. QUICKLY verify changes
   match the Edit Brief (if provided).
@@ -71,7 +70,6 @@ references, and bugs. Read-only. Report findings with severity and fixes.
 
 ## TOOL GUIDE
 
-- Use `get_brief_path` to resolve the brief file path.
 - Prefer `rg` and `fd` for searching; fallback to `grep`, `find`, and `glob`.
 - Use `read` to inspect files.
 - Use read-only `git *` commands to inspect changes.
