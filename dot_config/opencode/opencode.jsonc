@@ -8,12 +8,7 @@
     "model": "deepseek/deepseek-v4-pro",
     "small_model": "deepseek/deepseek-v4-flash",
     "default_agent": "orchestrate",
-    "command": {
-        "brief-path": {
-            "template": "IGNORED",
-            "description": "Show the brief file path for the current session"
-        }
-    },
+
     "agent": {
         "build": {
             "disable": true
