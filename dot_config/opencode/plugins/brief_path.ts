@@ -18,5 +18,17 @@ export const BriefPathPlugin: Plugin = async () => {
         },
       }),
     },
+
+    "command.execute.before": async (input, output) => {
+      if (input.command !== "brief-path") return
+      const path = join(BRIEFS_DIR, `${input.sessionID}.brief.md`)
+      output.parts = [{ type: "text", text: path }]
+    },
+
+    "shell.env": async (input, output) => {
+      if (input.sessionID) {
+        output.env.BRIEF = join(BRIEFS_DIR, `${input.sessionID}.brief.md`)
+      }
+    },
   }
 }
