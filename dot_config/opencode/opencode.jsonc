@@ -2,7 +2,6 @@
     "$schema": "https://opencode.ai/config.json",
     "plugin": [
         "./plugins/brief_path.ts",
-        "./plugins/dispatch.ts",
         "@tarquinen/opencode-dcp@latest",
     ],
     "model": "deepseek/deepseek-v4-pro",
