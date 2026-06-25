@@ -6,6 +6,7 @@
     },
     "diff_style": "auto",
     "plugin": [
+        "./tui-plugins/brief-path.ts",
         "@tarquinen/opencode-dcp@latest",
     ],
     "keybinds": {
