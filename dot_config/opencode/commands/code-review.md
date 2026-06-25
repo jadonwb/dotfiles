@@ -10,7 +10,7 @@ return:
 
 # CODE REVIEW.
 
-Read `.opencode/brief.md` first to understand the intended changes. The changed
+Call get_brief_path for the brief filepath, then read that file first to understand the intended changes. The changed
 files are specified below. Read them and look for regressions, stale references,
 and bugs. Verify correctness.
 

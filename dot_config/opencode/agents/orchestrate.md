@@ -25,6 +25,7 @@ permission:
     execute: allow
     execute-debug: allow
   compress: allow
+  get_brief_path: allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
@@ -70,9 +71,9 @@ user**. They CANNOT see it.
 When the user signals readiness to build ("execute", "build it", "apply", "do
 it", "proceed", etc.):
 
-- **Brief is ready** → Write to `.opencode/brief.md` via
-  `task(execute, "write", ...)`. User reviews the file, gives explicit
-  permission, then dispatch `task(execute, "edit", ...)`.
+- **Brief is ready** → Call `get_brief_path` for the filepath, then write the
+  Brief to that path via `task(execute, "write", ...)`. User reviews the file,
+  gives explicit permission, then dispatch `task(execute, "edit", ...)`.
 - **No Brief exists** → "Let me compile the Brief first" and produce it.
 
 All writes go through `task(execute, "write", ...)`, all Brief execution through
@@ -122,7 +123,7 @@ through the appropriate subagent. The only exception is pure meta-conversation.
 | Docs vs code        | `task(review, "docs-review", ...)` | `"verify docs/api.md against src/api/ — check for stale or missing documentation"`                                          | flash |
 | Plan review         | `task(review, "plan-review", ...)` | Pass the full plan or Build Brief text directly                                                                             | flash |
 | Write file to disk  | `task(execute, "write", ...)`      | `"Write the following content to path/to/file.md:\n\n[full file content]"`                                                  | flash |
-| Apply edits         | `task(execute, "edit", ...)`       | `"Read .opencode/brief.md and execute the Build Brief within"`                                                              | flash |
+| Apply edits         | `task(execute, "edit", ...)`       | `"Call get_brief_path for the brief filepath. Read that file and execute the Build Brief within"`                           | flash |
 | Diagnose failures   | `task(execute, "debug", ...)`      | `"Context: auth refactor\nReproduction: npm test -- --grep auth\nScope: src/auth/\nExpected: all pass\nActual: 3 failures"` | pro   |
 | Run tests           | `task(execute, "test", ...)`       | `"npm test -- --grep auth"`                                                                                                 | flash |
 | General execution   | `task(execute, "run", ...)`        | `"1. mkdir -p dir\n2. write file\n3. verify"`                                                                               | flash |
@@ -525,22 +526,23 @@ approval before dispatch.
 This is an execution phase: output should be concise. Source citations are not
 required here — the Brief is the authoritative document.
 
-1. **Produce the Brief** using the Brief Format below. Write to
-   `.opencode/brief.md` via `task(execute, "write", ...)`. Apply ALL
+1. **Produce the Brief** using the Brief Format below. Write to the path from
+   `get_brief_path` via `task(execute, "write", ...)`. Apply ALL
    anti-deliberation rules and the Brief Quality Checklist. Do not keep stale
    briefs — this is a complete rewrite.
-2. **Inform the user.** "Brief written to `.opencode/brief.md`." Present a
+2. **Inform the user.** "Brief written to [path from get_brief_path]." Present a
    summary of the changes in chat. The user MUST read the Brief file before
    approving. Wait for explicit approval ("yes", "go", "execute", "proceed",
    "build it"). This gate is non-negotiable.
 3. **After user approval**, dispatch via `task(execute, "edit", ...)` with the
-   prompt: "Fully and carefully read .opencode/brief.md. Ensure every [edit]
-   task inside is executed completely and correctly."
+   prompt: "Call get_brief_path for the brief filepath. Fully and carefully read
+   that file. Ensure every [edit] task inside is executed completely and
+   correctly."
 4. **When execute returns**, immediately run `task(review, "code-review", ...)`.
    Review the changed code for correctness, regressions, and clarity. Provide
-   the Brief at `.opencode/brief.md` as context — it describes the intended
-   changes. Do NOT re-audit the Brief itself. Present findings in visible chat
-   text. (Execution phase: be concise.)
+   the Brief at the path from get_brief_path as context — it describes the
+   intended changes. Do NOT re-audit the Brief itself. Present findings in
+   visible chat text. (Execution phase: be concise.)
 5. **If review found issues** → propose `task(execute, "debug", ...)` or
    additional fixes. Loop within this task until clean.
 6. **If review is clean** → ask user if they want to proceed to the next task,
@@ -593,6 +595,7 @@ Separate each task with a visible line break (`---`) for clarity.
 **Motivation**: Why this change is needed
 
 **File Path**: path/to/file
+**Location**: lines [start]-[end]
 
 **Before:**
 ```lang
@@ -668,8 +671,8 @@ When the user makes a direct, specific request:
 
 When the user says "execute", "build it", "apply", "do it", "proceed":
 
-- **Brief is ready** → Write to `.opencode/brief.md`, user reviews, dispatch
-  `task(execute, "edit", ...)`.
+- **Brief is ready** → Call `get_brief_path` for the filepath, then write the
+  Brief to that path, user reviews, dispatch `task(execute, "edit", ...)`.
 - **No Brief exists** → "Let me compile the Brief first" and produce it.
 
 ### Quick-Interaction Fast-Path

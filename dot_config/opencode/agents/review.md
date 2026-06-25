@@ -42,6 +42,7 @@ permission:
   websearch: deny
   task: deny
   question: deny
+  get_brief_path: allow
 ---
 
 # YOU ARE THE REVIEW AGENT
