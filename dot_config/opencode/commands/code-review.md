@@ -12,7 +12,7 @@ return:
 
 Read `.opencode/brief.md` first to understand the intended changes. The changed
 files are specified below. Read them and look for regressions, stale references,
-and bugs.
+and bugs. Verify correctness.
 
 ## PROCEDURE
 
