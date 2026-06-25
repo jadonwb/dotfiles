@@ -36,8 +36,12 @@ export default {
               title: "Brief Path",
               message: path,
               onConfirm: () => {
-                if (copyToClipboard(path)) {
-                  api.ui.toast({ variant: "success", message: "Copied to clipboard" })
+                try {
+                  if (copyToClipboard(path)) {
+                    api.ui.toast({ variant: "success", message: "Copied to clipboard" })
+                  }
+                } catch {
+                  // clipboard unavailable — silently continue
                 }
               },
             })
