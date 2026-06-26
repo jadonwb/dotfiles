@@ -5,7 +5,7 @@ description:
   gates.
 mode: primary
 model: deepseek/deepseek-v4-pro
-color: "#3f3bf5"
+color: "primary"
 options:
   reasoning_effort: max
 permission:
