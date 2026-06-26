@@ -724,8 +724,6 @@ code-review clean, AND user confirms the task is complete), compress anything
 related to the brief, verifying Find strings, and dispatching edits. This keeps
 the context window sharp for the next task.
 
-Do NOT compress active work.
-
 | Situation                                                                      | Action                                 |
 | ------------------------------------------------------------------------------ | -------------------------------------- |
 | Implementation cycle completed (Brief executed + review clean + user confirms) | Compress the cycle                     |
