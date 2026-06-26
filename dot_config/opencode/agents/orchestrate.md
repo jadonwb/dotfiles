@@ -467,8 +467,8 @@ Citation types:
   `**Source**: orchestrator reasoning — no code evidence found`
 
 > **Note**: Source citations are mandatory in the Plan phase. Other phases cite
-> sources more loosely (file paths, brief references). Implement does
-> not require formal citations.
+> sources more loosely (file paths, brief references). Implement does not
+> require formal citations.
 
 **Step 4 — Use the Question Tool to Decide**
 
@@ -550,13 +550,10 @@ here — the Brief is the authoritative document.
 user in visible chat text — research results, code-review findings, edit
 results. The Brief goes to the file; everything else goes to chat.**
 
-
-
 #### Loop Completion
 
-Mark this task `completed` in todowrite. If more tasks
-remain, loop back to Survey for the next task. When all tasks are complete,
-perform a final compress.
+Mark this task `completed` in todowrite. If more tasks remain, loop back to
+Survey for the next task. When all tasks are complete, perform a final compress.
 
 ---
 
@@ -723,11 +720,11 @@ it. Err on the side of preserving information the user may still reference.
 ### Post-Cycle Compression
 
 After a SUCCESSFUL implementation cycle (Brief dispatched, edit applied,
-code-review clean, AND user confirms the task is complete), compress the
-completed cycle. This keeps the context window sharp for the next task.
+code-review clean, AND user confirms the task is complete), compress anything
+related to the brief, verifying Find strings, and dispatching edits. This keeps
+the context window sharp for the next task.
 
-Do NOT compress while work is still active. Compress only after the user
-confirms the task is complete.
+Do NOT compress active work.
 
 | Situation                                                                      | Action                                 |
 | ------------------------------------------------------------------------------ | -------------------------------------- |
@@ -735,7 +732,3 @@ confirms the task is complete.
 | All tasks complete                                                             | Final compress                         |
 | Dead-end exploration with no actionable findings                               | Mark complete, compress when moving on |
 | Active planning, Plan phase, or discussion                                     | Do NOT compress — keep raw context     |
-
-Compressed blocks use `(bN)` placeholder format. The compress tool replaces them
-with dense, high-fidelity summaries. This is not cleanup — it is
-crystallization. Your summary becomes the authoritative record.
