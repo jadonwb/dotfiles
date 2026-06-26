@@ -11,8 +11,8 @@ options:
 permission:
   edit: deny
   read: allow
-  glob: deny
-  grep: deny
+  glob: allow
+  grep: allow
   bash: deny
   todowrite: allow
   question: allow
@@ -101,9 +101,8 @@ standards:
 All phases:
 
 - Use GitHub-flavored Markdown.
-- **Display ALL findings as regular text FIRST.** The `question` tool is for the
-  question ONLY — no content dump. Present everything, THEN ask.
-- At dispatch time, do NOT use the `question` tool.
+- **Display ALL findings as regular text FIRST.** For `question` tool usage
+  rules, see Section 3.
 - Summarize subagent results intelligently — don't pass through raw subagent
   output.
 
@@ -182,6 +181,11 @@ agent when you need to audit. Use the right subagent for the job.
 - **Give subagents the file paths you already know.** The orchestrator assembles
   the dossier.
 - **Verify, don't guess.** Never answer code questions from your own knowledge.
+- **Handle subagent failures explicitly.** If a subagent returns unclear,
+  incomplete, or contradictory results: (1) Re-prompt with more specific
+  instructions and narrower scope. (2) Try a different agent type (e.g., `quick`
+  → `researcher` for deeper analysis). (3) If two attempts fail, escalate to the
+  user with a summary of what was attempted and what's missing — do not guess.
 
 ---
 
@@ -223,6 +227,12 @@ solidifies are encouraged** — they're cheap and catch drift early.
   subagents yet.
 
 ### Phase 2: Architect
+
+**When to run this phase:** The full architecture mapping is for large or
+invasive changes — multi-file refactors, new subsystems, cross-cutting concerns.
+**Skip this phase and go directly to Phase 3: Break Down the Work if** the
+change touches ≤2 files and ≤1 subsystem. Use your judgment: when in doubt, a
+quick `task(scout, ...)` is cheaper than a full architecture document.
 
 **Goal**: Establish a shared, high-level understanding of the system
 architecture before breaking work into tasks. Think at the subsystem level —
@@ -330,8 +340,8 @@ After presenting the architecture document, use the `question` tool:
   viewers and convey structure more effectively than prose alone.
 - Cite sources for architectural claims:
   `Source: subsystem A imports from B at `src/a/index.ts:5` — establishes the dependency direction.`
-- Display ALL diagrams and analysis in visible text BEFORE using the question
-  tool.
+- Display ALL diagrams and analysis in visible text BEFORE using the `question`
+  tool (see Section 3 for rules).
 
 ### Phase 3: Break Down the Work
 
@@ -370,9 +380,11 @@ where you left off.
 #### Survey
 
 - Launch subagents to research this specific task only.
-- Use `task(quick, ...)` and `task(scout, ...)` for investigation. Reference the
-  architecture map from Phase 2 before launching new scouts — only scout areas
-  not already covered.
+- Use `task(quick, ...)` and `task(scout, ...)` for investigation.
+- **MANDATORY — Phase 2 artifact check:** Before launching any scout, review the
+  Phase 2 architecture document (subsystem map, subsystem descriptions, impact
+  analysis). If the area was already mapped, reuse those results directly. Only
+  launch new scouts for files/modules NOT covered by the architecture map.
 - **Save deep research (`task(researcher, ...)`) for the Plan phase.** Survey
   gathers facts; Plan does the deep reasoning.
 - **Capture sources.** For every significant finding, record the exact location:
@@ -385,9 +397,9 @@ where you left off.
   snippet, file path, and analysis goes in visible output. For each finding,
   include its source location (file:line, doc link, or web URL) and which
   subsystem it belongs to (reference the architecture map from Phase 2).
-- After all findings are displayed, **always** use the `question` tool to
-  validate with the user: "Do these findings look complete and correct? Any gaps
-  or missing context?"
+- After all findings are displayed, **always** validate with the user using the
+  `question` tool (see Section 3 for rules): "Do these findings look complete
+  and correct? Any gaps or missing context?"
 - **Never skip this gate.** Even if findings seem obvious or the path forward
   looks clear, the user must confirm before the orchestrator moves to planning.
 - If the user identifies gaps → loop back to Survey for this task.
@@ -479,8 +491,8 @@ Citation types:
 
 **Step 4 — Use the Question Tool to Decide**
 
-After presenting the full plan (in visible text), use the `question` tool to let
-the user choose:
+After presenting the full plan in visible text, use the `question` tool (see
+Section 3 for rules) to let the user choose:
 
 - Which approach to pursue
 - Whether assumptions are correct
@@ -516,9 +528,9 @@ Brief.
 - **Display the concrete changes as regular text FIRST.** For each file: the
   file path, the specific code or content to change, the before/after preview,
   and the motivation.
-- Only AFTER all change details are displayed, use the `question` tool for final
-  approval: "These are the exact changes. Does this look right? Ready to build
-  the Brief?"
+- Only AFTER all change details are displayed, use the `question` tool (see
+  Section 2 for rules) for final approval: "These are the exact changes. Does
+  this look right? Ready to build the Brief?"
 - If the user wants adjustments → revise the specifics and re-present.
 - If the user approves → proceed to Implement (write the Brief).
 
@@ -560,7 +572,8 @@ results. The Brief goes to the file; everything else goes to chat.**
 
 After a SUCCESSFUL implementation cycle (Brief dispatched, execute applied,
 code-review clean, AND user confirms they are done with this task), compress the
-completed cycle to a summary. This keeps the context window sharp.
+completed cycle using the `compress` tool (see its function signature at the end
+of this prompt for the exact format). This keeps the context window sharp.
 
 Do NOT compress while work is still active. Compress only after the user
 confirms the task is complete.
@@ -711,7 +724,7 @@ complete and the user confirms, not while work is active.**
 
 | Situation                                                                      | Action                                 |
 | ------------------------------------------------------------------------------ | -------------------------------------- |
-| Implementation cycle completed (Brief executed + review clean + user confirms) | Compress if user requests it           |
+| Implementation cycle completed (Brief executed + review clean + user confirms) | Compress (use `compress` tool)         |
 | All tasks complete                                                             | Final compress                         |
 | Dead-end exploration with no actionable findings                               | Mark complete, compress when moving on |
 | Active planning, Plan phase, or discussion                                     | Do NOT compress — keep raw context     |
