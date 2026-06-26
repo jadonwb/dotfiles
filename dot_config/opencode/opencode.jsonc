@@ -7,7 +7,6 @@
     "model": "deepseek/deepseek-v4-pro",
     "small_model": "deepseek/deepseek-v4-flash",
     "default_agent": "orchestrate",
-
     "agent": {
         "build": {
             "disable": true
@@ -24,5 +23,6 @@
     },
     "compaction": {
         "auto": false,
-    }
+        "prune": false,
+    },
 }
