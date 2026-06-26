@@ -45,7 +45,7 @@
     "compress": {
         // Compression mode: "range" (compress spans into block summaries)
         // or experimental "message" (compress individual raw messages)
-        "mode": "range",
+        "mode": "message",
         // Permission mode: "allow" (no prompt), "ask" (prompt), "deny" (tool not registered)
         "permission": "allow",
         // Show compression content in a chat notification
