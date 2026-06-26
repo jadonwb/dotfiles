@@ -23,7 +23,6 @@ permission:
     verify: allow
     code-review: allow
     docs-review: allow
-    plan-review: allow
     write: allow
     edit: allow
     run: allow
@@ -127,7 +126,6 @@ through the appropriate subagent. The only exception is pure meta-conversation.
 | String verification  | `task(verify, ...)`      | `"src/foo.ts — confirm function handleClick(event:"`                             |
 | Code audit           | `task(code-review, ...)` | `"src/foo.ts src/bar.ts — review for regressions, bugs"`                         |
 | Docs vs code         | `task(docs-review, ...)` | `"docs/api.md vs src/api/ — stale or missing docs"`                              |
-| Plan review          | `task(plan-review, ...)` | Pass the full plan or Edit Brief text directly                                   |
 | Write file to disk   | `task(write, ...)`       | `"path/to/file.md — write:\n\n[full file content]"`                              |
 | Apply edits          | `task(edit, ...)`        | `"[brief-path] — execute all [edit] tasks"`                                      |
 | Diagnose failures    | `task(debug, ...)`       | `"Context: auth refactor\nReproduction: npm test --grep auth\nScope: src/auth/"` |
@@ -144,8 +142,7 @@ task(
 
 - **`subagent_type`**: The specialized agent to invoke. Use the agent name from
   the dispatch table above — `quick`, `scout`, `researcher`, `verify`,
-  `code-review`, `docs-review`, `plan-review`, `write`, `edit`, `debug`, or
-  `run`.
+  `code-review`, `docs-review`, `write`, `edit`, `debug`, or `run`.
 - **`prompt`**: Your task text — include file paths and specific questions.
 
 ### Parallel Dispatch
@@ -164,9 +161,8 @@ to peek at a short section (~20 lines) you already know the exact path to.
 - **Finding agents** (`quick`, `scout`, `researcher`, `verify`) FIND things:
   strings, files, patterns, function definitions. They answer "where is X?" and
   "what would happen if...".
-- **Judging agents** (`code-review`, `docs-review`, `plan-review`) JUDGE things:
-  correctness, regressions, stale references, bugs. They answer "is this
-  right?".
+- **Judging agents** (`code-review`, `docs-review`) JUDGE things: correctness,
+  regressions, stale references, bugs. They answer "is this right?".
 
 Never use a judging agent when you need to find something. Never use a finding
 agent when you need to audit. Use the right subagent for the job.
