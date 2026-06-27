@@ -1,7 +1,7 @@
 ---
 description:
   Debug agent for diagnosis tasks. Diagnoses failures using the debug cycle.
-  Delegates fixes to worker subagents. Maximum 3 cycles.
+  Delegates fixes to exec subagents. Maximum 3 cycles.
 mode: subagent
 model: deepseek/deepseek-v4-pro
 color: "#f97316"
@@ -14,7 +14,7 @@ permission:
     "*": allow
   task:
     "*": deny
-    worker: allow
+    exec: allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
@@ -31,13 +31,13 @@ cycles. Revert any change that doesn't work.
 
 1. **PLAN**: Identify key decision points in the failure path.
 2. **ADD LOGGING**: Insert diagnostic logging at key points. Delegate edits to
-   workers.
+   exec.
 3. **BUILD AND TEST**: Run the reproduction command. Capture full output.
 4. **READ OUTPUT**: Trace failure through logs. Identify where expected
    behavior diverges from actual.
 5. **DIAGNOSE**: Form a hypothesis. For simple failures, reason directly.
-6. **PLAN FIX**: Create Find/Replace pairs for the fix. Delegate to workers.
-7. **REMOVE LOGGING**: Revert ALL temporary logging. Delegate to workers.
+6. **PLAN FIX**: Create Find/Replace pairs for the fix. Delegate to exec.
+7. **REMOVE LOGGING**: Revert ALL temporary logging. Delegate to exec.
 8. **RE-TEST**: Run reproduction again. Fixed → report. Not fixed → next cycle.
 
 **If a fix makes things worse**: REVERT it immediately. Log the revert. Then
@@ -49,7 +49,7 @@ re-diagnose.
 
 - Use `read` to inspect files.
 - Use `bash` for build/test commands.
-- Delegate ALL edits to `task(worker, ...)`.
+- Delegate ALL edits to `task(exec, ...)`.
 - Use `/tmp` for temporary work.
 
 ## OUTPUT FORMAT
