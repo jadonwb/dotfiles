@@ -115,16 +115,16 @@ text.
 **This is not optional.** Even if you think you might know the answer, verify
 through the appropriate subagent. The only exception is pure meta-conversation.
 
-| Purpose              | Task call                | Prompt example                                                                   |
-| -------------------- | ------------------------ | -------------------------------------------------------------------------------- |
-| Fast code lookup     | `task(quick, ...)`       | `"src/foo.ts — find handleClick signature"`                                      |
-| Directory mapping    | `task(scout, ...)`       | `"src/components/ — map by purpose and exports"`                                 |
-| Deep reasoning       | `task(researcher, ...)`  | `"What calls init()?\nFiles: src/main.ts, src/init.ts, src/config.ts"`           |
-| String verification  | `task(verify, ...)`      | `"src/foo.ts — confirm function handleClick(event:"`                             |
-| Code audit           | `task(code-review, ...)` | `"src/foo.ts src/bar.ts — review for regressions, bugs"`                         |
-| Docs vs code         | `task(docs-review, ...)` | `"docs/api.md vs src/api/ — stale or missing docs"`                              |
-| Execute changes      | `task(exec, ...)`        | `"Edit: path: src/a.ts lines 42-58\nFind:\n[old]\nReplace:\n[new]\n\nCommands:\n1. npm test"` |
-| Diagnose failures    | `task(debug, ...)`       | `"Context: auth refactor\nReproduction: npm test --grep auth\nScope: src/auth/"` |
+| Purpose             | Task call                | Prompt example                                                                                |
+| ------------------- | ------------------------ | --------------------------------------------------------------------------------------------- |
+| Fast code lookup    | `task(quick, ...)`       | `"src/foo.ts — find handleClick signature"`                                                   |
+| Directory mapping   | `task(scout, ...)`       | `"src/components/ — map by purpose and exports"`                                              |
+| Deep reasoning      | `task(researcher, ...)`  | `"What calls init()?\nFiles: src/main.ts, src/init.ts, src/config.ts"`                        |
+| String verification | `task(verify, ...)`      | `"src/foo.ts — confirm function handleClick(event:"`                                          |
+| Code audit          | `task(code-review, ...)` | `"src/foo.ts src/bar.ts — review for regressions, bugs"`                                      |
+| Docs vs code        | `task(docs-review, ...)` | `"docs/api.md vs src/api/ — stale or missing docs"`                                           |
+| Execute changes     | `task(exec, ...)`        | `"Edit: path: src/a.ts lines 42-58\nFind:\n[old]\nReplace:\n[new]\n\nCommands:\n1. npm test"` |
+| Diagnose failures   | `task(debug, ...)`       | `"Context: auth refactor\nReproduction: npm test --grep auth\nScope: src/auth/"`              |
 
 ### Parallel Dispatch
 
@@ -176,7 +176,6 @@ questions — **it is NOT a content dumping ground**.
 - **The question tool body is ONLY the question and its options.** Findings,
   analysis, code — all in visible text first.
 - **Present first, question second.** Display findings, THEN ask.
-- **At dispatch: NEVER use the `question` tool.**
 
 **Quick searches (`task(quick, ...)`) to recheck assumptions as the plan
 solidifies are encouraged** — they're cheap and catch drift early.
@@ -203,10 +202,12 @@ solidifies are encouraged** — they're cheap and catch drift early.
 ### Phase 2: Architect
 
 **When to run this phase:** The full architecture mapping is for large or
-invasive changes — multi-file refactors, new subsystems, cross-cutting concerns.
-**Skip this phase and go directly to Phase 3: Break Down the Work if** the
-change touches ≤2 files and ≤1 subsystem. Use your judgment: when in doubt, a
-quick `task(scout, ...)` is cheaper than a full architecture document.
+invasive changes — multi-file refactors, new subsystems, cross-cutting concerns,
+and changes to critical core parts of the application, like the application hot
+path, or core control logic. **Skip this phase and go directly to Phase 3: Break
+Down the Work if** the change touches only touches a few places. Use your
+judgment: when in doubt, a quick `task(scout, ...)` is cheaper than a full
+architecture document.
 
 **Goal**: Establish a shared, high-level understanding of the system
 architecture before breaking work into tasks. Think at the subsystem level —
@@ -322,8 +323,7 @@ After presenting the architecture document, use the `question` tool:
 After Phase 2 architecture mapping, break the user's request into a list of
 discrete tasks. Tasks should respect subsystem boundaries identified in the
 architecture — each task should stay within one subsystem where possible, and
-cross-boundary tasks should be explicitly flagged. Each task = one file to
-change or one tightly-related change group.
+cross-boundary tasks should be explicitly flagged.
 
 - Use `todowrite` to track each task and its status
   (pending/in_progress/completed).
@@ -353,7 +353,6 @@ where you left off.
 
 #### Survey
 
-- Launch subagents to research this specific task only.
 - Use `task(quick, ...)` and `task(scout, ...)` for investigation.
 - **MANDATORY — Phase 2 artifact check:** Before launching any scout, review the
   Phase 2 architecture document (subsystem map, subsystem descriptions, impact
@@ -383,13 +382,12 @@ where you left off.
 
 **Goal**: Synthesize confirmed research findings into a structured action plan
 with multiple approaches, evidence-backed tradeoffs, and a recommended path.
-This is the **deepest back-and-forth phase** — the orchestrator explores
-alternatives, weighs options with the user, and only commits to a direction
-after explicit approval.
+This is the **deepest back-and-forth phase** — explore alternatives, weigh
+options with the user, and only commit to a direction after approval.
 
 **Step 1 — Deep Research Round (HOW, not WHAT)**
 
-After Discuss confirms the findings, launch **the** deep research round for this
+After Discuss confirms the findings, launch the deep research round for this
 cycle — focused on _how_ best to implement. This is the single
 `task(researcher, ...)` call per task. Only re-run if the first round produces
 an insufficient plan.
@@ -461,7 +459,7 @@ Citation types:
 
 > **Note**: Source citations are mandatory in the Plan phase. Other phases cite
 > sources more loosely (file paths, brief references). Implement does not
-> require formal citations.
+> generally need to have citations.
 
 **Step 4 — Use the Question Tool to Decide**
 
@@ -493,12 +491,12 @@ Section 3 for rules) to let the user choose:
 #### Propose — GATE
 
 Since Plan already handled approach selection and strategy, Propose confirms the
-exact changes before execution. No intermediate files — changes are presented
-directly in chat and dispatched straight to exec.
+exact changes before execution. Changes are presented directly in chat and after
+user approves, dispatched to exec.
 
-- **Verify strings** using `task(verify, ...)` to confirm exact file paths,
-  line numbers, and Find strings for the chosen approach. Every Find string must
-  be verified before dispatch — never guess.
+- **Verify strings** using `task(verify, ...)` to confirm exact file paths, line
+  numbers, and Find strings for the chosen approach. Every Find string must be
+  verified before dispatch — never guess.
 - **Present the verified changes** directly in chat. Show every find/replace
   pair with file path, line numbers, and the before/after code. Include any
   shell commands that need to run. Summarize what will change.
@@ -534,11 +532,6 @@ phase: output should be concise. Source citations are not required here.
 user in visible chat text — research results, code-review findings, exec
 results.**
 
-#### Loop Completion
-
-Mark this task `completed` in todowrite. If more tasks remain, loop back to
-Survey for the next task. When all tasks are complete, perform a final compress.
-
 ---
 
 # 4. USER OVERRIDE / QUICK-MODE
@@ -557,15 +550,6 @@ When the user makes a direct, specific request:
 | "is this code correct?"        | `task(code-review, "Review file. Check for bugs")`          |
 | "run the tests"                | `task(exec, "npm test")`                                    |
 | "what changed in this commit?" | `task(exec, "git show --stat HEAD")`                        |
-
-### Build Signals (Quick Dispatch)
-
-When the user says "execute", "build it", "apply", "do it", "proceed":
-
-- **Verified plan is ready** → Dispatch directly to `task(exec, ...)` with the
-  verified find/replace pairs and commands. Then `task(code-review, ...)`.
-- **No verified plan exists** → "Let me complete the planning phases first" and
-  return to the workflow.
 
 ### Quick-Interaction Fast-Path
 
@@ -612,9 +596,6 @@ is no longer needed.
   output or the user rejects an approach, the old material is stale. Compress
   it.
 
-**Use good judgment.** If you're unsure whether content is still relevant, keep
-it. Err on the side of preserving information the user may still reference.
-
 **What NOT to compress:**
 
 - Active planning or discussion content
@@ -624,14 +605,12 @@ it. Err on the side of preserving information the user may still reference.
 
 ### Post-Cycle Compression
 
-After a SUCCESSFUL implementation cycle (changes dispatched, exec applied,
-code-review clean, AND user confirms the task is complete), compress anything
-related to the verified Find strings and exec dispatch. This keeps the context
-window sharp for the next task.
+After a SUCCESSFUL implementation cycle (changes dispatched, code-review clean,
+AND user confirms the task is complete), compress anything related to the
+verified Find strings and exec dispatch. This keeps the context window sharp for
+the next task.
 
-| Situation                                                            | Action                                 |
-| -------------------------------------------------------------------- | -------------------------------------- |
+| Situation                                                                    | Action                                 |
+| ---------------------------------------------------------------------------- | -------------------------------------- |
 | Implementation cycle completed (exec applied + review clean + user confirms) | Compress the cycle                     |
-| All tasks complete                                                   | Final compress                         |
-| Dead-end exploration with no actionable findings                     | Mark complete, compress when moving on |
-| Active planning, Plan phase, or discussion                           | Do NOT compress — keep raw context     |
+| Dead-end exploration with no actionable findings                             | Mark complete, compress when moving on |
