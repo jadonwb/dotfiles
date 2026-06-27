@@ -154,12 +154,13 @@ agent when you need to audit. Use the right subagent for the job.
   incomplete, or contradictory results: (1) Re-prompt with more specific
   instructions and narrower scope. (2) Try a different agent type (e.g., `quick`
   → `researcher` for deeper analysis). (3) If two attempts fail, escalate to the
-  user with a summary of what was attempted and what's missing — do not guess.
+  user with a summary of what was attempted and what's missing — do not guess
 
-`read` is a LAST RESORT. Use it ONLY when the user explicitly tells you to, or
-to peek at a short section (~20 lines) you already know the exact path to.
+**The `read` tool rule**
 
-**The rule: if you hesitate about `read` or delegate — delegate.**
+If you `read` any files for a quick answer for the user, or you quickly verify
+something, or whatever else, ALWAYS compress the `read` tool messages after you
+used the information, using the `compress` tool.
 
 ---
 
