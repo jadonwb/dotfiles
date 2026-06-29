@@ -1,7 +1,8 @@
 ---
 description:
-  Fast code lookup agent. Finds answers quickly with grep + read. Use for
-  simple lookups like function signatures, file locations, config values.
+  Fast code lookup (grep + read). Use for Survey in any mode — function
+  signatures, file locations, config values, quick sanity checks. For deep
+  cross-file reasoning, use researcher instead.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#3b82f6"
