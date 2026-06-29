@@ -1,8 +1,8 @@
 ---
 description:
-  Directory mapping agent. Surveys directories and produces structural maps.
-  Categorizes files by role and identifies connections between them. Use for
-  understanding project layout before deeper investigation.
+  Directory mapping and module structure. Use early in Survey or Architect to
+  understand project layout, categorize files by role, and identify subsystem
+  boundaries. For single-function lookups, use quick instead.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#3b82f6"
