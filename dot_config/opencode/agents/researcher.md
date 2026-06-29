@@ -1,8 +1,8 @@
 ---
 description:
-  Research subagent. Deep multi-file reasoning with pro model. Reads every file in
-  the provided dossier, traces call chains, and produces evidence-backed answers
-  with confidence level.
+  Deep multi-file reasoning and approach analysis. Use in Plan phase (Plan
+  Mode) or for complex Default tasks — call chain tracing, downstream effects,
+  approach viability. Reads full dossiers. Survey with quick/scout first.
 mode: subagent
 model: deepseek/deepseek-v4-pro
 color: "#3b82f6"
