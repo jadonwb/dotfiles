@@ -1,7 +1,8 @@
 ---
 description: >
-  Execution agent. Handles full file writes, exact find/replace edits with line
-  numbers, and sequential shell commands. Reports all output per step.
+  File writes, find/replace edits, and shell commands. The main agent that
+  modifies files or runs commands. Dispatch with verified Find/Replace strings
+  and line numbers. Reports each step's output. Not for analysis or search.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#ef4444"
