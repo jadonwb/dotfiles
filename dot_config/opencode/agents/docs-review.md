@@ -1,8 +1,8 @@
 ---
 description:
-  Documentation audit agent. Compares docs against actual code for factual
-  mismatches. Finds wrong paths, outdated signatures, missing features. Use to
-  verify documentation accuracy.
+  Documentation vs. code audit. Compares docs against actual code for wrong
+  paths, outdated signatures, and missing features. Use after major
+  implementation if documentation exists.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#f59e0b"
