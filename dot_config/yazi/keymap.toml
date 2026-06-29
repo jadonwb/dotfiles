@@ -3,6 +3,16 @@
 # "$schema" = "https://yazi-rs.github.io/schemas/keymap.json"
 
 [[mgr.prepend_keymap]]
+on = "q"
+run = "close"
+desc = "Close current tab, or quit if it's last"
+
+[[mgr.prepend_keymap]]
+on = ["t", "R"]
+run = "plugin close-and-restore-tab restore"
+desc = "Restore previously closed tab"
+
+[[mgr.prepend_keymap]]
 on = ["c", "m"]
 run = "plugin chmod"
 desc = "Chmod on selected files"

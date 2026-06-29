@@ -20,6 +20,8 @@ require("full-border"):setup({
 	type = ui.Border.ROUNDED,
 })
 
+require("close-and-restore-tab"):setup()
+
 Status:children_add(function()
 	local h = cx.active.current.hovered
 	if not h or ya.target_family() ~= "unix" then
