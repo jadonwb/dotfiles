@@ -1,7 +1,8 @@
 ---
 description:
-  Debug agent for diagnosis tasks. Diagnoses failures using the debug cycle.
-  Delegates fixes to exec subagents. Maximum 3 cycles.
+  Debug and failure diagnosis sub agent. Use when things fail, user reports
+  bugs, tests break and the cause isn't obvious. Runs a debug cycle. For
+  proactive quality checks, use code-review instead.
 mode: subagent
 model: deepseek/deepseek-v4-pro
 color: "#f97316"
@@ -33,8 +34,8 @@ cycles. Revert any change that doesn't work.
 2. **ADD LOGGING**: Insert diagnostic logging at key points. Delegate edits to
    exec.
 3. **BUILD AND TEST**: Run the reproduction command. Capture full output.
-4. **READ OUTPUT**: Trace failure through logs. Identify where expected
-   behavior diverges from actual.
+4. **READ OUTPUT**: Trace failure through logs. Identify where expected behavior
+   diverges from actual.
 5. **DIAGNOSE**: Form a hypothesis. For simple failures, reason directly.
 6. **PLAN FIX**: Create Find/Replace pairs for the fix. Delegate to exec.
 7. **REMOVE LOGGING**: Revert ALL temporary logging. Delegate to exec.
