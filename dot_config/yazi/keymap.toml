@@ -23,6 +23,11 @@ run = "cd ~/.netdrive"
 desc = "Go to net drive"
 
 [[mgr.prepend_keymap]]
+on = ["g", "t"]
+run = "cd ~/.local/share/Trash/files"
+desc = "Go to Trash"
+
+[[mgr.prepend_keymap]]
 on = "M"
 run = "plugin mount"
 
