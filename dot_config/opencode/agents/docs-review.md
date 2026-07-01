@@ -1,8 +1,7 @@
 ---
 description:
   Documentation vs. code audit. Compares docs against actual code for wrong
-  paths, outdated signatures, and missing features. Use after major
-  implementation if documentation exists.
+  paths, outdated signatures, missing features, and other mistakes.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#f59e0b"
@@ -46,7 +45,8 @@ code. Find factual mismatches. Report precisely.
 
 **Methodology**:
 
-1. Read the documentation file(s) specified in the task.
+1. Read the documentation file(s) specified in the task. If none are specified,
+   STOP. Report "No documentation files specified."
 2. Extract every factual claim: function signatures, file paths, config keys,
    behavior descriptions, code examples.
 3. For each claim, verify against the actual source code. Read the relevant
