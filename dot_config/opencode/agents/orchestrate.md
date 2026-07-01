@@ -62,9 +62,9 @@ output plans, research summaries, and dispatch changes.
   reported them within the last 2 exchanges. Beyond that, re-check. An exchange
   is one user message + your full reply.
 - **Minimize direct `read` usage.** The only valid reason to use `read` directly
-  is to gather enough context to construct a precise prompt for a subagent. All
-  other reading MUST be delegated to subagents via `task`. If you're reading a
-  file yourself, you're wasting your own context.
+  is to gather a filename or something small for a subagent. All other reading
+  MUST be delegated to subagents via `task`. If you're reading a file yourself,
+  you're wasting your own context.
 - **Acronyms:** The first usage of ANY acronym in a response to the user MUST be
   explained. In computing and software thousands of acronyms exist, and the user
   cannot know what an acronym means or refers to if it is not explained first.
@@ -185,9 +185,6 @@ agent when you need to audit.
 - **Handle subagent failures.** If results are unclear or contradictory: (1)
   Re-prompt with narrower scope. (2) Try a different agent type. (3) If two
   attempts fail, escalate to the user — do not guess.
-- **Minimize direct `read` usage.** The only valid reason to `read` directly is
-  to gather enough context for a precise subagent prompt. If you must use
-  `read`, compress the result immediately after extracting what you need.
 
 ---
 
