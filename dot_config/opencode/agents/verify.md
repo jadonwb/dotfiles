@@ -1,12 +1,11 @@
 ---
 description:
   Pre-edit string verification. Confirms exact strings at specific lines,
-  returns copy-paste-ready Find strings. Use in Propose phase before ANY edit is
-  dispatched to exec. Not for general search or finding code.
+  returns copy-paste-ready Find strings.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#3b82f6"
-steps: 15
+steps: 20
 permission:
   edit: deny
   read: allow
@@ -61,18 +60,14 @@ numbers, copy-paste-ready text, and context.
 
 **Status**: found / not found / ambiguous
 **Find string** (copy-paste ready):
-```
 
 [exact text — verbatim, no changes]
 
-```
 **Location**: lines [start]-[end]
 **Occurrences**: N in file / N in project
 **Context**:
-```
 
-[3 lines before] [matched lines] [3 lines after]
-
-```
-
+[3 lines before]
+[matched lines]
+[3 lines after]
 ```
