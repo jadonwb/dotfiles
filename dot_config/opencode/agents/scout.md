@@ -1,8 +1,7 @@
 ---
 description:
-  Directory mapping and module structure. Use early in Survey or Architect to
-  understand project layout, categorize files by role, and identify subsystem
-  boundaries. For single-function lookups, use quick instead.
+  Directory mapping and module structure. Understand project layout, categorize
+  files by role, and identify subsystem boundaries.
 mode: subagent
 model: deepseek/deepseek-v4-flash
 color: "#3b82f6"
@@ -46,6 +45,9 @@ orchestrator can navigate. Categorize files by role, identify connections, flag
 unknowns. Move fast.
 
 ## PROCEDURE
+
+**If the target scope is missing or invalid:** STOP and report what you need
+(exact directory path or file pattern). Do not guess the scope.
 
 - Use `glob` FIRST to inventory all relevant files in the target scope. Then
   `read` the top ~30 lines of each to classify them.
