@@ -1,13 +1,12 @@
 ---
 description:
-  Debug and failure diagnosis sub agent. Use when things fail, user reports
-  bugs, tests break and the cause isn't obvious. Runs a debug cycle. For
-  proactive quality checks, use code-review instead.
+  Debug and failure diagnosis. Use when things fail, user reports bugs, tests
+  break and the cause isn't obvious, or other issues.
 mode: subagent
 model: deepseek/deepseek-v4-pro
 color: "#f97316"
 permission:
-  edit: allow
+  edit: deny
   read: allow
   glob: allow
   grep: allow
@@ -27,6 +26,10 @@ You are the debug agent — diagnose failures and coordinate fixes. Maximum 3
 cycles. Revert any change that doesn't work.
 
 ## PROCEDURE
+
+**If the task is missing critical information** (no reproduction command, no
+scope directory, no description of expected vs actual behavior): STOP. Report
+what's missing and request it. Do not start debugging blind.
 
 **Cycle (repeat up to 3 times)**:
 
