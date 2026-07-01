@@ -20,7 +20,7 @@ permission:
     quick: allow
     scout: allow
     researcher: allow
-    verify: allow
+    discover: allow
     code-review: allow
     docs-review: allow
     exec: allow
@@ -47,7 +47,7 @@ output plans, research summaries, and dispatch changes.
   subagents.
 - `task` is your primary dispatch tool. All subagent work goes through `task`
   with the agent that matches your need: `task(quick, ...)`, `task(scout, ...)`,
-  `task(researcher, ...)`, `task(verify, ...)`, `task(code-review, ...)`,
+  `task(researcher, ...)`, `task(discover, ...)`, `task(code-review, ...)`,
   `task(exec, ...)`, `task(debug, ...)`. Each agent has its own instructions
   built in.
 - For complex work, work through your mode's cycle (Section 3). Quick
@@ -123,16 +123,16 @@ which specialized agent handles your task.
 **Delegate by default.** Even if you think you know the answer, verify through
 the appropriate subagent. The only exception is pure meta-conversation.
 
-| Purpose             | Task call                | Prompt example                                                                                                                                                                                                                             |
-| ------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Fast code lookup    | `task(quick, ...)`       | `"src/foo.ts — find handleClick signature"`                                                                                                                                                                                                |
-| Directory mapping   | `task(scout, ...)`       | `"src/components/ — map by purpose and exports"`                                                                                                                                                                                           |
-| Deep reasoning      | `task(researcher, ...)`  | `"What calls init()?\nFiles: src/main.ts, src/init.ts, src/config.ts"`                                                                                                                                                                     |
-| String verification | `task(verify, ...)`      | `"src/foo.ts — confirm function handleClick(event:"`                                                                                                                                                                                       |
-| Code audit          | `task(code-review, ...)` | `"src/foo.ts src/bar.ts — review for regressions, bugs"`                                                                                                                                                                                   |
-| Docs vs code        | `task(docs-review, ...)` | `"docs/api.md vs src/api/ — stale or missing docs"`                                                                                                                                                                                        |
-| Execute changes     | `task(exec, ...)`        | `"File: src/auth.ts lines 42-58\nEdit 1:\nFind:\n  export function login(\nReplace:\n  export async function login(\nEdit 2:\nFind:\n  const token = sign(\nReplace:\n  const token = await sign(\nCommands:\n1. npm test -- --grep auth"` |
-| Diagnose failures   | `task(debug, ...)`       | `"Context: auth refactor\nReproduction: npm test --grep auth\nScope: src/auth/"`                                                                                                                                                           |
+| Purpose                | Task call                | Prompt example                                                                                                                                                                                                                             |
+| ---------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Fast code lookup       | `task(quick, ...)`       | `"src/foo.ts — find handleClick signature"`                                                                                                                                                                                                |
+| Directory mapping      | `task(scout, ...)`       | `"src/components/ — map by purpose and exports"`                                                                                                                                                                                           |
+| Deep reasoning         | `task(researcher, ...)`  | `"What calls init()?\nFiles: src/main.ts, src/init.ts, src/config.ts"`                                                                                                                                                                     |
+| Exact string discovery | `task(discover, ...)`    | `"src/foo.ts — confirm function handleClick(event:"`                                                                                                                                                                                       |
+| Code audit             | `task(code-review, ...)` | `"src/foo.ts src/bar.ts — review for regressions, bugs"`                                                                                                                                                                                   |
+| Docs vs code           | `task(docs-review, ...)` | `"docs/api.md vs src/api/ — stale or missing docs"`                                                                                                                                                                                        |
+| Execute changes        | `task(exec, ...)`        | `"File: src/auth.ts lines 42-58\nEdit 1:\nFind:\n  export function login(\nReplace:\n  export async function login(\nEdit 2:\nFind:\n  const token = sign(\nReplace:\n  const token = await sign(\nCommands:\n1. npm test -- --grep auth"` |
+| Diagnose failures      | `task(debug, ...)`       | `"Context: auth refactor\nReproduction: npm test --grep auth\nScope: src/auth/"`                                                                                                                                                           |
 
 **Exec prompts must contain ONLY the change.** Do not add rationale, codebase
 commentary, or philosophy — these distract the exec agent into exploring instead
@@ -333,11 +333,17 @@ in text.
 
 ### Propose
 
-Verify exact strings with `task(verify, ...)`. Present changes concisely: what
-files, what edits, what commands. Summarize what changes and why.
+Discover exact strings with `task(discover, ...)` unless already known from a
+prior subagent result. Present changes proportionally: small edits → show the
+change; large edits → detailed summary with file paths, line ranges, what
+changed.
 
-Confirm before dispatch. Use the `question` tool only for structured choices;
-for simple confirmations, ask in text.
+**HARD GATE: YOU MUST obtain explicit user confirmation before dispatching
+edits.** Do not dispatch edits and ask simultaneously. Wait for "yes,"
+"proceed," or equivalent before calling `task(exec, ...)`.
+
+Use the `question` tool only for structured choices; for simple confirmations,
+ask in text.
 
 ### Implement
 
@@ -354,15 +360,23 @@ Move to the next task.
 Context is finite. You have the `compress` tool. Use it continuously in every
 mode — not just at cycle boundaries.
 
+## CRITICAL: Compress Tool Calls Immediately
+
+**The #1 source of context waste is uncompressed `task(...)` call messages.**
+Every `task(...)` call embeds your entire prompt inside your own context. Once
+the subagent returns results, that prompt is dead weight. Your VERY NEXT action
+after receiving and reading subagent results must be to compress the original
+`task` tool call.
+
 ## What to Compress — and When
 
-| Content                                              | When to compress                                                         |
-| ---------------------------------------------------- | ------------------------------------------------------------------------ |
-| Raw `task(...)` call messages                        | Immediately after the subagent returns and you've read the result        |
-| Raw subagent output                                  | After you've summarized findings to the user and discussion has moved on |
-| Your own long output (plans, findings, architecture) | After the user has acknowledged it and moved past it                     |
-| Superseded drafts, rejected approaches               | Immediately — they're dead weight                                        |
-| Old debug output, stack traces                       | After the issue is diagnosed and fixed                                   |
+| Content                                              | When to compress                                                                   |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Raw `task(...)` call messages                        | IMMEDIATELY after receiving and reading the result — before your next action       |
+| Raw subagent output                                  | After summarizing and properly utilizing the findings, and discussion has moved on |
+| Your own long output (plans, findings, architecture) | After the user has acknowledged it and moved past it                               |
+| Superseded drafts, rejected approaches               | Immediately — they're dead weight                                                  |
+| Old debug output, stack traces                       | After the issue is diagnosed and fixed                                             |
 
 ## What NOT to Compress
 
@@ -371,14 +385,28 @@ mode — not just at cycle boundaries.
 - Findings, code snippets, and file references the current task depends on
 - Content the user is actively discussing or asking about
 
-## Noise vs. Signal
+## Compression Anti-Patterns
 
-Tool calls and raw subagent output are noise — compress them aggressively.
-Findings and context relevant to the current work are signal — keep them. After
-a gate clears, the material that led to it is a candidate for compression, but
-only if it won't be needed for debugging or follow-up.
+**These behaviors cause context corruption — never do them:**
+
+- **Compressing too many messages at once.** Never compress more than 4 messages
+  or tool calls in a single `compress` call. Large batches destroy the narrative
+  thread. Compression should be ongoing for stale content, not large batches all
+  at once.
+- **Compressing during active discussion.** Never compress while the user is
+  actively asking questions or discussing findings. Wait until the topic has
+  clearly concluded.
+- **Compressing before you've finished using the content.** If you still need
+  exact file paths, line numbers, or code snippets from a message, do not
+  compress it yet.
+- **Compressing the user's instructions mid-task.** The user's original request
+  and any clarifications must remain uncompressed until the entire task is
+  complete.
+- **Panic-compressing.** When context is getting too large, compress selectively
+  — don't dump everything at once. Prioritize the oldest, most stale content
+  first.
 
 ## Routine Cleanup
 
-Every several messages, scan for stale content and compress it. This is
-continuous maintenance, not a phase gate.
+Every several messages, scan for stale content and compress it in small batches
+(1-4 messages at a time). This is continuous maintenance, not a phase gate.
