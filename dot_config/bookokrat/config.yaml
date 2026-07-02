@@ -85,15 +85,15 @@ custom_themes:
     base04: "87786c"
     base05: "54473f"
     base06: "6c5e55"
-    base07: "7B72D4"
+    base07: "6B64B5"
     base08: "bf4b5f"
-    base09: "ba6c4a"
-    base0A: "c28832"
-    base0B: "15594c"
-    base0C: "4ba095"
-    base0D: "6486b5"
-    base0E: "7B72D4"
-    base0F: "d190b0"
+    base09: "B56B64"
+    base0A: "B59364"
+    base0B: "24755f"
+    base0C: "4ba08d"
+    base0D: "6486B5"
+    base0E: "6B64B5"
+    base0F: "C97599"
 
 nav_panel_width: null
 lookup_command: null
