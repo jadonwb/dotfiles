@@ -7,8 +7,8 @@ local omarchy_gdk_scale = 1.5
 local omarchy_monitor_scale = "1.5"
 
 if machine.is_work then
-  omarchy_gdk_scale = 1.25
-  omarchy_monitor_scale = "1.25"
+  omarchy_gdk_scale = 1.33
+  omarchy_monitor_scale = "1.33"
 
   hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@120", position = "auto", scale = omarchy_monitor_scale })
   hl.monitor({ output = "DP-1", mode = "1920x1080@144", position = "auto", scale = omarchy_monitor_scale })
