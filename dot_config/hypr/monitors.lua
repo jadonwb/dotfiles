@@ -10,6 +10,16 @@ if machine.is_work then
   omarchy_gdk_scale = 1.33
   omarchy_monitor_scale = "1.33"
 
+  -- Toggle the left (HDMI) monitor off/on. All workspaces auto-migrate to DP-1 when disabled.
+  local hdmi_enabled = true
+  local function toggle_hdmi()
+    hdmi_enabled = not hdmi_enabled
+    hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@120", position = "auto", scale = omarchy_monitor_scale, disabled = not hdmi_enabled })
+    local msg = hdmi_enabled and "HDMI monitor enabled" or "HDMI monitor disabled -- all workspaces moved to DP-1"
+    hl.exec_cmd("notify-send '" .. msg .. "' --expire-time=2000")
+  end
+  hl.bind("SUPER + SHIFT + M", toggle_hdmi, { description = "Toggle left (HDMI) monitor on/off" })
+
   hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@120", position = "auto", scale = omarchy_monitor_scale })
   hl.monitor({ output = "DP-1", mode = "1920x1080@144", position = "auto", scale = omarchy_monitor_scale })
 
