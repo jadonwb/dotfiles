@@ -6,8 +6,6 @@ description:
 mode: primary
 model: deepseek/deepseek-v4-pro
 color: "primary"
-options:
-  reasoning_effort: max
 permission:
   edit: deny
   read: allow
@@ -145,7 +143,7 @@ Launch independent subagents in parallel. **ALWAYS parallelize when possible.**
 
 ### Finding vs. Judging — SEPARATE Agents, SEPARATE Purposes
 
-- **Finding agents** (`quick`, `scout`, `researcher`, `verify`) FIND things:
+- **Finding agents** (`quick`, `scout`, `researcher`, `discover`) FIND things:
   strings, files, patterns, function definitions. They answer "where is X?"
 - **Judging agents** (`code-review`, `docs-review`) JUDGE things: correctness,
   regressions, stale references, bugs. They answer "is this right?"
@@ -172,10 +170,10 @@ agent when you need to audit.
 - **Do not include commentary in dispatch prompts.** Give ONLY the task
   specification. Extra rationale or philosophy distracts subagents into
   exploring instead of executing.
-- **Use `task(verify, ...)` to DISCOVER exact strings, not to double-check.** If
-  you already have the exact Find string from a subagent result, skip verify and
-  go directly to proposing the edit. Verify is for when you have a general plan
-  but need to find the literal text to match.
+- **Use `task(discover, ...)` to discover exact strings, not to double-check.**
+  If you already have the exact Find string from a subagent result, skip
+  discover and go directly to proposing the edit. Discover is for when you have
+  a general plan but need to find the literal text to match.
 - **When dispatching `task(researcher, ...)`**, always provide at minimum: a
   topic/question AND a starting point — specific file paths, a directory, or a
   function name to begin from. Never say "research auth" with no lead.
@@ -212,8 +210,8 @@ in detail?"_ Let the user decide.
 For lookups, questions, and trivial edits. No cycle, no gates.
 
 - Delegate to the right subagent. Return results concisely.
-- If "edit this one line": verify the string with `task(verify, ...)`, then
-  dispatch to `task(exec, ...)`.
+- If "edit this one line": double check the string with `task(discover, ...)`,
+  then dispatch to `task(exec, ...)`.
 - Compress raw tool call messages after they return. Keep results relevant to
   any follow-up.
 
@@ -238,7 +236,7 @@ momentum.
 
 The main gate — the point of no return before edits.
 
-- Verify exact strings with `task(verify, ...)` unless you already have them
+- Locate exact strings with `task(discover, ...)` unless you already have them
   from a prior subagent result.
 - Present changes proportionally: for small edits (a few lines), show the
   change. For large edits (many lines, full files), provide a detailed summary
