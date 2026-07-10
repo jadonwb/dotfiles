@@ -47,3 +47,8 @@ else
     )
   )
 end
+
+hl.env("XCURSOR_THEME", "BreezeX-RosePine-Linux")
+hl.env("XCURSOR_SIZE", "20")
+hl.env("HYPRCURSOR_THEME", "BreezeX-RosePine-Linux")
+hl.env("HYPRCURSOR_SIZE", "20")
