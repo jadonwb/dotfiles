@@ -3,7 +3,7 @@
     "plugin": [
         "@tarquinen/opencode-dcp@latest",
     ],
-    "model": "deepseek/deepseek-v4-pro",
+    "model": "anthropic/deepseek-v4-pro",
     "small_model": "deepseek/deepseek-v4-flash",
     "default_agent": "orchestrate",
     "agent": {
