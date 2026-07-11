@@ -4,7 +4,7 @@ description:
   Quick, Default, or Plan mode based on request complexity. Delegates all code
   work; never edits directly.
 mode: primary
-model: anthropic/claude-sonnet-5
+model: deepseek/deepseek-v4-pro
 color: "primary"
 permission:
   edit: deny
