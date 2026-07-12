@@ -1,4 +1,5 @@
 local machine = require("hypr.host")
+local floats = require("hypr.floats-toggle")
 
 local function bind(keys, dispatcher, description)
   hl.bind(keys, dispatcher, { description = description })
@@ -15,6 +16,7 @@ hl.unbind("SUPER + T")
 hl.unbind("SUPER + O")
 hl.unbind("SUPER + S")
 hl.unbind("SUPER + ALT + S")
+hl.unbind("SUPER + SHIFT + G")
 
 bind("SUPER + SPACE", hl.dsp.exec_cmd("omarchy-menu"), "Omarchy menu")
 bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd("omarchy-launch-walker"), "Launch apps")
@@ -58,6 +60,7 @@ bind("SUPER + M", hl.dsp.workspace.toggle_special("media"), "Toggle special work
 bind("SUPER + E", hl.dsp.workspace.toggle_special("yazi"), "Toggle special workspace yazi")
 bind("SUPER + S", hl.dsp.workspace.toggle_special("scratch"), "Toggle special workspace scratch")
 bind("SUPER + ALT + S", hl.dsp.window.move({ workspace = "special:scratch", follow = false }), "Move window to scratch")
+bind("SUPER + SHIFT + G", floats.toggle, "Toggle float drawer (hide/show floats)")
 
 if machine.is_personal then
   bind("SUPER + PERIOD", hl.dsp.exec_cmd("uwsm-app -- 1password"), "Passwords")
