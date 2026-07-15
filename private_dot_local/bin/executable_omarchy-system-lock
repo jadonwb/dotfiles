@@ -5,14 +5,11 @@
 # omarchy:name=lock
 # omarchy:examples=omarchy system lock
 
-touch /home/jadon/c/FLAG_FILE
-
 if ! pidof hyprlock >/dev/null; then
   (
-    hyprlock --immediate-render
+    hyprlock
     omarchy-system-wake
   ) &
-  sleep 0.3
 fi
 
 # Set keyboard layout to default (first layout)
