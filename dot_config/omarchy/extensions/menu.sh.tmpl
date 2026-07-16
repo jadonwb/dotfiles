@@ -15,3 +15,23 @@ show_learn_menu() {
   *) show_main_menu ;;
   esac
 }
+{{- if eq .machine.type "work" }}
+
+show_system_menu() {
+  local options="󱄄  Screensaver\n  Lock"
+  ! omarchy-toggle-enabled suspend-off && options="$options\n󰒲  Suspend"
+  omarchy-hibernation-available && options="$options\n󰤁  Hibernate"
+  options="$options\n󰍃  Logout\n󰜉  Restart\n󰐥  Shutdown"
+
+  case $(menu "System" "$options") in
+  *Screensaver*) omarchy-launch-screensaver force ;;
+  *Lock*) OMARCHY_LOCK_ONLY=true omarchy-system-lock ;;
+  *Suspend*) systemctl suspend ;;
+  *Hibernate*) systemctl hibernate ;;
+  *Logout*) omarchy-system-logout ;;
+  *Restart*) omarchy-system-reboot ;;
+  *Shutdown*) omarchy-system-shutdown ;;
+  *) back_to show_main_menu ;;
+  esac
+}
+{{- end}}
