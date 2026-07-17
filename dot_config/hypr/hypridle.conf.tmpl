@@ -1,7 +1,7 @@
 general {
 {{- if eq .machine.type "work" }}
     lock_cmd = OMARCHY_LOCK_ONLY=true omarchy-system-lock
-{{- else if eq .machine.type "personal" }}
+{{- else}}
     lock_cmd = omarchy-system-lock
 {{- end}}
     before_sleep_cmd = OMARCHY_LOCK_ONLY=true omarchy-system-lock    # lock before suspend without scheduling display off.
@@ -9,7 +9,7 @@ general {
     inhibit_sleep = 3                                      # wait until screen is locked
 }
 
-{{- if eq .machine.type "personal" }}
+{{- if ne .machine.type "work" }}
 # Start screensaver after 2.5 minutes
 listener {
     timeout = 150
@@ -22,9 +22,9 @@ listener {
 {{- if eq .machine.type "work" }}
     timeout = 300
     on-timeout = OMARCHY_LOCK_ONLY=true omarchy-system-lock
-{{- else if eq .machine.type "personal" }}
+{{- else}}
     timeout = 152
-    on-timeout = OMARCHY_LOCK_ONLY=true omarchy-system-lock
+    on-timeout = omarchy-system-lock
 {{- end}}
     on-resume = omarchy-system-wake
 }
