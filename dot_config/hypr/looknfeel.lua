@@ -1,3 +1,5 @@
+local machine = require("hypr.host")
+
 hl.config({
   general = {
     gaps_in = 3,
@@ -38,8 +40,8 @@ hl.config({
   },
 
   scrolling = {
-    direction = "right",
-    column_width = 0.99,
+    direction = machine.hostname == "omapad" and "down" or "right",
+    column_width = machine.hostname == "omapad" and 1.0 or 0.99,
   },
 })
 

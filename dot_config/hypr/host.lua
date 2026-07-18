@@ -34,6 +34,7 @@ local hostname = read_first_line("/proc/sys/kernel/hostname")
 
 local machine_type = ({
   fwdt = "personal",
+  omapad = "personal",
   ws205 = "work",
 })[hostname]
 

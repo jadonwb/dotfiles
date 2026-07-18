@@ -1,5 +1,5 @@
-local machine = require("hypr.host")
 local floats = require("hypr.floats-toggle")
+local machine = require("hypr.host")
 
 local function bind(keys, dispatcher, description)
   hl.bind(keys, dispatcher, { description = description })
@@ -34,7 +34,6 @@ bind("SUPER + SHIFT + J", hl.dsp.layout("togglesplit"), "Toggle window split")
 bind("SUPER + SHIFT + K", hl.dsp.exec_cmd("omarchy-menu-keybindings"), "Show key bindings")
 bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("omarchy-hyprland-workspace-layout-toggle"), "Toggle workspace layout")
 
-bind("SUPER + SHIFT + P", hl.dsp.layout("promote"), "Promote (scrolling)")
 bind("SUPER + CTRL + LEFT", hl.dsp.layout("swapcol l"), "Swap column left (scrolling)")
 bind("SUPER + CTRL + RIGHT", hl.dsp.layout("swapcol r"), "Swap column right (scrolling)")
 
