@@ -10,6 +10,5 @@ c/update_source.sh
 .local/bin/quickshell
 c/update_source.sh
 {{- end}}
-.config/hypr/stylua.toml
 .gitignore
 .opencode
