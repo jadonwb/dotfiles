@@ -15,11 +15,6 @@ th.git.updated_sign = ""
 
 require("git"):setup()
 
-require("full-border"):setup({
-	-- Available values: ui.Border.PLAIN, ui.Border.ROUNDED
-	type = ui.Border.ROUNDED,
-})
-
 require("close-and-restore-tab"):setup()
 
 Status:children_add(function()
