@@ -5,11 +5,6 @@ reflash() {
     sudo bmaptool copy "$2" "$1"
   }
 
-# When my dictionary changes
-dictionary() {
-    chezmoi re-add $HOME/.config/harper-ls/dictionary.txt
-  }
-
 restore_hyprlock() {
     local instance="${1:-0}"
     local target_tty="${2}"
