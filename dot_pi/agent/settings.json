@@ -1,0 +1,8 @@
+{
+  "defaultProjectTrust": "always",
+  "lastChangelogVersion": "0.82.1",
+  "theme": "light",
+  "packages": [
+    "npm:@ff-labs/pi-fff"
+  ]
+}
