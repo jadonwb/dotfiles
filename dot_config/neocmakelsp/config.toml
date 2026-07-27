@@ -1,0 +1,2 @@
+# Set maximum line length to a lot of characters.
+line_words_max = 999
