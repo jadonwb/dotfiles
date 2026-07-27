@@ -2,11 +2,13 @@
 .zsh_secrets.age
 .ssh/config
 {{- else if eq .machine.type "laptop" }}
+.config/systemd/user/elephant.service
 .zsh_secrets.age
 .ssh/config
 .local/bin/quickshell
 c/update_source.sh
 {{- else}}
+.config/systemd/user/elephant.service
 .local/bin/quickshell
 c/update_source.sh
 {{- end}}

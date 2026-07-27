@@ -1,0 +1,11 @@
+[Unit]
+Description=Elephant
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/home/jadon.brutcher/.local/share/mise/installs/go/1.22.12/bin/elephant --debug
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
