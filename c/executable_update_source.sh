@@ -9,6 +9,7 @@ MAKO_DIR="$HOME/c/mako"
 QUICKSHELL_DIR="$HOME/c/quickshell"
 TERMFILECHOOSER_DIR="$HOME/c/xdg-desktop-portal-termfilechooser"
 XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
+IMV_DIR="$HOME/c/imv"
 ELEPHANT_PROVIDERS_DIR="$HOME/.config/elephant/providers"
 QUICKSHELL_NIX_PROFILE="${QUICKSHELL_NIX_PROFILE:-}"
 XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
@@ -159,6 +160,13 @@ build_quickshell() {
   build_quickshell_nix
 }
 
+build_imv() {
+  printf '\n==> Building imv\n'
+  cd "$IMV_DIR"
+  meson setup --reconfigure build --prefix="$HOME/.local"
+  ninja -C build install
+}
+
 build_xdg_terminal_exec() {
   printf '\n==> Building xdg-terminal-exec\n'
   cd "$XDG_TERMINAL_EXEC_DIR"
@@ -254,12 +262,14 @@ main() {
   update_repo "$QUICKSHELL_DIR"
   update_repo "$TERMFILECHOOSER_DIR"
   update_repo "$XDG_TERMINAL_EXEC_DIR"
+  update_repo "$IMV_DIR"
 
   build_yazi
   build_walker
   build_elephant
   build_mako
   build_quickshell
+  build_imv
   build_xdg_terminal_exec
   build_termfilechooser
   ensure_xdg_terminals_list
