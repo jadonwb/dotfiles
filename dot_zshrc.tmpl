@@ -10,6 +10,7 @@ export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS} --ansi --color=16"
 export _ZO_EXCLUDE_DIRS="/net/*:/media/*:/tmp/*"
 export MANPAGER='nvim +Man!'
 export BAT_THEME=ansi
+typeset -U PATH
 
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
@@ -35,8 +36,6 @@ zinit light zsh-users/zsh-syntax-highlighting
 
 zinit ice wait lucid atload'eval "$(zoxide init --cmd cd zsh)"'
 zinit light ajeetdsouza/zoxide
-zinit ice wait lucid
-zinit light jdx/mise
 zinit ice wait lucid multisrc"shell/{completion,key-bindings}.zsh"
 zinit light junegunn/fzf
 zinit ice wait lucid
@@ -65,6 +64,9 @@ autoload -Uz compinit
 compinit -C
 
 zinit cdreplay -q
+
+# mise activation
+eval "$(mise activate zsh)"
 
 # Keybindings
 zvm_after_init() {
