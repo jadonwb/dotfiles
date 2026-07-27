@@ -1,11 +1,1 @@
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/gcr/ssh"
-
-{{- if eq .machine.type "work" }}
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-export GOPATH=$HOME/c/go
-export PATH=$HOME/bin:$PATH
-export PATH=$HOME/.opencode/bin:$PATH
-export PATH=$PATH:$GOPATH/bin
-{{- end}}
