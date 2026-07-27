@@ -10,6 +10,7 @@ QUICKSHELL_DIR="$HOME/c/quickshell"
 TERMFILECHOOSER_DIR="$HOME/c/xdg-desktop-portal-termfilechooser"
 XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
 IMV_DIR="$HOME/c/imv"
+NEOVIM_DIR="$HOME/c/neovim"
 ELEPHANT_PROVIDERS_DIR="$HOME/.config/elephant/providers"
 QUICKSHELL_NIX_PROFILE="${QUICKSHELL_NIX_PROFILE:-}"
 XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
@@ -167,6 +168,44 @@ build_imv() {
   ninja -C build install
 }
 
+build_neovim() {
+  printf '\n==> Building neovim\n'
+  cd "$NEOVIM_DIR"
+  git fetch --tags
+
+  local latest_tag
+  latest_tag="$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)"
+
+  if [[ -z "$latest_tag" ]]; then
+    printf '   Error: no stable tag found\n' >&2
+    return 1
+  fi
+
+  local installed_ver
+  installed_ver="$(nvim --version 2>/dev/null | head -1 | grep -oP 'v\K[0-9.]+' || echo '')"
+
+  if [[ -n "$installed_ver" && "$installed_ver" == "${latest_tag#v}" ]]; then
+    printf '   Already at %s, skipping build.\n' "$latest_tag"
+    return 0
+  fi
+
+  printf '   Building %s (installed: %s)\n' "$latest_tag" "${installed_ver:-none}"
+  git checkout "$latest_tag"
+
+  if command -v apt-get >/dev/null 2>&1; then
+    local dep
+    for dep in cmake gettext ninja-build; do
+      if ! dpkg -s "$dep" >/dev/null 2>&1; then
+        printf '   Installing build dependency: %s\n' "$dep"
+        sudo apt-get install -y "$dep"
+      fi
+    done
+  fi
+
+  make CMAKE_BUILD_TYPE=Release
+  sudo make install
+}
+
 build_xdg_terminal_exec() {
   printf '\n==> Building xdg-terminal-exec\n'
   cd "$XDG_TERMINAL_EXEC_DIR"
@@ -252,8 +291,62 @@ restart_portal_services() {
 }
 
 main() {
+  local target="${1:-}"
+
   printf '==> Updating Rust toolchain\n'
   rustup update
+
+  if [[ -n "$target" ]]; then
+    case "$target" in
+      neovim)
+        update_repo "$NEOVIM_DIR"
+        build_neovim
+        ;;
+      yazi)
+        update_repo "$YAZI_DIR"
+        build_yazi
+        ;;
+      walker)
+        update_repo "$WALKER_DIR"
+        build_walker
+        ;;
+      elephant)
+        update_repo "$ELEPHANT_DIR"
+        build_elephant
+        ;;
+      mako)
+        update_repo "$MAKO_DIR"
+        build_mako
+        ;;
+      quickshell)
+        update_repo "$QUICKSHELL_DIR"
+        build_quickshell
+        ;;
+      imv)
+        update_repo "$IMV_DIR"
+        build_imv
+        ;;
+      xdg-terminal-exec)
+        update_repo "$XDG_TERMINAL_EXEC_DIR"
+        build_xdg_terminal_exec
+        ;;
+      termfilechooser)
+        update_repo "$TERMFILECHOOSER_DIR"
+        build_termfilechooser
+        ensure_xdg_terminals_list
+        ensure_termfilechooser_config
+        ensure_portals_conf
+        restart_portal_services
+        ;;
+      *)
+        printf 'Unknown target: %s\n' "$target" >&2
+        printf 'Available: neovim yazi walker elephant mako quickshell imv xdg-terminal-exec termfilechooser\n' >&2
+        return 1
+        ;;
+    esac
+    printf '\nDone.\n'
+    return
+  fi
 
   update_repo "$YAZI_DIR"
   update_repo "$WALKER_DIR"
@@ -263,6 +356,7 @@ main() {
   update_repo "$TERMFILECHOOSER_DIR"
   update_repo "$XDG_TERMINAL_EXEC_DIR"
   update_repo "$IMV_DIR"
+  update_repo "$NEOVIM_DIR"
 
   build_yazi
   build_walker
@@ -270,6 +364,7 @@ main() {
   build_mako
   build_quickshell
   build_imv
+  build_neovim
   build_xdg_terminal_exec
   build_termfilechooser
   ensure_xdg_terminals_list
