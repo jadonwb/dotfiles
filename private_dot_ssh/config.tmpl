@@ -1,0 +1,6 @@
+{{- if eq .machine.type "work" }}
+Host web1 web1.example.invalid
+        Port 2222
+{{- end}}
+
+AddKeysToAgent yes
