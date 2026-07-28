@@ -6,6 +6,8 @@
 .config/systemd/user/elephant.service
 .local/bin/quickshell
 c/update_source.sh
+.config/xdg-terminals.list
+.mise.toml
 
 {{- end}}
 
