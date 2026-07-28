@@ -4,5 +4,8 @@
   "theme": "light",
   "packages": [
     "npm:@ff-labs/pi-fff"
-  ]
+  ],
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-flash",
+  "defaultThinkingLevel": "high"
 }
