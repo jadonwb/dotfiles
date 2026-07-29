@@ -1,0 +1,10 @@
+{
+  "defaultMode": "ask",
+  "allow": [
+    "read",
+    "ffgrep",
+    "fffind",
+    "fetch",
+    "web_search"
+  ]
+}
