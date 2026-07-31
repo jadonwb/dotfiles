@@ -20,7 +20,7 @@
 [merge]
     tool = diffview
 [mergetool "diffview"]
-	trustExitCode = true
+	trustExitCode = false
 	cmd = nvim \"+DiffviewMergeFiles $MERGED $BASE $LOCAL $REMOTE\"
     prompt = false
     keepBackup = false
