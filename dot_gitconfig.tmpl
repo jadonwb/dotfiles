@@ -17,12 +17,9 @@
 {{- end}}
 [rebase]
 	autoStash = true
+[mergetool "diffview"]
+    cmd = nvim -c "DiffviewMergeFiles $MERGED $BASE $LOCAL $REMOTE"
 [merge]
-    tool = nvimdiff
-[mergetool "nvimdiff"]
-    cmd = nvim -d $LOCAL $MERGED $REMOTE -c 'wincmd J | wincmd ='
-[mergetool]
-    prompt = false
-    keepBackup = false
+    tool = diffview
 [push]
 	useForceIfIncludes = true
