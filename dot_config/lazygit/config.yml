@@ -1,4 +1,4 @@
 git:
+  autoStageResolvedConflicts: false
   log:
     order: default
-  autoStageResolvedConflicts: false
