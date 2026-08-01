@@ -1,0 +1,18 @@
+#!/bin/bash
+# diffview-merge: git mergetool wrapper for diffview-plus
+# Auto-detects neovim context: uses --remote-send if $NVIM is set,
+# otherwise falls back to launching a new nvim instance.
+
+MERGED="$1"
+BASE="$2"
+LOCAL="$3"
+REMOTE="$4"
+
+if [ -n "${NVIM:-}" ]; then
+    # Running inside neovim → send to existing instance
+    nvim --server "$NVIM" --remote-send \
+        "<C-\><C-n>:DiffviewMergeFiles $MERGED $BASE $LOCAL $REMOTE<CR>"
+else
+    # Standalone terminal → open new nvim (blocking)
+    nvim "+DiffviewMergeFiles $MERGED $BASE $LOCAL $REMOTE"
+fi
