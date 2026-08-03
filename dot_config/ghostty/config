@@ -31,3 +31,40 @@ mouse-scroll-multiplier = 0.95
 
 # Fix general slowness on hyprland (https://github.com/ghostty-org/ghostty/discussions/3224)
 async-backend = epoll
+
+# Unbinds
+
+# Ctrl+Alt+arrows
+keybind = ctrl+alt+up=unbind
+keybind = ctrl+alt+down=unbind
+keybind = ctrl+alt+left=unbind
+keybind = ctrl+alt+right=unbind
+
+# Ctrl+Shift
+keybind = ctrl+shift+n=unbind
+keybind = ctrl+shift+w=unbind
+keybind = ctrl+shift+q=unbind
+keybind = ctrl+shift+t=unbind
+keybind = ctrl+shift+o=unbind
+keybind = ctrl+shift+e=unbind
+keybind = ctrl+shift+f=unbind
+keybind = ctrl+shift+up=unbind
+keybind = ctrl+shift+down=unbind
+keybind = ctrl+shift+left=unbind
+keybind = ctrl+shift+right=unbind
+keybind = ctrl+shift+enter=unbind
+keybind = ctrl+shift+a=unbind
+keybind = ctrl+shift+i=unbind
+
+# Shift+arrows/page
+keybind = shift+up=unbind
+keybind = shift+down=unbind
+keybind = shift+left=unbind
+keybind = shift+right=unbind
+keybind = shift+page_up=unbind
+keybind = shift+page_down=unbind
+keybind = shift+home=unbind
+keybind = shift+end=unbind
+
+# Ctrl+Enter
+keybind = ctrl+enter=unbind
