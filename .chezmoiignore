@@ -14,3 +14,4 @@ c/update_source.sh
 # global
 .gitignore
 .opencode
+Documents/setup-merge-conflict.sh
