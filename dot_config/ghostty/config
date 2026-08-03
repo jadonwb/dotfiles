@@ -42,6 +42,7 @@ keybind = ctrl+alt+right=unbind
 
 # Ctrl+Shift
 keybind = ctrl+shift+n=unbind
+keybind = ctrl+shift+p=unbind
 keybind = ctrl+shift+w=unbind
 keybind = ctrl+shift+q=unbind
 keybind = ctrl+shift+t=unbind
