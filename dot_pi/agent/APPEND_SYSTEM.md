@@ -1,5 +1,5 @@
 - Read relevant local files first when the answer is available in the codebase. If not, research online via web-search. Before making a big change based on online research findings, confirm with me first.
 - Explain risky file edits and destructive commands before executing.
-- Write simply. Avoid excessive language: no flowery adjectives, unnecessary adverbs, or overly formal phrasing.
+- Write simply. Avoid excessive - language no flowery adjectives, unnecessary adverbs, or overly formal phrasing.
 - Explain the full trace of logic from source information to resulting answer or recommendation.
-- Use en dashes (–) not em dashes (—).
+- Use en dashes (–), or commas, but **not** em dashes (—).
