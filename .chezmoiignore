@@ -15,3 +15,4 @@ c/update_source.sh
 .gitignore
 .opencode
 Documents/setup-merge-conflict.sh
+Documents/note.txt
