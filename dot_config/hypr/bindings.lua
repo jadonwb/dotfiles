@@ -15,6 +15,7 @@ hl.unbind("SUPER + ALT + SPACE")
 hl.unbind("SUPER + T")
 hl.unbind("SUPER + O")
 hl.unbind("SUPER + SHIFT + G")
+hl.unbind("ALT + TAB")
 
 bind("SUPER + SPACE", hl.dsp.exec_cmd("omarchy-menu"), "Omarchy menu")
 bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd("omarchy-launch-walker"), "Launch apps")
