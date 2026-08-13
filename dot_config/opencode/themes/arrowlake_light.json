@@ -134,80 +134,80 @@
     },
     "theme": {
         "primary": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "primary",
+            "light": "primary"
         },
         "secondary": {
-            "dark": "purple",
-            "light": "purple"
+            "dark": "secondary",
+            "light": "secondary"
         },
         "accent": {
-            "dark": "orange",
-            "light": "orange"
+            "dark": "focus",
+            "light": "focus"
         },
         "error": {
-            "dark": "error",
-            "light": "error"
+            "dark": "diagnostics_error",
+            "light": "diagnostics_error"
         },
         "warning": {
-            "dark": "yellow",
-            "light": "yellow"
+            "dark": "diagnostics_warning",
+            "light": "diagnostics_warning"
         },
         "success": {
-            "dark": "green",
-            "light": "green"
+            "dark": "diagnostics_success",
+            "light": "diagnostics_success"
         },
         "info": {
-            "dark": "info",
-            "light": "info"
+            "dark": "diagnostics_info",
+            "light": "diagnostics_info"
         },
         "text": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "foregrounds_normal",
+            "light": "foregrounds_normal"
         },
         "textMuted": {
-            "dark": "fg_dark",
-            "light": "fg_dark"
+            "dark": "foregrounds_muted",
+            "light": "foregrounds_muted"
         },
         "background": {
-            "dark": "bg",
-            "light": "bg"
+            "dark": "backgrounds_normal",
+            "light": "backgrounds_normal"
         },
         "backgroundPanel": {
-            "dark": "bg_dark",
-            "light": "bg_dark"
+            "dark": "backgrounds_sidebar",
+            "light": "backgrounds_sidebar"
         },
         "backgroundElement": {
-            "dark": "bg_dark",
-            "light": "bg_dark"
+            "dark": "backgrounds_code",
+            "light": "backgrounds_code"
         },
         "border": {
-            "dark": "black",
-            "light": "black"
-        },
-        "borderActive": {
             "dark": "border_color",
             "light": "border_color"
+        },
+        "borderActive": {
+            "dark": "border_active",
+            "light": "border_active"
         },
         "borderSubtle": {
             "dark": "border_subtle",
             "light": "border_subtle"
         },
         "diffAdded": {
-            "dark": "success",
-            "light": "success"
+            "dark": "git_add",
+            "light": "git_add"
         },
         "diffRemoved": {
-            "dark": "error",
-            "light": "error"
+            "dark": "git_delete",
+            "light": "git_delete"
         },
         "diffContext": {
-            "dark": "fg_dark",
-            "light": "fg_dark"
+            "dark": "foregrounds_dark",
+            "light": "foregrounds_dark"
         },
         "diffHunkHeader": {
-            "dark": "comment",
-            "light": "comment"
+            "dark": "foregrounds_comment",
+            "light": "foregrounds_comment"
         },
         "diffHighlightAdded": {
             "dark": "git_add",
@@ -226,12 +226,12 @@
             "light": "diff_delete"
         },
         "diffContextBg": {
-            "dark": "diff_change",
-            "light": "diff_change"
+            "dark": "backgrounds_dark",
+            "light": "backgrounds_dark"
         },
         "diffLineNumber": {
-            "dark": "fg_gutter",
-            "light": "fg_gutter"
+            "dark": "foregrounds_muted",
+            "light": "foregrounds_muted"
         },
         "diffAddedLineNumberBg": {
             "dark": "diff_add",
@@ -242,96 +242,96 @@
             "light": "diff_delete"
         },
         "markdownText": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "foregrounds_normal",
+            "light": "foregrounds_normal"
         },
         "markdownHeading": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "ui_header",
+            "light": "ui_header"
         },
         "markdownLink": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "syntax_link",
+            "light": "syntax_link"
         },
         "markdownLinkText": {
-            "dark": "cyan",
-            "light": "cyan"
+            "dark": "syntax_link",
+            "light": "syntax_link"
         },
         "markdownCode": {
-            "dark": "md_inline",
-            "light": "md_inline"
+            "dark": "syntax_md_inline",
+            "light": "syntax_md_inline"
         },
         "markdownBlockQuote": {
-            "dark": "comment",
-            "light": "comment"
+            "dark": "foregrounds_comment",
+            "light": "foregrounds_comment"
         },
         "markdownEmph": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "foregrounds_normal",
+            "light": "foregrounds_normal"
         },
         "markdownStrong": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "foregrounds_normal",
+            "light": "foregrounds_normal"
         },
         "markdownHorizontalRule": {
-            "dark": "fg_gutter",
-            "light": "fg_gutter"
+            "dark": "foregrounds_muted",
+            "light": "foregrounds_muted"
         },
         "markdownListItem": {
-            "dark": "operator",
-            "light": "operator"
+            "dark": "syntax_markup",
+            "light": "syntax_markup"
         },
         "markdownListEnumeration": {
-            "dark": "orange",
-            "light": "orange"
+            "dark": "syntax_markup",
+            "light": "syntax_markup"
         },
         "markdownImage": {
-            "dark": "blue",
-            "light": "blue"
+            "dark": "syntax_link",
+            "light": "syntax_link"
         },
         "markdownImageText": {
-            "dark": "cyan",
-            "light": "cyan"
+            "dark": "syntax_link",
+            "light": "syntax_link"
         },
         "markdownCodeBlock": {
-            "dark": "fg",
-            "light": "fg"
+            "dark": "foregrounds_normal",
+            "light": "foregrounds_normal"
         },
         "syntaxComment": {
-            "dark": "comment",
-            "light": "comment"
+            "dark": "foregrounds_comment",
+            "light": "foregrounds_comment"
         },
         "syntaxKeyword": {
-            "dark": "keyword",
-            "light": "keyword"
+            "dark": "syntax_keyword",
+            "light": "syntax_keyword"
         },
         "syntaxFunction": {
-            "dark": "functions",
-            "light": "functions"
+            "dark": "syntax_functions",
+            "light": "syntax_functions"
         },
         "syntaxVariable": {
-            "dark": "variable",
-            "light": "variable"
+            "dark": "syntax_variable",
+            "light": "syntax_variable"
         },
         "syntaxString": {
-            "dark": "string",
-            "light": "string"
+            "dark": "syntax_string",
+            "light": "syntax_string"
         },
         "syntaxNumber": {
-            "dark": "constant",
-            "light": "constant"
+            "dark": "syntax_constant",
+            "light": "syntax_constant"
         },
         "syntaxType": {
-            "dark": "type",
-            "light": "type"
+            "dark": "syntax_type",
+            "light": "syntax_type"
         },
         "syntaxOperator": {
-            "dark": "operator",
-            "light": "operator"
+            "dark": "syntax_operator",
+            "light": "syntax_operator"
         },
         "syntaxPunctuation": {
-            "dark": "punctuation",
-            "light": "punctuation"
+            "dark": "foregrounds_punctuation",
+            "light": "foregrounds_punctuation"
         }
     }
 }
