@@ -174,12 +174,12 @@
             "light": "backgrounds_normal"
         },
         "backgroundPanel": {
-            "dark": "backgrounds_sidebar",
-            "light": "backgrounds_sidebar"
+            "dark": "backgrounds_float",
+            "light": "backgrounds_float"
         },
         "backgroundElement": {
-            "dark": "backgrounds_code",
-            "light": "backgrounds_code"
+            "dark": "backgrounds_float",
+            "light": "backgrounds_float"
         },
         "border": {
             "dark": "border_color",
