@@ -18,7 +18,8 @@ cursor-style-blink = false
 shell-integration-features = no-cursor,ssh-env
 
 # Disable clipboard paste protection
-clipboard-paste-protection = false
+clipboard-read = allow
+clipboard-write = allow
 
 # Keyboard bindings
 keybind = f11=toggle_fullscreen
