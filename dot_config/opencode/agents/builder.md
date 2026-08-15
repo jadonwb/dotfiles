@@ -40,8 +40,8 @@ If the brief lists images or PDFs, read them first.
 
 - Stay in the task and the named files. Do not widen the work.
 - Read each file before you edit it. Match the style.
-- If the brief is thin or the code would change the design, stop and report. Do not guess.
-- Drift in space, a local name, or a line number is fine. A change in meaning is not.
+- If the brief is underspecified or the code would change the design, stop and report. Do not guess.
+- Whitespace, a renamed local, or an off-by-a-line location is fine. A change in meaning is not.
 - Run the commands you were given, and what you need to apply the change. If a command fails, stop and report. Do not retry unless told.
 
 ## Output
