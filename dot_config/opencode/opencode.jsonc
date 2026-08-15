@@ -1,11 +1,8 @@
 {
     "$schema": "https://opencode.ai/config.json",
-    "plugin": [
-        "@tarquinen/opencode-dcp@latest",
-    ],
-    "model": "deepseek/deepseek-v4-pro",
+    "model": "xai/grok-4.6",
     "small_model": "deepseek/deepseek-v4-flash",
-    "default_agent": "orchestrate",
+    "default_agent": "planner",
     "agent": {
         "build": {
             "disable": true
@@ -18,10 +15,13 @@
         },
         "explore": {
             "disable": true
+        },
+        "scout": {
+            "disable": true
         }
     },
     "compaction": {
-        "auto": false,
+        "auto": true,
         "prune": false,
     },
 }

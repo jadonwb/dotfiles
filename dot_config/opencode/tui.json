@@ -5,9 +5,6 @@
         "enabled": true
     },
     "diff_style": "auto",
-    "plugin": [
-        "@tarquinen/opencode-dcp@latest",
-    ],
     "keybinds": {
         "messages_line_up": "alt+k",
         "messages_line_down": "alt+j",
