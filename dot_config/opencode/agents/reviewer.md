@@ -3,7 +3,7 @@ description: Reviews the changed files. Checks regressions, stale refs, bugs, an
 mode: subagent
 hidden: true
 model: xai/grok-build-0.1
-color: "#f59e0b"
+color: "orange"
 steps: 20
 permission:
   edit: deny

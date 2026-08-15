@@ -3,7 +3,7 @@ description: Maps directories. Finds files. Traces refs. Exhausts call sites. Lo
 mode: subagent
 hidden: true
 model: xai/grok-build-0.1
-color: "#3b82f6"
+color: "yellow"
 steps: 30
 permission:
   edit: deny
