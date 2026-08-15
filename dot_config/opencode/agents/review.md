@@ -1,5 +1,5 @@
 ---
-description: Reviews the changed files. Checks regressions, stale refs, bugs, and gains in scope. Read-only. Not for search or fixes.
+description: Reviews changed files for regressions, stale references, bugs, and scope creep. Read-only. Not for search or fixes.
 mode: subagent
 hidden: true
 model: xai/grok-build-0.1
@@ -10,20 +10,16 @@ permission:
   read: allow
   glob: allow
   grep: allow
+  list: allow
   bash:
     "*": deny
     "rg *": allow
     "fd *": allow
-    "fd-find *": allow
     "grep *": allow
     "ls *": allow
     "git log *": allow
-    "git log --oneline *": allow
     "git show *": allow
-    "git show --stat *": allow
     "git diff *": allow
-    "git diff --stat *": allow
-    "git diff --name-only *": allow
     "git status *": allow
     "git branch *": allow
     "git stash list *": allow
@@ -42,11 +38,11 @@ permission:
   todowrite: allow
 ---
 
-# Reviewer
+# Review
 
 You audit the changed files. Read-only.
 
-Answer if it is right and what should improve. Do not search the tree. Do not fix.
+Say whether the change is correct and what should improve. Do not search the tree. Do not fix.
 
 ## Procedure
 
