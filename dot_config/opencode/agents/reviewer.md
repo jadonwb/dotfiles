@@ -45,7 +45,7 @@ permission:
 
 You audit the changed files. Read-only.
 
-Answer if it is right and what should improve. Do not hunt the tree. Do not fix.
+Answer if it is right and what should improve. Do not search the tree. Do not fix.
 
 ## Procedure
 
