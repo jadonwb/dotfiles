@@ -33,7 +33,7 @@ permission:
   websearch: allow
   task: deny
   question: deny
-  todowrite: deny
+  todowrite: allow
 ---
 
 # Searcher
@@ -57,6 +57,8 @@ Answer where X is and how X works. Do not judge the change.
 4. Cite `file:line` for every claim.
 5. Stop when you can answer.
 6. If you cannot answer, say what is missing.
+
+Use `todowrite` when the job has many steps. Mark one item in progress. Close it when done.
 
 ## Output
 

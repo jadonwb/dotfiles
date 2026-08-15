@@ -39,6 +39,7 @@ permission:
   websearch: deny
   task: deny
   question: deny
+  todowrite: allow
 ---
 
 # Reviewer
@@ -55,6 +56,7 @@ Answer if it is right and what should improve. Do not search the tree. Do not fi
 - Public interface changed: check callers.
 - Docs in scope: check they match.
 - Draft findings. Keep what matters. If nothing is wrong, say so and stop.
+- Use `todowrite` when the review has many steps. Mark one item in progress. Close it when done.
 
 ## Output
 

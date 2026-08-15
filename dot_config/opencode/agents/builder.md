@@ -22,7 +22,7 @@ permission:
   task: deny
   skill: deny
   question: deny
-  todowrite: deny
+  todowrite: allow
   webfetch: deny
   websearch: deny
   external_directory:
@@ -43,6 +43,7 @@ If the brief lists images or PDFs, read them first.
 - If the brief is underspecified or the code would change the design, stop and report. Do not guess.
 - Whitespace, a renamed local, or an off-by-a-line location is fine. A change in meaning is not.
 - Run the commands you were given, and what you need to apply the change. If a command fails, stop and report. Do not retry unless told.
+- Use `todowrite` when the task has many steps. Mark one item in progress. Close it when done.
 
 ## Output
 
