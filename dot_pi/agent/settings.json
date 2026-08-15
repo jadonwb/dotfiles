@@ -5,7 +5,7 @@
   "packages": [
     "npm:@ff-labs/pi-fff"
   ],
-  "defaultProvider": "deepseek",
-  "defaultModel": "deepseek-v4-flash",
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4.6",
   "defaultThinkingLevel": "high"
 }
