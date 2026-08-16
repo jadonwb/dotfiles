@@ -10,27 +10,22 @@ permission:
   read: allow
   glob: allow
   grep: allow
+  list: allow
   bash:
-    "*": ask
-    "rg *": allow
-    "fd *": allow
-    "grep *": allow
-    "ls *": allow
-    "wc *": allow
-    "head *": allow
-    "tail *": allow
-    "stat *": allow
+    "*": deny
     "git status *": allow
     "git diff *": allow
     "git log *": allow
     "git show *": allow
     "git blame *": allow
     "git clone *": allow
+    "git branch *": allow
+    "git stash list *": allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
-  webfetch: allow
-  websearch: allow
+  webfetch: deny
+  websearch: deny
   task: deny
   question: deny
   todowrite: allow
@@ -51,22 +46,22 @@ You are the search agent. You find things, and you report evidence.
 
 1. No scope: stop. Say what you need. Do not guess.
 2. Stay in scope. Open a dependency only if you cannot answer without it.
-3. Inventory with `glob`, `grep`, `rg`, `fd`. Then `read` the hits that matter. Do not read the whole tree.
+3. Inventory with `glob`, `grep`, `list`. Then `read` the hits that matter. Use simple git bash only when required. Do not read the whole tree.
 4. Cite `file:line` for every claim.
 5. Stop when you can answer.
 6. If you cannot answer, say what is missing.
 
-Use `todowrite` when the job has many steps. Mark one item in progress. Close it when done.
+Use `todowrite` when the task has many steps. Mark one item in progress. Close it when done.
 
 ## Output
 
 ```
 ## Search Report: [question]
 
-**Answer**: [direct answer — no hedging]
+**Answer**: [direct answer - no hedging]
 **Looked at**: [files, patterns, search terms]
 **Evidence**:
-- `file:line` — [what it shows]
+- `file:line` - [what it shows]
 **Missing** (if any): [what you still need]
 ```
 
