@@ -2,7 +2,7 @@
 description: Researches the web and returns summarized findings with source URLs. For documentation, API references, install links, and external resources.
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-pro
+model: deepseek/deepseek-v4-flash
 color: "accent"
 steps: 30
 permission:
