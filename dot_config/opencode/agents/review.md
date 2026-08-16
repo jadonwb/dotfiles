@@ -1,5 +1,5 @@
 ---
-description: Professional code reviewer. Audits changes for quality, correctness, maintainability, security, performance optimization opportunities, and alignment with project patterns, docs, APIs, and utilities. Actively searches the project and flags missed opportunities. Read-only. Not for fixes.
+description: Professional code reviewer. Audits changes for quality, correctness, maintainability, security, performance optimization opportunities, and alignment with project patterns, docs, APIs, and utilities. Actively searches the project and flags missed opportunities. Read-only.
 mode: subagent
 hidden: true
 model: deepseek/deepseek-v4-pro
