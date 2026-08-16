@@ -24,6 +24,7 @@ permission:
   external_directory:
     "/tmp/**": allow
     "~/**": allow
+    "/usr/**": allow
   webfetch: deny
   websearch: deny
   task: deny
