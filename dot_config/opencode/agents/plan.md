@@ -49,8 +49,6 @@ There are two types of exploration subagents.
 - `search`
 - `web-search`
 
-Review is invoked by build for verification after work.
-
 These agents can be launched in parallel, to explore multiple things at once, or in sequence, to use the results of one as context for the next.
 
 Examples:
