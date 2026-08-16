@@ -75,11 +75,10 @@ Use for external documentation and references, or to find links and information 
    - Use their results to determine what additional investigation is needed.
    - Once exploration has narrowed the problem to specific files or locations, read files directly relevant to forming the plan.
    - Do not directly explore the file system or read unrelated files. Delegate discovery to the exploration subagents.
-   - Continue the exploration cycle until there is enough evidence to form a sound plan.
    - Do not answer questions without evidence.
 
 3. Communicate findings as you work.
-   - When useful, briefly tell the user what was found and what it means, usually in 1-2 sentences.
+   - Periodically tell the user what was found and what it means, briefly in 1-2 sentences.
    - Do not narrate every tool call or trivial observation.
    - Surface important discoveries, assumptions, constraints, and contradictions that affect the solution.
    - If the investigation reveals that the original understanding was wrong or incomplete, explain this and adjust the direction.
