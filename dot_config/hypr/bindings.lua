@@ -5,36 +5,14 @@ local function bind(keys, dispatcher, description)
   hl.bind(keys, dispatcher, { description = description })
 end
 
-hl.unbind("SUPER + K")
-hl.unbind("SUPER + J")
-hl.unbind("SUPER + L")
-hl.unbind("SUPER + F")
-hl.unbind("SUPER + CTRL + T")
+-- hl.unbind("SUPER + CTRL + T")
 hl.unbind("SUPER + SPACE")
 hl.unbind("SUPER + ALT + SPACE")
-hl.unbind("SUPER + T")
-hl.unbind("SUPER + O")
-hl.unbind("SUPER + SHIFT + G")
-hl.unbind("ALT + TAB")
+-- hl.unbind("SUPER + SHIFT + G")
+-- hl.unbind("ALT + TAB")
 
 bind("SUPER + SPACE", hl.dsp.exec_cmd("omarchy-menu"), "Omarchy menu")
 bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd("omarchy-launch-walker"), "Launch apps")
-
-bind("SUPER + SHIFT + O", hl.dsp.exec_cmd("omarchy-hyprland-window-pop"), "Pop window out (float & pin)")
-bind("SUPER + O", hl.dsp.window.float({ action = "toggle" }), "Toggle window floating/tiling")
-
-bind("SUPER + H", hl.dsp.focus({ direction = "l" }), "Move window focus left")
-bind("SUPER + L", hl.dsp.focus({ direction = "r" }), "Move window focus right")
-bind("SUPER + K", hl.dsp.focus({ direction = "u" }), "Move window focus up")
-bind("SUPER + J", hl.dsp.focus({ direction = "d" }), "Move window focus down")
-
-bind("SUPER + SHIFT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), "Fullscreen")
-bind("SUPER + SHIFT + J", hl.dsp.layout("togglesplit"), "Toggle window split")
-bind("SUPER + SHIFT + K", hl.dsp.exec_cmd("omarchy-menu-keybindings"), "Show key bindings")
-bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("omarchy-hyprland-workspace-layout-toggle"), "Toggle workspace layout")
-
-bind("SUPER + CTRL + LEFT", hl.dsp.layout("swapcol l"), "Swap column left (scrolling)")
-bind("SUPER + CTRL + RIGHT", hl.dsp.layout("swapcol r"), "Swap column right (scrolling)")
 
 bind(
   "SUPER + RETURN",
@@ -42,9 +20,9 @@ bind(
   "Terminal"
 )
 bind("SUPER + B", hl.dsp.exec_cmd("omarchy-launch-browser"), "Browser")
-bind("SUPER + T", hl.dsp.workspace.toggle_special("activity"), "Toggle special workspace activity")
+bind("SUPER + A", hl.dsp.workspace.toggle_special("activity"), "Toggle special workspace activity")
 bind("SUPER + E", hl.dsp.workspace.toggle_special("yazi"), "Toggle special workspace yazi")
-bind("SUPER + SHIFT + G", floats.toggle, "Toggle float drawer (hide/show floats)")
+-- bind("SUPER + SHIFT + G", floats.toggle, "Toggle float drawer (hide/show floats)")
 
 if machine.is_personal then
   bind("SUPER + PERIOD", hl.dsp.exec_cmd("uwsm-app -- 1password"), "Passwords")
