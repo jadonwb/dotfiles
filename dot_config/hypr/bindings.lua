@@ -29,3 +29,5 @@ if machine.is_personal then
 end
 
 bind("SUPER + SHIFT + W", hl.dsp.exec_cmd([[notify-send 'click window to kill' && hyprctl kill]]), "Kill")
+
+bind("SUPER + CTRL + SHIFT + COMMA", hl.dsp.exec_cmd("makoctl reload"), "Reload notification daemon")
