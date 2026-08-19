@@ -1,5 +1,5 @@
-local floats = require("hypr.floats-toggle")
 local float_tui = require("hypr.float-tui")
+local floats = require("hypr.floats-toggle")
 local machine = require("hypr.host")
 
 local function bind(keys, dispatcher, description)
@@ -21,6 +21,7 @@ bind(
   "Terminal"
 )
 bind("SUPER + B", hl.dsp.exec_cmd("omarchy-launch-browser"), "Browser")
+-- TODO: simplify, omarchy-launch-tui auto names them org.omarchy.*, so just provide a single name and the internals will make special:* and use org.omarchy.*
 bind(
   "SUPER + E",
   float_tui.new({ class = "org.omarchy.yazi", special = "special:yazi", launch = "omarchy-launch-tui yazi" }),
