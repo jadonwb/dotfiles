@@ -1,4 +1,5 @@
 local floats = require("hypr.floats-toggle")
+local float_tui = require("hypr.float-tui")
 local machine = require("hypr.host")
 
 local function bind(keys, dispatcher, description)
@@ -20,8 +21,16 @@ bind(
   "Terminal"
 )
 bind("SUPER + B", hl.dsp.exec_cmd("omarchy-launch-browser"), "Browser")
-bind("SUPER + A", hl.dsp.workspace.toggle_special("activity"), "Toggle special workspace activity")
-bind("SUPER + E", hl.dsp.workspace.toggle_special("yazi"), "Toggle special workspace yazi")
+bind(
+  "SUPER + E",
+  float_tui.new({ class = "org.omarchy.yazi", special = "special:yazi", launch = "omarchy-launch-tui yazi" }),
+  "Toggle yazi"
+)
+bind(
+  "SUPER + A",
+  float_tui.new({ class = "org.omarchy.btop", special = "special:btop", launch = "omarchy-launch-tui btop" }),
+  "Toggle btop"
+)
 -- bind("SUPER + SHIFT + G", floats.toggle, "Toggle float drawer (hide/show floats)")
 
 if machine.is_personal then
