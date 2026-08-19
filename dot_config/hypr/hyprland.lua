@@ -11,7 +11,6 @@ package.path = os.getenv("HOME")
 require("default.hypr.omarchy")
 
 -- Change your own setup in these files and override defaults.
-require("hypr.workspaces")
 require("hypr.windows")
 require("hypr.monitors")
 require("hypr.input")
