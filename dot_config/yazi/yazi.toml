@@ -6,14 +6,22 @@ image_quality = 75
 ueberzug_scale = 1
 ueberzug_offset = [0, 0, 0, 0]
 
+[opener]
+# edit = [{ run = 'nvim "$@"', desc = "Neovim", block = true, for = "unix" }]
+edit = [
+    { run = '${EDITOR:-nvim} %s', desc = "$EDITOR", block = true, for = "unix" },
+    { run = 'xdg-terminal-exec ${EDITOR:-nvim} %s', orphan = true, desc = "$EDITOR (new terminal)", for = "unix" },
+]
+open = [{ run = 'xdg-open %s', desc = "Open", for = "linux" }]
+
 [[plugin.prepend_fetchers]]
-group = ""
+group = "git"
 id = "git"
 url = "*"
 run = "git"
 
 [[plugin.prepend_fetchers]]
-group = ""
+group = "git"
 id = "git"
 url = "*/"
 run = "git"
