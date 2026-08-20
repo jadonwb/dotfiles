@@ -18,4 +18,6 @@ config.front_end = "WebGpu"
 
 config.window_close_confirmation = "NeverPrompt"
 
+config.keys = require("keymaps")
+
 return config
