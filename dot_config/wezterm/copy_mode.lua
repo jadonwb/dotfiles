@@ -9,7 +9,6 @@ local function apply(config)
 		copy_mode = wezterm.gui.default_key_tables().copy_mode
 
 		search_mode = wezterm.gui.default_key_tables().search_mode
-		-- vim-like: Enter advances to the next match (default was prior)
 		for _, entry in ipairs(search_mode) do
 			if entry.key == "Enter" and entry.mods == "NONE" then
 				entry.action = act.CopyMode("NextMatch")

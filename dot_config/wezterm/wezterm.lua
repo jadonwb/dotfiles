@@ -31,4 +31,41 @@ config.window_close_confirmation = "NeverPrompt"
 config.keys = require("keymaps")
 require("copy_mode")(config)
 
+config.status_update_interval = 100
+
+local MAG_BG = "#D7A9B1"
+local MAG_FG = "#54473F"
+
+local function is_magenta(value)
+	if type(value) == "string" then
+		return value:lower() == MAG_BG:lower()
+	elseif type(value) == "table" then
+		local v = value.Color or value.AnsiColor or value.Default
+		return type(v) == "string" and v:lower() == MAG_BG:lower()
+	end
+	return false
+end
+
+local function in_copy_or_search(win)
+	local t = win:active_key_table()
+	return t == "copy_mode" or t == "search_mode"
+end
+
+wezterm.on("update-status", function(win, pane)
+	local overrides = win:get_config_overrides() or {}
+	local want = in_copy_or_search(win)
+	local have = overrides.colors ~= nil and is_magenta(overrides.colors.selection_bg)
+
+	if want ~= have then
+		if want then
+			overrides.colors = win:effective_config().colors
+			overrides.colors.selection_bg = MAG_BG
+			overrides.colors.selection_fg = MAG_FG
+		else
+			overrides.colors = nil
+		end
+		win:set_config_overrides(overrides)
+	end
+end)
+
 return config
