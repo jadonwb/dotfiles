@@ -1,0 +1,63 @@
+[colors]
+foreground = "#54473f"
+background = "#ebe0cf"
+cursor_bg = "#54473f"
+cursor_border = "#54473f"
+cursor_fg = "#ebe0cf"
+selection_bg = "#d4c6b3"
+selection_fg = "#54473f"
+split = "#e3d7c7"
+compose_cursor = "#56AEA9"
+scrollbar_thumb = "#d4c6b3"
+
+ansi = [
+    "#DED0BF",
+    "#BC495D",
+    "#4E7469",
+    "#AE984C",
+    "#4A74A8",
+    "#C16C90",
+    "#56AEA9",
+    "#87786c",
+]
+brights = [
+    "#ad9b88",
+    "#e43b5f",
+    "#448474",
+    "#c2a525",
+    "#3782cb",
+    "#db719f",
+    "#2dc0ba",
+    "#54473f",
+]
+
+[colors.tab_bar]
+inactive_tab_edge = "#e3d7c7"
+background = "#ebe0cf"
+
+[colors.tab_bar.active_tab]
+fg_color = "#6660AF"
+bg_color = "#ebe0cf"
+
+[colors.tab_bar.inactive_tab]
+fg_color = "#ad9b88"
+bg_color = "#ebe0cf"
+
+[colors.tab_bar.inactive_tab_hover]
+fg_color = "#56AEA9"
+bg_color = "#ebe0cf"
+# intensity = "Bold"
+
+[colors.tab_bar.new_tab_hover]
+fg_color = "#56AEA9"
+bg_color = "#ebe0cf"
+intensity = "Bold"
+
+[colors.tab_bar.new_tab]
+fg_color = "#ad9b88"
+bg_color = "#ebe0cf"
+
+[metadata]
+aliases = []
+author = "jadonwb"
+name = "arrowlake_light"
