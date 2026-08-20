@@ -10,6 +10,8 @@ config.colors = {
 	copy_mode_inactive_highlight_fg = { Color = "#54473f" },
 }
 
+config.quit_when_all_windows_are_closed = false -- TODO: how does this interact with the session persistence?
+
 config.hide_tab_bar_if_only_one_tab = true -- TODO: remove when once full tabline.wez?
 config.use_fancy_tab_bar = false
 
