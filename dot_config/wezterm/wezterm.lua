@@ -3,6 +3,7 @@ local config = wezterm.config_builder()
 
 config.color_scheme = "arrowlake_light"
 
+config.hide_tab_bar_if_only_one_tab = true -- TODO: remove when once full tabline.wez?
 config.use_fancy_tab_bar = false
 
 config.font = wezterm.font("JetBrains Mono", { weight = "Medium" })
