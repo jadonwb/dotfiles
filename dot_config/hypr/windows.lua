@@ -5,6 +5,12 @@ hl.window_rule({
 })
 
 hl.window_rule({
+  name = "wezterm-terminal-tag",
+  match = { class = "org.wezfurlong.wezterm" },
+  tag = "+terminal",
+})
+
+hl.window_rule({
   name = "yazi",
   match = { class = "org.omarchy.yazi" },
   float = true,
