@@ -31,6 +31,10 @@ permission:
     "git branch --list *": allow
     "git branch -a *": allow
     "git branch -vv *": allow
+    "echo *": allow
+    "head *": allow
+    "tail *": allow
+    "cat *": allow
   external_directory:
     "/tmp/**": allow
     "~/**": allow
