@@ -3,6 +3,13 @@ local config = wezterm.config_builder()
 
 config.color_scheme = "arrowlake_light"
 
+config.colors = {
+	copy_mode_active_highlight_bg = { Color = "#D7A9B1" },
+	copy_mode_active_highlight_fg = { Color = "#54473F" },
+	copy_mode_inactive_highlight_bg = { Color = "#d4c6b3" },
+	copy_mode_inactive_highlight_fg = { Color = "#54473f" },
+}
+
 config.hide_tab_bar_if_only_one_tab = true -- TODO: remove when once full tabline.wez?
 config.use_fancy_tab_bar = false
 
