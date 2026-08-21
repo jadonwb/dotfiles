@@ -121,3 +121,4 @@ Use this exact structure. Keep sections even if empty. Use professional language
 ```
 
 Always cite `file:line` or source. Base everything on actual project content found via tools. Do not invent.
+
