@@ -16,10 +16,12 @@ config.colors = {
 	copy_mode_inactive_highlight_fg = { Color = "#54473f" },
 }
 
--- config.quit_when_all_windows_are_closed = false -- TODO: how does this interact with the session persistence?
+-- config.quit_when_all_windows_are_closed = true -- TODO: how does this interact with the session persistence?
 
-config.hide_tab_bar_if_only_one_tab = true -- TODO: remove when once full tabline.wez?
+-- config.hide_tab_bar_if_only_one_tab = false
 config.use_fancy_tab_bar = false
+
+-- config.enable_scroll_bar = true
 
 config.font = wezterm.font("JetBrains Mono", { weight = "Medium" })
 config.font_size = 9
@@ -31,38 +33,25 @@ config.underline_thickness = "2.75px"
 config.cell_width = 0.95
 
 config.front_end = "OpenGL"
+config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
 
 -- Shared local multiplexer: every GUI window attaches to this unix domain,
 -- so tabs/panes persist across windows and survive closing a window.
 config.unix_domains = {
-	{ name = "unix" },
+	{
+		name = "unix",
+	},
 }
 
--- SUPER + ALT + RETURN runs `wezterm-launcher`, which sets
--- WEZTERM_OPEN_LAUNCHER=1 and opens a fresh window; this hook opens the custom
--- launcher (launcher.lua) once the GUI has attached to the shared domain.
-if os.getenv("WEZTERM_OPEN_LAUNCHER") == "1" then
-	local launcher = require("launcher")
-	local shown = false
-	wezterm.on("gui-attached", function()
-		if shown then
-			return
-		end
-		shown = true
-
-		wezterm.time.call_after(0.1, function()
-			for _, gui in ipairs(wezterm.gui.gui_windows()) do
-				local pane = gui:active_pane()
-				if pane then
-					launcher.show(gui, pane)
-					return
-				end
-			end
-		end)
-	end)
-end
+-- wezterm.on("update-status", function(window, _pane)
+-- 	local ws = window:active_workspace()
+-- 	window:set_right_status(wezterm.format({
+-- 		{ Attribute = { Intensity = "Bold" } },
+-- 		{ Text = " " .. ws .. " " },
+-- 	}))
+-- end)
 
 config.keys = require("keymaps")
 
