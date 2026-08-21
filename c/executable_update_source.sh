@@ -2,6 +2,7 @@
 
 set -euo pipefail
 
+FOOT_DIR="$HOME/c/foot"
 YAZI_DIR="$HOME/c/yazi"
 WALKER_DIR="$HOME/c/walker"
 ELEPHANT_DIR="$HOME/c/elephant"
@@ -19,7 +20,7 @@ TERMFILECHOOSER_CONFIG_FILE="$TERMFILECHOOSER_CONFIG_DIR/config"
 XDG_PORTAL_CONFIG_DIR="$HOME/.config/xdg-desktop-portal"
 XDG_PORTAL_CONFIG_FILE="$XDG_PORTAL_CONFIG_DIR/portals.conf"
 YAZI_DESKTOP_FILE="$HOME/.local/share/applications/yazi.desktop"
-OMARCHY_LAUNCH_TUI="$HOME/.local/share/omarchy/bin/omarchy-launch-tui"
+# OMARCHY_LAUNCH_TUI="$HOME/.local/share/omarchy/bin/omarchy-launch-tui"
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -206,6 +207,29 @@ build_neovim() {
   sudo make install
 }
 
+build_foot() {
+  printf '\n==> Building foot\n'
+
+  if command -v apt-get >/dev/null 2>&1; then
+    local dep
+    for dep in \
+      meson ninja-build pkg-config wayland-protocols \
+      libwayland-dev libxkbcommon-dev libpixman-1-dev libutf8proc-dev \
+      libfreetype-dev libfontconfig1-dev libfcft-dev libtllist-dev \
+      libncurses-dev scdoc; do
+      if ! dpkg -s "$dep" >/dev/null 2>&1; then
+        printf '   Installing build dependency: %s\n' "$dep"
+        sudo apt-get install -y "$dep"
+      fi
+    done
+  fi
+
+  cd "$FOOT_DIR"
+  meson setup --reconfigure build --buildtype=release -Db_lto=true
+  ninja -C build
+  sudo ninja -C build install
+}
+
 build_xdg_terminal_exec() {
   printf '\n==> Building xdg-terminal-exec\n'
   cd "$XDG_TERMINAL_EXEC_DIR"
@@ -298,51 +322,55 @@ main() {
 
   if [[ -n "$target" ]]; then
     case "$target" in
-      neovim)
-        update_repo "$NEOVIM_DIR"
-        build_neovim
-        ;;
-      yazi)
-        update_repo "$YAZI_DIR"
-        build_yazi
-        ;;
-      walker)
-        update_repo "$WALKER_DIR"
-        build_walker
-        ;;
-      elephant)
-        update_repo "$ELEPHANT_DIR"
-        build_elephant
-        ;;
-      mako)
-        update_repo "$MAKO_DIR"
-        build_mako
-        ;;
-      quickshell)
-        update_repo "$QUICKSHELL_DIR"
-        build_quickshell
-        ;;
-      imv)
-        update_repo "$IMV_DIR"
-        build_imv
-        ;;
-      xdg-terminal-exec)
-        update_repo "$XDG_TERMINAL_EXEC_DIR"
-        build_xdg_terminal_exec
-        ;;
-      termfilechooser)
-        update_repo "$TERMFILECHOOSER_DIR"
-        build_termfilechooser
-        ensure_xdg_terminals_list
-        ensure_termfilechooser_config
-        ensure_portals_conf
-        restart_portal_services
-        ;;
-      *)
-        printf 'Unknown target: %s\n' "$target" >&2
-        printf 'Available: neovim yazi walker elephant mako quickshell imv xdg-terminal-exec termfilechooser\n' >&2
-        return 1
-        ;;
+    neovim)
+      update_repo "$NEOVIM_DIR"
+      build_neovim
+      ;;
+    foot)
+      update_repo "$FOOT_DIR"
+      build_foot
+      ;;
+    yazi)
+      update_repo "$YAZI_DIR"
+      build_yazi
+      ;;
+    walker)
+      update_repo "$WALKER_DIR"
+      build_walker
+      ;;
+    elephant)
+      update_repo "$ELEPHANT_DIR"
+      build_elephant
+      ;;
+    mako)
+      update_repo "$MAKO_DIR"
+      build_mako
+      ;;
+    quickshell)
+      update_repo "$QUICKSHELL_DIR"
+      build_quickshell
+      ;;
+    imv)
+      update_repo "$IMV_DIR"
+      build_imv
+      ;;
+    xdg-terminal-exec)
+      update_repo "$XDG_TERMINAL_EXEC_DIR"
+      build_xdg_terminal_exec
+      ;;
+    termfilechooser)
+      update_repo "$TERMFILECHOOSER_DIR"
+      build_termfilechooser
+      ensure_xdg_terminals_list
+      ensure_termfilechooser_config
+      ensure_portals_conf
+      restart_portal_services
+      ;;
+    *)
+      printf 'Unknown target: %s\n' "$target" >&2
+      printf 'Available: neovim yazi walker elephant mako quickshell imv xdg-terminal-exec termfilechooser\n' >&2
+      return 1
+      ;;
     esac
     printf '\nDone.\n'
     return
@@ -357,6 +385,7 @@ main() {
   update_repo "$XDG_TERMINAL_EXEC_DIR"
   update_repo "$IMV_DIR"
   update_repo "$NEOVIM_DIR"
+  update_repo "$FOOT_DIR"
 
   build_yazi
   build_walker
@@ -365,6 +394,7 @@ main() {
   build_quickshell
   build_imv
   build_neovim
+  build_foot
   build_xdg_terminal_exec
   build_termfilechooser
   ensure_xdg_terminals_list
