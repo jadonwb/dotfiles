@@ -30,7 +30,7 @@ config.underline_thickness = "2.75px"
 -- config.freetype_render_target = "HorizontalLcd"
 config.cell_width = 0.95
 
-config.front_end = "WebGpu"
+config.front_end = "OpenGL"
 
 config.window_close_confirmation = "NeverPrompt"
 
