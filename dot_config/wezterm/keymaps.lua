@@ -34,8 +34,10 @@ local keys = {
 	-- panes / tabs
 	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = false }) },
 	{ key = "c", mods = "ALT", action = act.SpawnTab("CurrentPaneDomain") },
-	-- launcher: workspaces, sessions, zoxide, commands
-	{ key = "s", mods = "ALT", action = launcher.action() },
+	-- launcher: main = quick switch (workspaces/sessions/zoxide)
+	{ key = "s", mods = "ALT", action = launcher.action_main() },
+	-- launcher: utility = domains + commands
+	{ key = "s", mods = "ALT|SHIFT", action = launcher.action_utility() },
 	-- scroll, or forward to neovim
 	{ key = "j", mods = "ALT", action = scroll_or_forward("j", 2) },
 	{ key = "k", mods = "ALT", action = scroll_or_forward("k", -2) },
