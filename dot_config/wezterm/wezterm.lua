@@ -1,5 +1,4 @@
 local wezterm = require("wezterm")
-local act = wezterm.action
 local config = wezterm.config_builder()
 
 config.color_scheme = "arrowlake_light"
@@ -16,12 +15,12 @@ config.colors = {
 	copy_mode_inactive_highlight_fg = { Color = "#54473f" },
 }
 
--- config.quit_when_all_windows_are_closed = true -- TODO: how does this interact with the session persistence?
+config.quit_when_all_windows_are_closed = true
 
--- config.hide_tab_bar_if_only_one_tab = false
+config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = false
 
--- config.enable_scroll_bar = true
+config.enable_scroll_bar = true
 
 config.font = wezterm.font("JetBrains Mono", { weight = "Medium" })
 config.font_size = 9
@@ -37,8 +36,6 @@ config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
 
--- Shared local multiplexer: every GUI window attaches to this unix domain,
--- so tabs/panes persist across windows and survive closing a window.
 config.unix_domains = {
 	{
 		name = "unix",
