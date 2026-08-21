@@ -6,13 +6,9 @@
 #   xdg-terminal-exec --app-id=org.omarchy.<name> -e <command>
 # which xdg-terminal-exec translates (via X-TerminalArgAppId) into:
 #   wezterm-omarchy --class=org.omarchy.<name> -- <command>
-#
-# Those windows are standalone (no shared mux/session) with the tab bar fully
-# hidden, since they close as soon as the TUI inside exits. Every other
-# terminal launch (including SUPER+RETURN) becomes a new persistent,
-# auto-named session in the shared `unix` mux domain.
 
 is_float=0
+wsdir="$PWD"
 prev=""
 for arg in "$@"; do
   if [[ "$prev" == "--class" && "$arg" == org.omarchy.* ]]; then
@@ -21,11 +17,24 @@ for arg in "$@"; do
   if [[ "$arg" == --class=org.omarchy.* ]]; then
     is_float=1
   fi
+  if [[ "$prev" == "--cwd" ]]; then
+    wsdir="$arg"
+  fi
+  if [[ "$arg" == --cwd=* ]]; then
+    wsdir="${arg#--cwd=}"
+  fi
   prev="$arg"
 done
 
-if (( is_float )); then
+if ((is_float)); then
   exec wezterm --config enable_tab_bar=false start --always-new-process "$@"
-else
-  exec wezterm start --always-new-process "$@"
 fi
+
+# base="$(basename "$PWD")"
+# [ -n "$base" ] || base="default"
+#
+# name="$base-$$"
+#
+# exec wezterm connect unix --workspace "$name"
+
+exec wezterm start --always-new-process
