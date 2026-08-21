@@ -20,7 +20,7 @@ bind(
   hl.dsp.exec_cmd([[uwsm-app -- xdg-terminal-exec --dir="$(omarchy-cmd-terminal-cwd)"]]),
   "Terminal"
 )
-bind("SUPER + ALT + RETURN", hl.dsp.exec_cmd("uwsm-app -- wezterm-session-picker"), "Session picker")
+bind("SUPER + ALT + RETURN", hl.dsp.exec_cmd("uwsm-app -- wezterm-launcher"), "Session launcher")
 bind("SUPER + B", hl.dsp.exec_cmd("omarchy-launch-browser"), "Browser")
 -- TODO: simplify, omarchy-launch-tui auto names them org.omarchy.*, so just provide a single name and the internals will make special:* and use org.omarchy.*
 bind(
