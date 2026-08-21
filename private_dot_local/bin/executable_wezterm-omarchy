@@ -9,7 +9,7 @@
 #
 # Those windows should be standalone (no shared mux/session) with the tab bar
 # fully hidden, since they close as soon as the TUI inside exits. Regular
-# terminals keep the default class, tab bar, and single-instance session.
+# terminals attach to the shared `unix` mux domain so tabs/panes persist.
 
 is_float=0
 prev=""
@@ -26,5 +26,5 @@ done
 if (( is_float )); then
   exec wezterm --config enable_tab_bar=false start --always-new-process "$@"
 else
-  exec wezterm start "$@"
+  exec wezterm start --domain unix "$@"
 fi

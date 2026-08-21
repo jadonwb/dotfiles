@@ -33,6 +33,8 @@ local keys = {
 	-- panes / tabs
 	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = false }) },
 	{ key = "c", mods = "ALT", action = act.SpawnTab("CurrentPaneDomain") },
+	-- launcher menu: sessions (launch_menu), workspaces, and domains
+	{ key = "s", mods = "ALT", action = act.ShowLauncherArgs({ flags = "FUZZY|LAUNCH_MENU_ITEMS|WORKSPACES|DOMAINS" }) },
 	-- scroll, or forward to neovim
 	{ key = "j", mods = "ALT", action = scroll_or_forward("j", 2) },
 	{ key = "k", mods = "ALT", action = scroll_or_forward("k", -2) },

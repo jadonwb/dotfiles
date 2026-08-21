@@ -1,0 +1,39 @@
+-- WezTerm session definitions, shown in the Launcher Menu.
+--
+-- Each entry is a SpawnCommand (assigned to config.launch_menu): picking one
+-- spawns a new tab in the current domain (the shared `unix` mux), so it
+-- persists after the window is closed.
+--
+-- Fields:
+--   label - name shown in the launcher menu
+--   cwd   - working directory for the spawned shell/program (optional)
+--   args  - program + args to run instead of the default shell (optional)
+--
+-- TODO: extend entries with an optional `domain` or `layout` later.
+
+return {
+	{ label = "Downloads", cwd = "~/Downloads", args = { "yazi" } },
+	{ label = "home", cwd = "~" },
+	{ label = "arrowlake", cwd = "~/c/arrowlake.nvim", args = { "nvim" } },
+	{ label = "source code", cwd = "~/c" },
+	{ label = "dots", cwd = "~/.local/share/chezmoi" },
+	{ label = "neovim", cwd = "~/.config/nvim", args = { "nvim" } },
+	{ label = "configs", cwd = "~/.config" },
+	{ label = "hyprland", cwd = "~/.config/hypr", args = { "nvim" } },
+	{ label = "omarchy", cwd = "~/.config/omarchy", args = { "nvim" } },
+	{ label = "chezmoi", cwd = "~/.config/chezmoi", args = { "nvim" } },
+	{{- if eq .machine.type "work" }}
+	{ label = "Work", cwd = "~/Work/" },
+	{ label = "bitbake", cwd = "~/Work/fusion2/dms-yocto/" },
+	{ label = "fusion", cwd = "~/Work/fusion2/Fusion_2s_i.MX/" },
+	{ label = "update-server", cwd = "~/Work/ota/af2_update_manager/" },
+	{ label = "uboot-imx", cwd = "~/Work/fusion2/uboot-imx/" },
+	{ label = "linux-imx", cwd = "~/Work/fusion2/linux-imx/" },
+	{ label = "build-server", cwd = "~/", args = { "ssh", "jadon.brutcher@cs12" } },
+	{ label = "radar ctrl", cwd = "~/Work/radar/" },
+	{{- else if eq .machine.type "personal" }}
+	{ label = "llama-toolboxes", cwd = "~/c/amd-strix-halo-toolboxes/" },
+	{ label = "vllm-toolboxes", cwd = "~/c/amd-strix-halo-vllm-toolboxes/" },
+	{ label = "comfyui-toolboxes", cwd = "~/c/amd-strix-halo-image-video-toolboxes/" },
+	{{- end }}
+}
