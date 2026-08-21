@@ -1,15 +1,13 @@
--- WezTerm session definitions, shown in the Launcher Menu.
+-- WezTerm session definitions, shown in the custom launcher (launcher.lua).
 --
--- Each entry is a SpawnCommand (assigned to config.launch_menu): picking one
--- spawns a new tab in the current domain (the shared `unix` mux), so it
--- persists after the window is closed.
+-- Each entry is a session opened as a whole workspace: picking one switches to
+-- that workspace, creating it (with this cwd and command) only if it doesn't
+-- already exist. Tabs within it are your "windows".
 --
 -- Fields:
---   label - name shown in the launcher menu
+--   label - workspace name / launcher label
 --   cwd   - working directory for the spawned shell/program (optional)
 --   args  - program + args to run instead of the default shell (optional)
---
--- TODO: extend entries with an optional `domain` or `layout` later.
 
 return {
 	{ label = "Downloads", cwd = "~/Downloads", args = { "yazi" } },
