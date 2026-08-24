@@ -20,8 +20,6 @@ hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/gcr/ssh")
 
 if machine.is_work then
   hl.env("EGL_PLATFORM", "wayland")
-  hl.env("NVD_BACKEND", "direct")
-  hl.env("WLR_NO_HARDWARE_CURSORS", "1")
   hl.env("GBM_BACKEND", "nvidia-drm")
   hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
   hl.env("LIBVA_DRIVER_NAME", "nvidia")

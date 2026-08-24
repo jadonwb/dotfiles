@@ -5,10 +5,9 @@
 --   utility (ALT+SHIFT+s):   domains (new tab / attach), new workspace,
 --                            rename tab, rename workspace
 --
--- Sessions are opened as whole workspaces. Persistence requires spawning into
--- the shared `unix` domain explicitly (an omitted domain defaults to "local",
--- which dies with the window). The active workspace is per-GUI-process, so a
--- fresh window still starts at "default"; re-attach by picking a session here.
+-- Sessions are opened as whole workspaces. Windows attach to the shared `unix`
+-- domain on startup (via the wezterm-omarchy wrapper), so workspaces persist
+-- across window close/reopen. Pick a session here to switch to it or create it.
 -- Labels are colored with the theme's own ANSI palette via AnsiColor names.
 
 local wezterm = require("wezterm")
@@ -58,27 +57,17 @@ local function new_builder()
 	end
 end
 
-local function workspace_exists(name)
-	for _, ws in ipairs(wezterm.mux.get_workspace_names()) do
-		if ws == name then
-			return true
-		end
-	end
-	return false
-end
-
--- Open a session as a workspace: spawn a persistent window in the unix domain
--- only if the workspace is new, then switch to it.
-local function open_workspace(name, cwd, args)
-	if not workspace_exists(name) then
-		wezterm.mux.spawn_window({
-			domain = { DomainName = "unix" },
-			workspace = name,
-			cwd = cwd,
-			args = args,
-		})
-	end
-	wezterm.mux.set_active_workspace(name)
+-- Open a session as a workspace: SwitchToWorkspace atomically creates the
+-- workspace (spawning a persistent unix-domain window) only if it doesn't
+-- already exist, then switches to it.
+local function open_workspace(win, pan, name, cwd, args)
+	win:perform_action(
+		act.SwitchToWorkspace({
+			name = name,
+			spawn = { domain = { DomainName = "unix" }, cwd = cwd, args = args },
+		}),
+		pan
+	)
 end
 
 -- ---- main menu: quick switch -------------------------------------------
@@ -96,15 +85,15 @@ local function build_main()
 	-- 1. Active workspace first, then the rest.
 	local active_shown = false
 	if open[active] then
-		add(styled("↳ " .. active, "Blue", true), function()
-			wezterm.mux.set_active_workspace(active)
+		add(styled("↳ " .. active, "Blue", true), function(win, pan)
+			win:perform_action(act.SwitchToWorkspace({ name = active }), pan)
 		end)
 		active_shown = true
 	end
 	for _, n in ipairs(names) do
 		if not (active_shown and n == active) then
-			add(styled("↳ " .. n, "Blue"), function()
-				wezterm.mux.set_active_workspace(n)
+			add(styled("↳ " .. n, "Blue"), function(win, pan)
+				win:perform_action(act.SwitchToWorkspace({ name = n }), pan)
 			end)
 		end
 	end
@@ -120,8 +109,8 @@ local function build_main()
 			used[label] = true
 			local cwd = expand_tilde(s.cwd)
 			local args = s.args
-			add(styled(label, "Green"), function()
-				open_workspace(label, cwd, args)
+			add(styled(label, "Green"), function(win, pan)
+				open_workspace(win, pan, label, cwd, args)
 			end)
 		end
 	end
@@ -140,8 +129,8 @@ local function build_main()
 				end
 				if name then
 					used[name] = true
-					add(styled("z " .. name, "Fuchsia"), function()
-						open_workspace(name, dir, nil)
+					add(styled("z " .. name, "Fuchsia"), function(win, pan)
+						open_workspace(win, pan, name, dir, nil)
 					end)
 				end
 			end
