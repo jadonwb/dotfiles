@@ -29,6 +29,17 @@ local function expand_tilde(path)
 	return path
 end
 
+local function display_path(path)
+	local home = wezterm.home_dir
+	if path == home then
+		return "home"
+	end
+	if path:sub(1, #home + 1) == home .. "/" then
+		return "~/" .. path:sub(#home + 2)
+	end
+	return path
+end
+
 local function styled(text, ansi, bold)
 	local fmt = {}
 	if bold then
@@ -143,14 +154,14 @@ local function build_zoxide()
 					name = dir
 				end
 				used[name] = true
-				add(styled("z " .. name, "Fuchsia"), function(win, pan)
+				add(styled(display_path(dir), "Fuchsia"), function(win, pan)
 					open_workspace(win, pan, name, dir, nil)
 				end)
 			end
 		end
 	end
 
-	add(styled("+ open path", "Fuchsia", true), function(win, pan)
+	add(styled("+ open path", "Yellow", true), function(win, pan)
 		win:perform_action(
 			act.PromptInputLine({
 				description = "Path to open",
