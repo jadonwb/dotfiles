@@ -1,9 +1,9 @@
--- Custom launcher: two fuzzy InputSelector menus replacing the built-in
+-- Custom launcher: three fuzzy InputSelector menus replacing the built-in
 -- `ShowLauncher`.
 --
---   main    (ALT+s):         active workspaces, sessions, zoxide dirs
---   utility (ALT+SHIFT+s):   domains (new tab / attach), new workspace,
---                            rename tab, rename workspace
+--   main    (ALT+s):         active workspaces, sessions, + new workspace
+--   zoxide  (ALT+SHIFT+s):   zoxide dirs, + open path
+--   control (ALT+CTRL+s):    domains (attach / new tab), rename tab/workspace
 --
 -- Sessions are opened as whole workspaces. Windows attach to the shared `unix`
 -- domain on startup (via the wezterm-omarchy wrapper), so workspaces persist
@@ -99,14 +99,9 @@ local function build_main()
 	end
 
 	-- 2. Preconfigured sessions, hiding any that are already open.
-	local used = {}
-	for _, n in ipairs(names) do
-		used[n] = true
-	end
 	for _, s in ipairs(sessions) do
 		local label = s.label
 		if not open[label] then
-			used[label] = true
 			local cwd = expand_tilde(s.cwd)
 			local args = s.args
 			add(styled(label, "Green"), function(win, pan)
@@ -115,27 +110,61 @@ local function build_main()
 		end
 	end
 
-	-- 3. Zoxide directories.
+	-- 3. New workspace.
+	add(styled("+ new workspace", "Yellow", true), function(win, pan)
+		win:perform_action(
+			act.PromptInputLine({
+				description = "New workspace name",
+				action = wezterm.action_callback(function(w, p, line)
+					if line and line ~= "" then
+						w:perform_action(act.SwitchToWorkspace({ name = line }), p)
+					end
+				end),
+			}),
+			pan
+		)
+	end)
+
+	return get()
+end
+
+-- ---- zoxide menu -------------------------------------------------------
+local function build_zoxide()
+	local add, get = new_builder()
+
 	local ok, stdout = wezterm.run_child_process({ "zoxide", "query", "-l" })
 	if ok and stdout then
+		local used = {}
 		for dir in stdout:gmatch("[^\r\n]+") do
 			if dir ~= "" then
-				local basename = dir:match("([^/]+)/?$")
+				local basename = dir:match("([^/]+)/?$") or dir
 				local name = basename
-				if open[name] then
-					name = nil
-				elseif used[name] then
+				if used[name] then
 					name = dir
 				end
-				if name then
-					used[name] = true
-					add(styled("z " .. name, "Fuchsia"), function(win, pan)
-						open_workspace(win, pan, name, dir, nil)
-					end)
-				end
+				used[name] = true
+				add(styled("z " .. name, "Fuchsia"), function(win, pan)
+					open_workspace(win, pan, name, dir, nil)
+				end)
 			end
 		end
 	end
+
+	add(styled("+ open path", "Fuchsia", true), function(win, pan)
+		win:perform_action(
+			act.PromptInputLine({
+				description = "Path to open",
+				action = wezterm.action_callback(function(w, p, line)
+					if line and line ~= "" then
+						local path = expand_tilde(line)
+						local name = path:match("([^/]+)/?$") or path
+						open_workspace(w, p, name, path, nil)
+					end
+				end),
+			}),
+			pan
+		)
+	end)
 
 	return get()
 end
@@ -157,20 +186,6 @@ local function build_utility()
 			end)
 		end
 	end
-
-	add(styled("+ new workspace", "Yellow", true), function(win, pan)
-		win:perform_action(
-			act.PromptInputLine({
-				description = "New workspace name",
-				action = wezterm.action_callback(function(w, p, line)
-					if line and line ~= "" then
-						w:perform_action(act.SwitchToWorkspace({ name = line }), p)
-					end
-				end),
-			}),
-			pan
-		)
-	end)
 
 	add(styled("rename tab", "Yellow"), function(win, pan)
 		win:perform_action(
@@ -231,6 +246,10 @@ function M.main(window, pane)
 	show(window, pane, "Sessions", build_main)
 end
 
+function M.zoxide(window, pane)
+	show(window, pane, "Zoxide", build_zoxide)
+end
+
 function M.utility(window, pane)
 	show(window, pane, "Commands", build_utility)
 end
@@ -238,6 +257,12 @@ end
 function M.action_main()
 	return wezterm.action_callback(function(window, pane)
 		M.main(window, pane)
+	end)
+end
+
+function M.action_zoxide()
+	return wezterm.action_callback(function(window, pane)
+		M.zoxide(window, pane)
 	end)
 end
 
