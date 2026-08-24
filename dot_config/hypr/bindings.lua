@@ -12,7 +12,7 @@ hl.unbind("SUPER + ALT + SPACE")
 bind("SUPER + SPACE", hl.dsp.exec_cmd("omarchy-menu"), "Omarchy menu")
 bind("SUPER + ALT + SPACE", hl.dsp.exec_cmd("omarchy-launch-walker"), "Launch apps")
 
-bind("SUPER + RETURN", hl.dsp.exec_cmd("omarchy-launch-terminal '--domain unix'"), "Terminal")
+bind("SUPER + RETURN", hl.dsp.exec_cmd("omarchy-launch-terminal"), "Terminal")
 
 bind("SUPER + B", hl.dsp.exec_cmd("omarchy-launch-browser"), "Browser")
 

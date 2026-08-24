@@ -17,7 +17,7 @@ config.colors = {
 
 config.quit_when_all_windows_are_closed = true
 
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 config.use_fancy_tab_bar = false
 
 config.enable_scroll_bar = true
@@ -31,7 +31,15 @@ config.underline_thickness = "2.75px"
 -- config.freetype_render_target = "HorizontalLcd"
 config.cell_width = 0.95
 
-config.front_end = "OpenGL"
+local function hostname()
+	local ok, out = wezterm.run_child_process({ "hostname" })
+	if ok and out then
+		return out:gsub("%s+$", "")
+	end
+	return nil
+end
+
+config.front_end = (hostname() == "ws205") and "WebGpu" or "OpenGL"
 config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
@@ -42,13 +50,32 @@ config.unix_domains = {
 	},
 }
 
--- wezterm.on("update-status", function(window, _pane)
--- 	local ws = window:active_workspace()
--- 	window:set_right_status(wezterm.format({
--- 		{ Attribute = { Intensity = "Bold" } },
--- 		{ Text = " " .. ws .. " " },
--- 	}))
--- end)
+wezterm.on("update-status", function(window, pane)
+	local colors = window:effective_config().resolved_palette
+	local workspace = window:active_workspace()
+
+	window:set_left_status(wezterm.format({
+		{ Background = { Color = colors.tab_bar.active_tab.fg_color } },
+		{ Foreground = { Color = colors.tab_bar.active_tab.bg_color } },
+		{ Text = " " .. workspace .. " " },
+	}))
+
+	window:set_right_status(wezterm.format({
+		{ Foreground = { Color = "#ad9b88" } },
+		{ Text = hostname() .. " " },
+	}))
+end)
+
+-- Hide the scrollbar when there is no scrollback or alternate screen is active
+wezterm.on("update-status", function(window, pane)
+	local overrides = window:get_config_overrides() or {}
+	local dimensions = pane:get_dimensions()
+
+	overrides.enable_scroll_bar = dimensions.scrollback_rows > dimensions.viewport_rows
+		and not pane:is_alt_screen_active()
+
+	window:set_config_overrides(overrides)
+end)
 
 config.keys = require("keymaps")
 
