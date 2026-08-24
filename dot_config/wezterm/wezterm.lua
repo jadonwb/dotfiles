@@ -50,6 +50,8 @@ config.unix_domains = {
 	},
 }
 
+config.default_workspace = "0"
+
 wezterm.on("update-status", function(window, pane)
 	local colors = window:effective_config().resolved_palette
 	local workspace = window:active_workspace()
