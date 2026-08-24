@@ -25,6 +25,9 @@ local function scroll_or_forward(key, delta)
 end
 
 local keys = {
+	--copy/paste
+	{ key = "Insert", mods = "CTRL", action = wezterm.action.CopyTo("Clipboard") },
+	{ key = "Insert", mods = "SHIFT", action = wezterm.action.PasteFrom("Clipboard") },
 	-- tab navigation
 	{ key = "LeftArrow", mods = "ALT", action = act.ActivateTabRelative(-1) },
 	{ key = "RightArrow", mods = "ALT", action = act.ActivateTabRelative(1) },
