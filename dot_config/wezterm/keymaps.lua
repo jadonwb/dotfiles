@@ -31,6 +31,8 @@ local keys = {
 	-- tab navigation
 	{ key = "LeftArrow", mods = "ALT", action = act.ActivateTabRelative(-1) },
 	{ key = "RightArrow", mods = "ALT", action = act.ActivateTabRelative(1) },
+	{ key = "p", mods = "ALT", action = act.ActivateTabRelative(-1) },
+	{ key = "n", mods = "ALT", action = act.ActivateTabRelative(1) },
 	-- tab move/swap
 	{ key = "LeftArrow", mods = "ALT|SHIFT", action = act.MoveTabRelative(-1) },
 	{ key = "RightArrow", mods = "ALT|SHIFT", action = act.MoveTabRelative(1) },
