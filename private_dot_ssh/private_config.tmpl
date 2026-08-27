@@ -7,5 +7,10 @@ Host work
     HostName ws205
     User jadon.brutcher
 {{- end}}
+{{- if ne .machine.type "personal" }}
+Host fwdt
+    HostName fwdt
+    User jadon
+{{- end}}
 
 AddKeysToAgent yes
