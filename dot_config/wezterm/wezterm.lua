@@ -68,6 +68,10 @@ wezterm.on("update-status", function(window, pane)
 		{ Foreground = { Color = "#ad9b88" } },
 		{ Text = hostname() .. " " },
 	}))
+
+	-- useful debug
+	-- local vars = pane:get_user_vars()
+	-- window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
 end)
 
 -- Hide the scrollbar when there is no scrollback or alternate screen is active
