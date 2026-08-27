@@ -11,7 +11,7 @@ hl.config({
     kb_options = "compose:caps", -- ,grp:alts_toggle
 
     -- Change speed of keyboard repeat.
-    repeat_rate = 50,
+    repeat_rate = 60,
     repeat_delay = 300,
 
     -- Start with numlock on by default.
