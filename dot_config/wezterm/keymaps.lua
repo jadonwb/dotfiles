@@ -2,21 +2,14 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local launcher = require("launcher")
 
-local function basename(path)
-	return path:match("([^/]+)$") or path
-end
-
-local function is_neovim(pane)
-	local info = pane:get_foreground_process_info()
-	if not info or not info.executable then
-		return false
-	end
-	return basename(info.executable) == "nvim"
+local function is_nvim(pane)
+	local process_name = pane:get_foreground_process_name() or ""
+	return process_name:match("nvim") ~= nil
 end
 
 local function scroll_or_forward(key, delta)
 	return wezterm.action_callback(function(win, pane)
-		if is_neovim(pane) then
+		if is_nvim(pane) then
 			win:perform_action(act.SendKey({ key = key, mods = "ALT" }), pane)
 		else
 			win:perform_action(act.ScrollByLine(delta), pane)
