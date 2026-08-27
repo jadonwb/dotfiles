@@ -1,14 +1,15 @@
--- Custom launcher: three fuzzy InputSelector menus replacing the built-in
--- `ShowLauncher`.
+-- Custom launcher: a single fuzzy hub (ALT+s) with submenus.
 --
---   main    (ALT+s):         active workspaces, sessions, + new workspace
---   zoxide  (ALT+SHIFT+s):   zoxide dirs, + open path
---   control (ALT+CTRL+s):    domains (attach / new tab), rename tab/workspace
+--   hub (ALT+s):  workspaces, sessions, zoxide, machines, rename, + new workspace
+--     zoxide →    second-level picker of zoxide dirs + open path
+--     machines →  second-level picker of domains (attach / new tab)
 --
--- Sessions are opened as whole workspaces. Windows attach to the shared `unix`
--- domain on startup (via the wezterm-omarchy wrapper), so workspaces persist
--- across window close/reopen. Pick a session here to switch to it or create it.
--- Labels are colored with the theme's own ANSI palette via AnsiColor names.
+-- Sessions are opened as whole workspaces on a domain (the local `unix` domain
+-- by default, or an ssh domain for remote sessions). Windows attach to the
+-- shared `unix` domain on startup (via the wezterm-omarchy wrapper), so
+-- workspaces persist across window close/reopen. Pick a session to switch to it
+-- or create it. Labels are colored with the theme's own ANSI palette via
+-- AnsiColor names.
 
 local wezterm = require("wezterm")
 local act = wezterm.action
@@ -69,19 +70,19 @@ local function new_builder()
 end
 
 -- Open a session as a workspace: SwitchToWorkspace atomically creates the
--- workspace (spawning a persistent unix-domain window) only if it doesn't
--- already exist, then switches to it.
-local function open_workspace(win, pan, name, cwd, args)
+-- workspace (spawning a persistent window on `domain`) only if it doesn't
+-- already exist, then switches to it. Defaults to the local `unix` domain.
+local function open_workspace(win, pan, name, cwd, args, domain)
 	win:perform_action(
 		act.SwitchToWorkspace({
 			name = name,
-			spawn = { domain = { DomainName = "unix" }, cwd = cwd, args = args },
+			spawn = { domain = { DomainName = domain or "unix" }, cwd = cwd, args = args },
 		}),
 		pan
 	)
 end
 
--- ---- main menu: quick switch -------------------------------------------
+-- ---- hub: quick switch -----------------------------------------------
 local function build_main()
 	local add, get = new_builder()
 
@@ -116,13 +117,21 @@ local function build_main()
 			local cwd = expand_tilde(s.cwd)
 			local args = s.args
 			add(styled(label, "Green"), function(win, pan)
-				open_workspace(win, pan, label, cwd, args)
+				open_workspace(win, pan, label, cwd, args, s.domain)
 			end)
 		end
 	end
 
-	-- 3. New workspace.
-	add(styled("+ new workspace", "Yellow", true), function(win, pan)
+	-- 3. Submenus.
+	add(styled("zoxide →", "Fuchsia", true), function(win, pan)
+		M.zoxide(win, pan)
+	end)
+	add(styled("machines →", "Yellow", true), function(win, pan)
+		M.machines(win, pan)
+	end)
+
+	-- 4. New workspace / renames.
+	add(styled("+ new workspace", "Yellow"), function(win, pan)
 		win:perform_action(
 			act.PromptInputLine({
 				description = "New workspace name",
@@ -136,10 +145,41 @@ local function build_main()
 		)
 	end)
 
+	add(styled("rename tab", "Yellow"), function(win, pan)
+		win:perform_action(
+			act.PromptInputLine({
+				description = "New tab name",
+				action = wezterm.action_callback(function(w, p, line)
+					if line then
+						local tab = w:active_tab()
+						if tab then
+							tab:set_title(line)
+						end
+					end
+				end),
+			}),
+			pan
+		)
+	end)
+
+	add(styled("rename workspace", "Yellow"), function(win, pan)
+		win:perform_action(
+			act.PromptInputLine({
+				description = "New workspace name",
+				action = wezterm.action_callback(function(w, p, line)
+					if line and line ~= "" then
+						wezterm.mux.rename_workspace(wezterm.mux.get_active_workspace(), line)
+					end
+				end),
+			}),
+			pan
+		)
+	end)
+
 	return get()
 end
 
--- ---- zoxide menu -------------------------------------------------------
+-- ---- zoxide submenu ----------------------------------------------------
 local function build_zoxide()
 	local add, get = new_builder()
 
@@ -180,11 +220,10 @@ local function build_zoxide()
 	return get()
 end
 
--- ---- utility menu: domains + commands ----------------------------------
-local function build_utility()
+-- ---- machines submenu: domains ----------------------------------------
+local function build_machines()
 	local add, get = new_builder()
 
-	-- Domains: attach detached ones, or spawn a new tab in attached ones.
 	for _, domain in ipairs(wezterm.mux.all_domains()) do
 		local name = domain:name()
 		if domain:state() == "Detached" then
@@ -197,37 +236,6 @@ local function build_utility()
 			end)
 		end
 	end
-
-	add(styled("rename tab", "Yellow"), function(win, pan)
-		win:perform_action(
-			act.PromptInputLine({
-				description = "New tab name",
-				action = wezterm.action_callback(function(w, p, line)
-					if line then
-						local tab = w:active_tab()
-						if tab then
-							tab:set_title(line)
-						end
-					end
-				end),
-			}),
-			pan
-		)
-	end)
-
-	add(styled("rename workspace", "Yellow"), function(win, pan)
-		win:perform_action(
-			act.PromptInputLine({
-				description = "New workspace name",
-				action = wezterm.action_callback(function(w, p, line)
-					if line and line ~= "" then
-						wezterm.mux.rename_workspace(wezterm.mux.get_active_workspace(), line)
-					end
-				end),
-			}),
-			pan
-		)
-	end)
 
 	return get()
 end
@@ -261,8 +269,8 @@ function M.zoxide(window, pane)
 	show(window, pane, "Zoxide", build_zoxide)
 end
 
-function M.utility(window, pane)
-	show(window, pane, "Commands", build_utility)
+function M.machines(window, pane)
+	show(window, pane, "Machines", build_machines)
 end
 
 function M.action_main()
@@ -270,20 +278,5 @@ function M.action_main()
 		M.main(window, pane)
 	end)
 end
-
-function M.action_zoxide()
-	return wezterm.action_callback(function(window, pane)
-		M.zoxide(window, pane)
-	end)
-end
-
-function M.action_utility()
-	return wezterm.action_callback(function(window, pane)
-		M.utility(window, pane)
-	end)
-end
-
--- The WEZTERM_OPEN_LAUNCHER hook in wezterm.lua calls M.show.
-M.show = M.main
 
 return M

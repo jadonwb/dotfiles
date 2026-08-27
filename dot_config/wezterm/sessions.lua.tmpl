@@ -5,14 +5,20 @@
 -- already exist. Tabs within it are your "windows".
 --
 -- Fields:
---   label - workspace name / launcher label
---   cwd   - working directory for the spawned shell/program (optional)
---   args  - program + args to run instead of the default shell (optional)
+--   label  - workspace name / launcher label
+--   cwd    - working directory for the spawned shell/program (optional)
+--   args   - program + args to run instead of the default shell (optional)
+--   domain - domain to open the session on (optional; defaults to local `unix`).
+--            Use an ssh domain name (from ssh_domains.lua) for remote sessions.
+--            Workspace names are mux-global, so give remote sessions unique
+--            labels to avoid colliding with local ones.
 
 return {
 	{ label = "source code", cwd = "~/c" },
 	{ label = "dotfiles", cwd = "~/.local/share/chezmoi", args = {'nvim'} },
 	{ label = "neovim", cwd = "~/.config/nvim", args = {'nvim'} },
+	-- { label = "build", domain = "server", cwd = "~/build" },
+	{ label = "testing123", domain = "work" },
 	{{- if eq .machine.type "work" }}
 	{ label = "bitbake", cwd = "~/Work/fusion2/dms-yocto/" },
 	{ label = "fusion", cwd = "~/Work/fusion2/Fusion_2s_i.MX/" },

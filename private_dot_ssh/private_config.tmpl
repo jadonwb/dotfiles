@@ -2,5 +2,10 @@
 Host web1 web1.example.invalid
         Port 2222
 {{- end}}
+{{- if ne .machine.type "work" }}
+Host work
+    HostName ws205
+    User jadon.brutcher
+{{- end}}
 
 AddKeysToAgent yes
