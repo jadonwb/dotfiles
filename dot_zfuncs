@@ -3,7 +3,7 @@ reflash() {
     sudo umount "$1"* > /dev/null 2>&1
     sudo dd if=/dev/zero of="$1" bs=1M count=100 && sync
     sudo bmaptool copy "$2" "$1"
-  }
+}
 
 restore_hyprlock() {
     local instance="${1:-0}"
@@ -50,4 +50,22 @@ restore_hyprlock() {
 
     chvt "$target_tty"
     exit
-    }
+}
+
+open() {
+  xdg-open "$@" >/dev/null 2>&1 &
+}
+
+deref() {
+  local f real dir
+  for f in "$@"; do
+    [[ -L $f ]] || continue
+
+    dir=$(dirname -- "$f")
+    real=$(readlink -- "$f") || continue
+
+    rm -- "$f" || continue
+    cp -- "$dir/$real" "$f"
+  done
+}
+
