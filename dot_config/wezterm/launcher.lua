@@ -185,11 +185,12 @@ local function build_main()
 
 	-- 1. Workspaces across all attached domains.
 	for _, e in ipairs(workspaces) do
-		local is_active = e.workspace == active
-		local prefix = is_active and "↳ " or ""
-		add(styled(prefix .. workspace_label(e), "Navy", is_active), function(win, pan)
-			switch_to_workspace(win, pan, e)
-		end)
+		-- ignore current attached
+		if e.workspace ~= active then
+			add(styled(workspace_label(e), "Navy", false), function(win, pan)
+				switch_to_workspace(win, pan, e)
+			end)
+		end
 	end
 
 	-- 2. Preconfigured sessions, hiding any that are already open.
