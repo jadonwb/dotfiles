@@ -2,25 +2,39 @@
 
 # xdg-terminal-exec entry point for WezTerm.
 #
-# Omarchy launches its floating TUIs via:
-#   xdg-terminal-exec --app-id=org.omarchy.<name> -e <command>
-# which xdg-terminal-exec translates (via X-TerminalArgAppId) into:
-#   wezterm-omarchy --class=org.omarchy.<name> -- <command>
+# Normal terminals:
+#   - always get a fresh GUI process/window
+#   - run their pane in the persistent local `unix` mux domain
+#
+# Omarchy floating TUIs:
+#   - stay isolated from the persistent mux
+#   - use their requested --class for Hyprland rules
 
 is_float=0
 prev=""
+
 for arg in "$@"; do
   if [[ "$prev" == "--class" && "$arg" == org.omarchy.* ]]; then
     is_float=1
   fi
+
   if [[ "$arg" == --class=org.omarchy.* ]]; then
     is_float=1
   fi
+
   prev="$arg"
 done
 
 if ((is_float)); then
-  exec wezterm --config enable_tab_bar=false start --always-new-process "$@"
+  exec wezterm \
+    --config enable_tab_bar=false \
+    start \
+    --always-new-process \
+    "$@"
 else
-  exec wezterm start --domain unix --always-new-process "$@"
+  exec wezterm \
+    start \
+    --domain unix \
+    --always-new-process \
+    "$@"
 fi
