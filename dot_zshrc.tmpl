@@ -2,6 +2,9 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+# WezTerm integration
+[[ -f "$HOME/.local/share/wezterm/shell-integration.sh" ]] && source "$HOME/.local/share/wezterm/shell-integration.sh"
+
 # disable control flow
 stty -ixon < /dev/tty
 
@@ -63,6 +66,8 @@ zinit snippet OMZP::command-not-found
 # Load completions
 autoload -Uz compinit
 compinit -C
+
+eval "$(wezterm shell-completion --shell zsh)"
 
 zinit cdreplay -q
 

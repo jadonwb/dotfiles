@@ -2,9 +2,31 @@ local wezterm = require("wezterm")
 local act = wezterm.action
 local launcher = require("launcher")
 
+local tui_programs = {
+	nvim = true,
+	vim = true,
+	vi = true,
+
+	yazi = true,
+
+	opencode = true,
+	oc = true,
+
+	lazygit = true,
+}
+
 local function should_forward(pane)
-	-- TODO: read wezterm prog env
-	return true
+	local prog = pane:get_user_vars().WEZTERM_PROG or ""
+
+	local command = prog:match("^%s*([^%s]+)")
+	if not command then
+		return false
+	end
+
+	-- Handle paths like /usr/bin/nvim
+	command = command:match("([^/]+)$") or command
+
+	return tui_programs[command] == true
 end
 
 local function scroll_or_forward(key, delta)
