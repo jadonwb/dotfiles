@@ -12,6 +12,7 @@
 --            Use an ssh domain name (from ssh_domains.lua) for remote sessions.
 
 return {
+	{ label = "home", cwd = "~" },
 	{ label = "source code", cwd = "~/c" },
 	{ label = "dotfiles", cwd = "~/.local/share/chezmoi", args = {'nvim'} },
 	{ label = "neovim", cwd = "~/.config/nvim", args = {'nvim'} },
