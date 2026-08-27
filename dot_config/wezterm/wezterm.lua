@@ -65,7 +65,7 @@ wezterm.on("update-status", function(window, pane)
 	}))
 
 	window:set_right_status(wezterm.format({
-		{ Foreground = { Color = "#ad9b88" } },
+		{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
 		{ Text = hostname() .. " " },
 	}))
 
