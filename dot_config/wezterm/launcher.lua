@@ -1,17 +1,3 @@
--- Custom launcher: a single fuzzy hub (ALT+s) with submenus.
---
---   hub (ALT+s):  workspaces (all domains), sessions, submenus
---     machines →  second-level picker of hosts to attach (ssh)
---     commands →  second-level picker of + new workspace / rename tab / rename workspace
---     zoxide →    second-level picker of zoxide dirs + open path (last)
---
--- The local `unix` domain is a headless persistent mux (wezterm-mux-server)
--- holding your named sessions. New windows open unattached; picking a session,
--- zoxide dir, host, or + new workspace attaches that domain (awaited) before
--- switching. Remote workspaces are shown namespaced as "host: workspace";
--- local ones are bare. Labels are colored with the theme's own ANSI palette via
--- AnsiColor names.
-
 local wezterm = require("wezterm")
 local act = wezterm.action
 local sessions = require("sessions")
@@ -75,85 +61,101 @@ local function is_local_domain(name)
 	return name == "unix" or name == "local"
 end
 
--- Attach a domain (awaited) if it isn't already attached. Must be called from
--- an async action-callback context.
+-- Attach an SSH/Unix mux domain.
+--
+-- domain:attach() imports whatever windows/tabs/panes already exist in that
+-- mux server. Importantly, it does NOT create a pane if the remote mux is
+-- empty.
 local function attach_domain(name)
-	local dom = wezterm.mux.get_domain(name)
-	if dom and dom:state() == "Detached" then
-		dom:attach()
+	local domain = wezterm.mux.get_domain(name)
+	if not domain then
+		wezterm.log_error("unknown mux domain: " .. tostring(name))
+		return false
 	end
+
+	if domain:state() == "Detached" then
+		domain:attach()
+	end
+
+	return true
 end
 
--- Domain name of a mux window (from its first pane).
-local function window_domain(win)
-	for _, tab in ipairs(win:tabs()) do
+-- Determine which mux domain owns a MuxWindow.
+local function window_domain(window)
+	for _, tab in ipairs(window:tabs()) do
 		for _, pane in ipairs(tab:panes()) do
 			return pane:get_domain_name()
 		end
 	end
+
 	return nil
 end
 
--- All workspaces across every attached domain: { domain, workspace, anchor }.
+-- Collect the workspaces represented by the mux windows currently visible to
+-- this GUI/mux client.
+--
+-- A domain attachment imports its remote mux windows. Once imported, those
+-- windows appear in wezterm.mux.all_windows().
 local function collect_workspaces()
-	local out = {}
+	local result = {}
 	local seen = {}
-	for _, win in ipairs(wezterm.mux.all_windows()) do
-		local ws = win:get_workspace()
-		local domain = window_domain(win)
+
+	for _, window in ipairs(wezterm.mux.all_windows()) do
+		local workspace = window:get_workspace()
+		local domain = window_domain(window)
+
 		if domain then
-			local key = domain .. "\0" .. ws
+			local key = domain .. "\0" .. workspace
+
 			if not seen[key] then
 				seen[key] = true
-				out[#out + 1] = { domain = domain, workspace = ws, anchor = win }
-			end
-		end
-	end
-	return out
-end
 
-local function workspace_label(e)
-	if is_local_domain(e.domain) then
-		return e.workspace
-	end
-	if e.workspace:sub(1, #e.domain + 1) == e.domain .. ":" then
-		return e.workspace
-	end
-	return e.domain .. ": " .. e.workspace
-end
-
--- Switch to an existing workspace, attaching its domain first if needed and
--- namespacing remote workspaces so names are unambiguous across machines.
-local function switch_to_workspace(win, pan, e)
-	attach_domain(e.domain)
-
-	local name = e.workspace
-	if not is_local_domain(e.domain) then
-		name = e.domain .. ":" .. e.workspace
-		if e.workspace ~= name then
-			for _, w in ipairs(wezterm.mux.all_windows()) do
-				if w:get_workspace() == e.workspace and window_domain(w) == e.domain then
-					w:set_workspace(name)
-				end
+				result[#result + 1] = {
+					domain = domain,
+					workspace = workspace,
+				}
 			end
 		end
 	end
 
-	win:perform_action(act.SwitchToWorkspace({ name = name }), pan)
+	return result
 end
 
--- Open a session as a workspace, attaching its domain first (awaited), then
--- creating the workspace (spawning a persistent window on `domain`) only if it
--- doesn't already exist. Defaults to the local `unix` domain.
-local function open_workspace(win, pan, name, cwd, args, domain)
+-- Domain names are presentation metadata only.
+--
+-- Do NOT rename the actual remote workspace to add the host name.
+local function workspace_label(entry)
+	if is_local_domain(entry.domain) then
+		return entry.workspace
+	end
+
+	return entry.domain .. ": " .. entry.workspace
+end
+
+local function switch_to_workspace(win, pane, entry)
+	win:perform_action(
+		act.SwitchToWorkspace({
+			name = entry.workspace,
+		}),
+		pane
+	)
+end
+
+local function open_workspace(win, pane, name, cwd, args, domain)
 	domain = domain or "unix"
+
 	attach_domain(domain)
+
 	win:perform_action(
 		act.SwitchToWorkspace({
 			name = name,
-			spawn = { domain = { DomainName = domain }, cwd = cwd, args = args },
+			spawn = {
+				domain = { DomainName = domain },
+				cwd = cwd,
+				args = args,
+			},
 		}),
-		pan
+		pane
 	)
 end
 
@@ -167,55 +169,62 @@ local function build_main()
 	table.sort(workspaces, function(a, b)
 		local aa = (a.workspace == active) and 0 or 1
 		local ba = (b.workspace == active) and 0 or 1
+
 		if aa ~= ba then
 			return aa < ba
 		end
+
 		local al = is_local_domain(a.domain) and 0 or 1
 		local bl = is_local_domain(b.domain) and 0 or 1
+
 		if al ~= bl then
 			return al < bl
 		end
+
 		return workspace_label(a) < workspace_label(b)
 	end)
 
 	local open = {}
-	for _, e in ipairs(workspaces) do
-		open[e.workspace] = true
+
+	for _, entry in ipairs(workspaces) do
+		local key = entry.domain .. "\0" .. entry.workspace
+		open[key] = true
 	end
 
-	-- 1. Workspaces across all attached domains.
-	for _, e in ipairs(workspaces) do
-		-- ignore current attached
-		if e.workspace ~= active then
-			add(styled(workspace_label(e), "Navy", false), function(win, pan)
-				switch_to_workspace(win, pan, e)
+	-- Existing workspaces from every currently attached mux domain.
+	for _, entry in ipairs(workspaces) do
+		if entry.workspace ~= active or not is_local_domain(entry.domain) then
+			add(styled(workspace_label(entry), "Navy", false), function(win, pane)
+				switch_to_workspace(win, pane, entry)
 			end)
 		end
 	end
 
-	-- 2. Preconfigured sessions, hiding any that are already open.
-	for _, s in ipairs(sessions) do
-		local label = s.label
-		local domain = s.domain or "unix"
-		local target = is_local_domain(domain) and label or (domain .. ":" .. label)
-		if not open[label] and not open[target] then
-			local cwd = expand_tilde(s.cwd)
-			local args = s.args
-			add(styled(label, "Green"), function(win, pan)
-				open_workspace(win, pan, label, cwd, args, domain)
+	-- Preconfigured sessions.
+	for _, session in ipairs(sessions) do
+		local domain = session.domain or "unix"
+		local key = domain .. "\0" .. session.label
+
+		if not open[key] then
+			local cwd = expand_tilde(session.cwd)
+			local args = session.args
+
+			add(styled(session.label, "Green"), function(win, pane)
+				open_workspace(win, pane, session.label, cwd, args, domain)
 			end)
 		end
 	end
 
-	-- 3. Submenus: machines, commands, zoxide (last).
-	add(styled("machines →", "Teal", true), function(win, pan)
-		M.machines(win, pan)
+	add(styled("machines →", "Teal", true), function(win, pane)
+		M.machines(win, pane)
 	end)
-	add(styled("commands →", "Olive", true), function(win, pan)
-		M.commands(win, pan)
+
+	add(styled("commands →", "Olive", true), function(win, pane)
+		M.commands(win, pane)
 	end)
-	add(styled("zoxide →", "Purple", true), function(win, pan)
-		M.zoxide(win, pan)
+
+	add(styled("zoxide →", "Purple", true), function(win, pane)
+		M.zoxide(win, pane)
 	end)
 
 	return get()
@@ -262,21 +271,39 @@ local function build_zoxide()
 	return get()
 end
 
--- ---- machines submenu: attach to a host --------------------------------
+-- ---- machines submenu -----------------------------------------------------
+--
+-- Selecting a machine has exactly one job:
+--
+--     attach that remote mux domain
+--
+-- Attaching imports that machine's existing mux windows/tabs/panes into this
+-- client. We deliberately do not immediately open another InputSelector from
+-- inside this InputSelector callback.
+
 local function build_machines()
 	local add, get = new_builder()
 
 	local host_set = {}
-	for _, n in ipairs(ssh.host_names()) do
-		host_set[n] = true
+	for _, name in ipairs(ssh.host_names()) do
+		host_set[name] = true
 	end
 
 	for _, domain in ipairs(wezterm.mux.all_domains()) do
 		local name = domain:name()
+
 		if host_set[name] then
-			add(styled(name, "Teal"), function(win, pan)
+			local state = domain:state()
+
+			local label
+			if state == "Attached" then
+				label = name .. "  [attached]"
+			else
+				label = name
+			end
+
+			add(styled(label, "Teal"), function()
 				attach_domain(name)
-				M.main(win, pan)
 			end)
 		end
 	end
