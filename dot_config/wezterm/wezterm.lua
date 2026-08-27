@@ -50,6 +50,8 @@ config.unix_domains = {
 	},
 }
 
+config.ssh_domains = require("ssh_domains").build()
+
 config.default_workspace = "0"
 
 wezterm.on("update-status", function(window, pane)
