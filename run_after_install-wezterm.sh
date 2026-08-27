@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Install the latest WezTerm nightly (raw Linux binary) to ~/.local/bin,
-# plus shell integration, completions, icon, and terminfo — all under $HOME.
+# plus shell integration, icon, and terminfo — all under $HOME.
 # Runs on every `chezmoi apply`, but only re-downloads when upstream changes.
 
 base_url="https://github.com/wezterm/wezterm/releases/download/nightly"
@@ -10,11 +10,9 @@ asset="wezterm-nightly.Ubuntu24.04.tar.xz"
 cache="$HOME/.cache/wezterm"
 dest="$HOME/.local/bin"
 integ_dir="$HOME/.local/share/wezterm"
-zsh_comp_dir="$HOME/.local/share/zsh/site-functions"
-bash_comp_dir="$HOME/.local/share/bash-completion/completions"
 icon_path="$HOME/.local/share/icons/hicolor/128x128/apps/org.wezfurlong.wezterm.png"
 
-mkdir -p "$cache" "$dest" "$integ_dir" "$zsh_comp_dir" "$bash_comp_dir" "$(dirname "$icon_path")"
+mkdir -p "$cache" "$dest" "$integ_dir" "$(dirname "$icon_path")"
 
 sha_new="$cache/$asset.sha256.new"
 sha_marker="$cache/$asset.sha256"
@@ -29,7 +27,6 @@ installed() {
     [[ -f "$sha_marker" ]] && cmp -s "$sha_marker" "$sha_new" \
         && [[ -x "$dest/wezterm" ]] \
         && [[ -f "$integ_dir/shell-integration.sh" ]] \
-        && [[ -f "$zsh_comp_dir/_wezterm" ]] \
         && [[ -f "$icon_path" ]]
 }
 
@@ -53,12 +50,6 @@ done
 
 # Shell integration (zsh + bash; sourced from ~/.zshrc)
 install -m 0644 "$root/etc/profile.d/wezterm.sh" "$integ_dir/shell-integration.sh"
-
-# Completions
-[[ -f "$root/usr/share/zsh/functions/Completion/Unix/_wezterm" ]] \
-    && install -m 0644 "$root/usr/share/zsh/functions/Completion/Unix/_wezterm" "$zsh_comp_dir/_wezterm"
-[[ -f "$root/usr/share/bash-completion/completions/wezterm" ]] \
-    && install -m 0644 "$root/usr/share/bash-completion/completions/wezterm" "$bash_comp_dir/wezterm"
 
 # Icon (keeps the desktop-entry icon working after the distro package is removed)
 [[ -f "$root/usr/share/icons/hicolor/128x128/apps/org.wezfurlong.wezterm.png" ]] \
