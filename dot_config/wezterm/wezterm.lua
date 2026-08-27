@@ -17,7 +17,7 @@ config.colors = {
 
 config.quit_when_all_windows_are_closed = true
 
-config.hide_tab_bar_if_only_one_tab = true
+config.hide_tab_bar_if_only_one_tab = false
 config.use_fancy_tab_bar = false
 
 config.enable_scroll_bar = true
