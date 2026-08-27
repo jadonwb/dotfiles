@@ -66,7 +66,7 @@ wezterm.on("update-status", function(window, pane)
 
 	window:set_right_status(wezterm.format({
 		{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
-		{ Text = hostname() .. " " },
+		{ Text = pane:get_user_vars().WEZTERM_HOST .. " " },
 	}))
 
 	-- useful debug
