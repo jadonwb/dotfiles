@@ -22,6 +22,8 @@ bind(
   float_tui.new({ class = "org.omarchy.yazi", special = "special:yazi", launch = "omarchy-launch-tui yazi" }),
   "Toggle yazi"
 )
+
+-- TODO: Give super a as a smart select all?
 bind(
   "SUPER + A",
   float_tui.new({ class = "org.omarchy.btop", special = "special:btop", launch = "omarchy-launch-tui btop" }),
