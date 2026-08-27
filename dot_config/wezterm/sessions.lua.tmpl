@@ -19,6 +19,7 @@ return {
 	{{- if eq .machine.type "work" }}
 	{ label = "bitbake", cwd = "~/Work/fusion2/dms-yocto/" },
 	{ label = "fusion", cwd = "~/Work/fusion2/Fusion_2s_i.MX/" },
+	{ label = "radar", cwd = "~/Work/radar/" },
 	{{- else if eq .machine.type "personal" }}
 	{ label = "llama-toolboxes", cwd = "~/c/amd-strix-halo-toolboxes/" },
 	{ label = "vllm-toolboxes", cwd = "~/c/amd-strix-halo-vllm-toolboxes/" },
