@@ -1,12 +1,10 @@
 [user]
 	name = Jadon Brutcher
+	email = {{ .email | quote  }}
 {{- if eq .machine.type "work" }}
-	email = jadon.brutcher@deltamobile.com
 
 [safe]
 	directory = *
-{{- else}}
-	email = jadonwbrutcher@icloud.com
 {{- end}}
 
 [protocol "file"]

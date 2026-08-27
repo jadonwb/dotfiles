@@ -1,0 +1,20 @@
+{{- $machineType := promptStringOnce . "machine.type" "Machine type" -}}
+{{- $email := promptStringOnce . "email" "email" -}}
+
+[data]
+    email = {{ $email | quote }}
+
+[data.machine]
+    type = {{ $machineType | quote }}
+
+[merge]
+    command = "nvim"
+    args = [
+        {{ printf "%q" "+DiffviewMergeFiles {{ .Destination }} {{ .Source }} {{ .Target }}" }},
+    ]
+
+[diff]
+    exclude = ["scripts"]
+
+[status]
+    exclude = ["scripts"]
