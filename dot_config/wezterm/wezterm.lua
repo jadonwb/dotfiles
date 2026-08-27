@@ -17,7 +17,7 @@ config.colors = {
 
 config.quit_when_all_windows_are_closed = true
 
-config.hide_tab_bar_if_only_one_tab = false
+config.hide_tab_bar_if_only_one_tab = true
 config.use_fancy_tab_bar = false
 
 config.enable_scroll_bar = true
@@ -52,7 +52,7 @@ config.unix_domains = {
 
 config.ssh_domains = require("ssh_domains").build()
 
-config.default_workspace = "0"
+config.default_workspace = "Home"
 
 wezterm.on("update-status", function(window, pane)
 	local colors = window:effective_config().resolved_palette
@@ -83,6 +83,7 @@ end)
 
 -- config.debug_key_events = true
 
+config.disable_default_key_bindings = true
 config.keys = require("keymaps")
 
 return config
