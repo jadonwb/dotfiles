@@ -58,14 +58,14 @@ wezterm.on("update-status", function(window, pane)
 		{ Text = " " .. workspace .. " " },
 	}))
 
-	window:set_right_status(wezterm.format({
-		{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
-		{ Text = pane:get_user_vars().WEZTERM_HOST .. " " },
-	}))
+	-- window:set_right_status(wezterm.format({
+	-- 	{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
+	-- 	{ Text = pane:get_user_vars().WEZTERM_HOST .. " " },
+	-- }))
 
 	-- useful debug
-	-- local vars = pane:get_user_vars()
-	-- window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
+	local vars = pane:get_user_vars()
+	window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
 end)
 
 -- Hide the scrollbar when there is no scrollback or alternate screen is active
