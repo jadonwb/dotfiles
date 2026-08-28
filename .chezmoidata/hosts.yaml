@@ -1,0 +1,9 @@
+# .chezmoidata/hosts.yaml
+
+hosts:
+  omapad:
+    user: jadon
+  fwdt:
+    user: jadon
+  ws205:
+    user: jadon.brutcher

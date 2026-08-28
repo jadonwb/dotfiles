@@ -2,17 +2,13 @@
 Host web1 web1.deltamobile.com
         Port 23023
 {{- end}}
-{{- if ne .machine.type "work" }}
-Host ws205
-    User jadon.brutcher
-{{- end}}
-{{- if ne .machine.type "personal" }}
-Host fwdt
-    User jadon
-{{- end}}
-{{- if ne .machine.type "laptop" }}
-Host omapad
-    User jadon
-{{- end}}
+
+{{ range $host, $config := .hosts -}}
+{{- if ne $host $.chezmoi.hostname }}
+Host {{ $host }}
+    User {{ $config.user }}
+
+{{- end }}
+{{- end }}
 
 AddKeysToAgent yes
