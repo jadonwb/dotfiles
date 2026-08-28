@@ -12,5 +12,10 @@ Host fwdt
     HostName fwdt
     User jadon
 {{- end}}
+{{- if ne .machine.type "laptop" }}
+Host omapad
+    HostName omapad
+    User jadon
+{{- end}}
 
 AddKeysToAgent yes
