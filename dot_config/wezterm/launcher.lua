@@ -276,7 +276,7 @@ local function open_session(window, pane, session, domain_name)
 					DomainName = domain_name,
 				},
 
-				cwd = expand_tilde(session.cwd),
+				cwd = session.cwd,
 				args = shell_args(session.args),
 			},
 		}),
