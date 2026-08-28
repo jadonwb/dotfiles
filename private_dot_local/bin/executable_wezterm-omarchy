@@ -2,13 +2,12 @@
 
 # xdg-terminal-exec entry point for WezTerm.
 #
-# Normal terminals:
-#   - always get a fresh GUI process/window
-#   - run their pane in the persistent local `unix` mux domain
+# Normal terminals are deliberately ephemeral:
+#   - fresh GUI process
+#   - built-in `local` domain
+#   - not attached to the persistent mux
 #
-# Omarchy floating TUIs:
-#   - stay isolated from the persistent mux
-#   - use their requested --class for Hyprland rules
+# Persistent sessions are entered explicitly through the Alt-s domain menu.
 
 is_float=0
 prev=""
@@ -33,8 +32,8 @@ if ((is_float)); then
     "$@"
 else
   exec wezterm \
+    --config "default_workspace='$$'" \
     start \
-    --domain unix \
     --always-new-process \
     "$@"
 fi
