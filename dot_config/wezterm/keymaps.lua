@@ -70,6 +70,7 @@ local keys = {
 	{ key = "/", mods = "ALT", action = act.Search({ CaseSensitiveString = "" }) },
 	-- Alt-v is the sole copy-mode entry: disable the default Ctrl+Shift+X
 	{ key = "X", mods = "CTRL|SHIFT", action = act.DisableDefaultAssignment },
+	{ key = "L", mods = "CTRL|SHIFT", action = act.ShowDebugOverlay },
 }
 
 for i = 1, 9 do
