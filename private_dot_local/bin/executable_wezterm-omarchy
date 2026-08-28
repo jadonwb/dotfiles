@@ -24,6 +24,12 @@ for arg in "$@"; do
   prev="$arg"
 done
 
+host=$(hostname)
+
+if [[ "$host" == "ws205" ]] ; then
+  host="work"
+fi
+
 if ((is_float)); then
   exec wezterm \
     --config enable_tab_bar=false \
@@ -32,8 +38,8 @@ if ((is_float)); then
     "$@"
 else
   exec wezterm \
-    --config "default_workspace='$$'" \
     start \
     --always-new-process \
+    --domain "$host" \
     "$@"
 fi
