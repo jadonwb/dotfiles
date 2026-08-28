@@ -292,16 +292,15 @@ local function open_session(window, pane, session, domain_name)
 			local parts = {}
 
 			for _, arg in ipairs(session.args) do
-				parts[#parts + 1] = shell_quote(arg)
+				parts[#parts + 1] = arg -- TODO: quoting?
+				-- parts[#parts + 1] = shell_quote(arg)
 			end
 
-			commands[#commands + 1] = "__wezterm_set_user_var WEZTERM_PROG " .. shell_quote(session.args[1])
-
-			commands[#commands + 1] = "exec " .. table.concat(parts, " ")
+			commands[#commands + 1] = table.concat(parts, " ")
 		end
 
-		if #commands > 0 then
-			remote_pane:send_text(table.concat(commands, " && ") .. "\n")
+		for _, command in ipairs(commands) do
+			remote_pane:send_text(command .. "\n")
 		end
 	end)
 end
