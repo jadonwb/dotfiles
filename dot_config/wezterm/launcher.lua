@@ -11,24 +11,16 @@ local function shell_quote(s)
 	return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
-local function shell_args(args)
-	if not args or #args == 0 then
-		return nil
+local function shell_path(path)
+	if path == "~" then
+		return "~"
 	end
 
-	local parts = {}
-
-	for _, arg in ipairs(args) do
-		parts[#parts + 1] = shell_quote(arg)
+	if path:sub(1, 2) == "~/" then
+		return "~/" .. shell_quote(path:sub(3))
 	end
 
-	local command = table.concat(parts, " ")
-
-	return {
-		"zsh",
-		"-ic",
-		"__wezterm_set_user_var WEZTERM_PROG " .. shell_quote(args[1]) .. "; exec " .. command,
-	}
+	return shell_quote(path)
 end
 
 local function expand_session_cwd(path, domain_name)
@@ -292,25 +284,65 @@ local function open_session(window, pane, session, domain_name)
 	end
 
 	local workspace = session_workspace(session, domain_name)
-	local cwd = expand_session_cwd(session.cwd, domain_name)
 
-	wezterm.log_info("SESSION SPAWN:", " domain=", domain_name, " workspace=", workspace, " cwd=", tostring(cwd))
+	-- Existing workspace: just switch.
+	for _, name in ipairs(wezterm.mux.get_workspace_names()) do
+		if name == workspace then
+			window:perform_action(
+				act.SwitchToWorkspace({
+					name = workspace,
+				}),
+				pane
+			)
+			return
+		end
+	end
 
+	-- New workspace: create the remote pane with NO cwd/args.
+	-- I think this is needed due to a bug where setting args
+	-- or cwd causes the local panes env to leak into the new pane in the other domain
 	window:perform_action(
 		act.SwitchToWorkspace({
 			name = workspace,
-
 			spawn = {
 				domain = {
 					DomainName = domain_name,
 				},
-
-				cwd = cwd,
-				args = shell_args(session.args),
 			},
 		}),
 		pane
 	)
+
+	-- Then initialize the already-correct remote shell.
+	wezterm.time.call_after(0.1, function()
+		local remote_pane = window:active_pane()
+
+		if not remote_pane then
+			return
+		end
+
+		local commands = {}
+
+		if session.cwd then
+			commands[#commands + 1] = "cd " .. shell_path(session.cwd)
+		end
+
+		if session.args and #session.args > 0 then
+			local parts = {}
+
+			for _, arg in ipairs(session.args) do
+				parts[#parts + 1] = shell_quote(arg)
+			end
+
+			commands[#commands + 1] = "__wezterm_set_user_var WEZTERM_PROG " .. shell_quote(session.args[1])
+
+			commands[#commands + 1] = "exec " .. table.concat(parts, " ")
+		end
+
+		if #commands > 0 then
+			remote_pane:send_text(table.concat(commands, " && ") .. "\n")
+		end
+	end)
 end
 
 -- ---- session definitions -------------------------------------------------
