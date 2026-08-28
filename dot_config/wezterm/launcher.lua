@@ -485,18 +485,6 @@ local function build_domain(domain_name)
 	return get()
 end
 
-local function build_scratch()
-	local add, get = new_builder()
-
-	for _, domain_name in ipairs(domain_names()) do
-		add(styled(domain_name .. " →", "Teal", true), function(window, pane)
-			M.domain(window, pane, domain_name)
-		end)
-	end
-
-	return get()
-end
-
 -- ---- main hub ------------------------------------------------------------
 
 local function build_main()
@@ -654,11 +642,6 @@ end
 -- ---- public entry points -------------------------------------------------
 
 function M.main(window, pane)
-	if pane:get_domain_name() == "local" then
-		show(window, pane, "Domains", build_scratch)
-		return
-	end
-
 	show(window, pane, "Sessions", build_main)
 end
 
