@@ -285,7 +285,13 @@ local function open_session(window, pane, session, domain_name)
 		local commands = {}
 
 		if session.cwd then
-			commands[#commands + 1] = "cd " .. shell_path(session.cwd)
+			local command = "cd " .. shell_path(session.cwd)
+
+			if not session.args or #session.args == 0 then
+				command = command .. " && clear"
+			end
+
+			commands[#commands + 1] = command
 		end
 
 		if session.args and #session.args > 0 then
