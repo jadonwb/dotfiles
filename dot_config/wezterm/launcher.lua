@@ -354,7 +354,7 @@ end
 
 -- ---- domain workspace picker --------------------------------------------
 
-local function build_domain_workspaces(domain_name, scratch_pane)
+local function build_domain_workspaces(domain_name)
 	local add, get = new_builder()
 	local open = {}
 
@@ -362,7 +362,7 @@ local function build_domain_workspaces(domain_name, scratch_pane)
 		open[workspace] = true
 
 		add(styled(workspace, "Navy"), function(window, pane)
-			switch_to_workspace(window, pane, workspace, scratch_pane)
+			switch_to_workspace(window, pane, workspace)
 		end)
 	end
 
@@ -371,7 +371,7 @@ local function build_domain_workspaces(domain_name, scratch_pane)
 
 		if not open[workspace] then
 			add(styled(workspace, "Green"), function(window, pane)
-				open_session(window, pane, session, domain_name, scratch_pane)
+				open_session(window, pane, session, domain_name)
 			end)
 		end
 	end
@@ -386,7 +386,7 @@ local function build_domain_workspaces(domain_name, scratch_pane)
 						return
 					end
 
-					open_workspace(w, p, name, nil, nil, domain_name, scratch_pane)
+					open_workspace(w, p, name, nil, nil, domain_name)
 				end),
 			}),
 			pane
@@ -581,7 +581,7 @@ local function build_zoxide()
 				used[name] = true
 
 				add(styled(display_path(dir), "Fuchsia"), function(window, pane)
-					open_workspace(window, pane, name, dir, nil, domains.local_name, nil)
+					open_workspace(window, pane, name, dir, nil, domains.local_name)
 				end)
 			end
 		end
@@ -597,10 +597,10 @@ local function build_zoxide()
 						return
 					end
 
-					local path = expand_tilde(line)
+					local path = expand_session_cwd(line, domains.local_name)
 					local name = path:match("([^/]+)/?$") or path
 
-					open_workspace(w, p, name, path, nil, domains.local_name, nil)
+					open_workspace(w, p, name, path, nil, domains.local_name)
 				end),
 			}),
 			pane
