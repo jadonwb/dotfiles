@@ -387,67 +387,30 @@ function M.domain_workspaces(window, pane, domain_name)
 	end)
 end
 
--- ---- domains attach/detach ----------------------------------------------
+-- ---- domain submenu ------------------------------------------------------
 
-local function build_domains()
+local function build_domain(domain_name)
 	local add, get = new_builder()
 
-	for _, name in ipairs(domain_names()) do
-		local domain = wezterm.mux.get_domain(name)
+	local domain = wezterm.mux.get_domain(domain_name)
 
-		if domain then
-			if domain:state() == "Attached" then
-				add(styled("detach " .. name, "Teal"), function()
-					detach_domain(name)
-				end)
-			else
-				add(styled("attach " .. name, "Teal"), function(window, _pane)
-					if not attach_domain(name) then
-						return
-					end
-
-					wezterm.time.call_after(0.05, function()
-						if domain:state() ~= "Attached" then
-							return
-						end
-
-						local active = window:active_pane()
-
-						if active then
-							M.domain_workspaces(window, active, name)
-						end
-					end)
-				end)
-			end
-		end
+	if not domain then
+		return get()
 	end
 
-	return get()
-end
+	-- Preconfigured sessions for this domain.
+	--
+	-- These are always shown. SwitchToWorkspace only uses the spawn definition
+	-- when the workspace does not already exist, so selecting an already-open
+	-- session simply switches to it.
+	for _, session in ipairs(sessions_for_domain(domain_name)) do
+		add(styled(session.label, "Green"), function(window, pane)
+			open_session(window, pane, session, domain_name)
+		end)
+	end
 
--- ---- per-domain "new" submenu -------------------------------------------
-
-local function build_domain_new(domain_name)
-	local add, get = new_builder()
-
-	add(styled("+ new workspace", "Yellow"), function(window, pane)
-		window:perform_action(
-			act.PromptInputLine({
-				description = "New workspace on " .. domain_name,
-
-				action = wezterm.action_callback(function(w, p, name)
-					if not name or name == "" then
-						return
-					end
-
-					open_workspace(w, p, name, nil, nil, domain_name, nil)
-				end),
-			}),
-			pane
-		)
-	end)
-
-	add(styled("+ new tab", "Yellow"), function(window, _pane)
+	-- Create a tab from this domain in the current MuxWindow/workspace.
+	add(styled("+ new tab", "Yellow", true), function(window, _pane)
 		if not attach_domain(domain_name) then
 			return
 		end
@@ -459,13 +422,64 @@ local function build_domain_new(domain_name)
 		})
 	end)
 
+	-- Create a new workspace whose initial pane belongs to this domain.
+	add(styled("+ new workspace", "Yellow", true), function(window, pane)
+		window:perform_action(
+			act.PromptInputLine({
+				description = "New workspace on " .. domain_name,
+
+				action = wezterm.action_callback(function(w, p, name)
+					if not name or name == "" then
+						return
+					end
+
+					open_workspace(w, p, name, nil, nil, domain_name)
+				end),
+			}),
+			pane
+		)
+	end)
+
+	-- Explicit connection control/status goes last.
+	if domain:state() == "Attached" then
+		add(styled("detach " .. domain_name, "Teal"), function()
+			detach_domain(domain_name)
+		end)
+	else
+		add(styled("attach " .. domain_name, "Teal"), function(window, pane)
+			if not attach_domain(domain_name) then
+				return
+			end
+
+			-- Once explicitly attached, open the same domain menu again so
+			-- the user can immediately choose a session/new workspace/tab.
+			wezterm.time.call_after(0.05, function()
+				if domain:state() ~= "Attached" then
+					return
+				end
+
+				local active = window:active_pane()
+
+				if active then
+					M.domain(window, active, domain_name)
+				end
+			end)
+		end)
+	end
+
 	return get()
 end
 
-function M.domain_new(window, pane, domain_name)
-	show(window, pane, domain_name .. ":new", function()
-		return build_domain_new(domain_name)
-	end)
+local function build_scratch()
+	local add, get = new_builder()
+
+	for _, domain_name in ipairs(domain_names()) do
+		add(styled(domain_name .. " →", "Teal", true), function(window, pane)
+			M.domain(window, pane, domain_name)
+		end)
+	end
+
+	return get()
 end
 
 -- ---- main hub ------------------------------------------------------------
@@ -474,48 +488,54 @@ local function build_main()
 	local add, get = new_builder()
 	local active_workspace = wezterm.mux.get_active_workspace()
 
-	for _, domain_name in ipairs(attached_domain_names()) do
-		local open = {}
+	-- All currently active persistent workspaces first, regardless of domain.
+	local seen = {}
+	local workspaces = {}
 
-		for _, workspace in ipairs(domain_workspaces(domain_name)) do
-			open[workspace] = true
+	for _, domain_name in ipairs(domain_names()) do
+		local domain = wezterm.mux.get_domain(domain_name)
 
-			if workspace ~= active_workspace then
-				add(styled(workspace, "Navy"), function(window, pane)
-					switch_to_workspace(window, pane, workspace, nil)
-				end)
+		if domain and domain:state() == "Attached" then
+			for _, workspace in ipairs(domain_workspaces(domain_name)) do
+				if not seen[workspace] then
+					seen[workspace] = true
+					workspaces[#workspaces + 1] = workspace
+				end
 			end
 		end
-
-		for _, session in ipairs(sessions_for_domain(domain_name)) do
-			local workspace = session_workspace(session, domain_name)
-
-			if not open[workspace] then
-				add(styled(workspace, "Green"), function(window, pane)
-					open_session(window, pane, session, domain_name, nil)
-				end)
-			end
-		end
-
-		add(styled(domain_name .. ":new →", "Yellow", true), function(window, pane)
-			M.domain_new(window, pane, domain_name)
-		end)
 	end
 
-	add(styled("domains →", "Teal", true), function(window, pane)
-		M.domains(window, pane, nil)
+	table.sort(workspaces, function(a, b)
+		if a == active_workspace then
+			return true
+		end
+
+		if b == active_workspace then
+			return false
+		end
+
+		return a < b
 	end)
+
+	for _, workspace in ipairs(workspaces) do
+		-- Don't offer the workspace we're already viewing.
+		if workspace ~= active_workspace then
+			add(styled(workspace, "Navy"), function(window, pane)
+				switch_to_workspace(window, pane, workspace)
+			end)
+		end
+	end
+
+	-- One submenu per configured domain.
+	for _, domain_name in ipairs(domain_names()) do
+		add(styled(domain_name .. " →", "Teal", true), function(window, pane)
+			M.domain(window, pane, domain_name)
+		end)
+	end
 
 	add(styled("rename →", "Olive", true), function(window, pane)
 		M.rename(window, pane)
 	end)
-
-	local local_domain = wezterm.mux.get_domain(domains.local_name)
-	if local_domain and local_domain:state() == "Attached" then
-		add(styled("zoxide →", "Purple", true), function(window, pane)
-			M.zoxide(window, pane)
-		end)
-	end
 
 	return get()
 end
@@ -620,15 +640,17 @@ end
 
 function M.main(window, pane)
 	if pane:get_domain_name() == "local" then
-		M.domains(window, pane)
+		show(window, pane, "Domains", build_scratch)
 		return
 	end
 
 	show(window, pane, "Sessions", build_main)
 end
 
-function M.domains(window, pane)
-	show(window, pane, "Domains", build_domains)
+function M.domain(window, pane, domain_name)
+	show(window, pane, domain_name, function()
+		return build_domain(domain_name)
+	end)
 end
 
 function M.zoxide(window, pane)
