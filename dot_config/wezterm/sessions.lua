@@ -16,7 +16,7 @@
 -- environment.
 
 local common = {
-	"work",
+	"ws205",
 	"fwdt",
 	"omapad",
 }
@@ -27,9 +27,9 @@ return {
 	{ label = "dotfiles", domains = common, cwd = "~/.local/share/chezmoi", args = { "nvim" } },
 	{ label = "neovim", domains = common, cwd = "~/.config/nvim", args = { "nvim" } },
 
-	{ label = "bitbake", domains = { "work" }, cwd = "~/Work/fusion2/dms-yocto/" },
-	{ label = "fusion", domains = { "work" }, cwd = "~/Work/fusion2/Fusion_2s_i.MX/" },
-	{ label = "radar", domains = { "work" }, cwd = "~/Work/radar/" },
+	{ label = "bitbake", domains = { "ws205" }, cwd = "~/Work/fusion2/dms-yocto/" },
+	{ label = "fusion", domains = { "ws205" }, cwd = "~/Work/fusion2/Fusion_2s_i.MX/" },
+	{ label = "radar", domains = { "ws205" }, cwd = "~/Work/radar/" },
 
 	{ label = "llama-toolboxes", domains = { "fwdt" }, cwd = "~/c/amd-strix-halo-toolboxes/" },
 	{ label = "vllm-toolboxes", domains = { "fwdt" }, cwd = "~/c/amd-strix-halo-vllm-toolboxes/" },

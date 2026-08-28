@@ -2,14 +2,8 @@ local wezterm = require("wezterm")
 
 local M = {}
 
-M.local_name = (wezterm.hostname() == "ws205") and "work" or wezterm.hostname()
+M.local_name = wezterm.hostname()
 
-M.name_overrides = {
-	ws205 = "work",
-}
-
--- Ignore SSH config aliases that are implementation/detail aliases rather than
--- machines we want exposed in the WezTerm launcher.
 local function include_host(host)
 	return not host:match(".host") and not host:match("machine/.host")
 end
@@ -20,7 +14,7 @@ function M.build()
 	for host, _config in pairs(wezterm.enumerate_ssh_hosts()) do
 		if include_host(host) then
 			result[#result + 1] = {
-				name = M.name_overrides[host] or host,
+				name = host,
 
 				-- Keep the original SSH alias here so WezTerm applies the
 				-- effective ~/.ssh/config settings for this host.
