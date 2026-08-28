@@ -31,16 +31,42 @@ local function shell_args(args)
 	}
 end
 
-local function expand_tilde(path)
+local function expand_session_cwd(path, domain_name)
 	if not path then
 		return nil
 	end
+
+	-- Local persistent domain: wezterm.home_dir is correct.
+	if domain_name == domains.local_name then
+		if path == "~" then
+			return wezterm.home_dir
+		end
+
+		if path:sub(1, 2) == "~/" then
+			return wezterm.home_dir .. path:sub(2)
+		end
+
+		return path
+	end
+
+	-- SSH domain: derive /home/<user> from the effective SSH config.
+	local user = domains.username(domain_name)
+
+	if not user then
+		wezterm.log_error("no SSH username for domain " .. tostring(domain_name))
+		return path
+	end
+
+	local home = "/home/" .. user
+
 	if path == "~" then
-		return wezterm.home_dir
+		return home
 	end
+
 	if path:sub(1, 2) == "~/" then
-		return wezterm.home_dir .. path:sub(2)
+		return home .. path:sub(2)
 	end
+
 	return path
 end
 
@@ -266,6 +292,9 @@ local function open_session(window, pane, session, domain_name)
 	end
 
 	local workspace = session_workspace(session, domain_name)
+	local cwd = expand_session_cwd(session.cwd, domain_name)
+
+	wezterm.log_info("SESSION SPAWN:", " domain=", domain_name, " workspace=", workspace, " cwd=", tostring(cwd))
 
 	window:perform_action(
 		act.SwitchToWorkspace({
@@ -276,7 +305,7 @@ local function open_session(window, pane, session, domain_name)
 					DomainName = domain_name,
 				},
 
-				cwd = expand_tilde(session.cwd),
+				cwd = cwd,
 				args = shell_args(session.args),
 			},
 		}),
