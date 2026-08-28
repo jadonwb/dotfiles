@@ -52,7 +52,7 @@ config.unix_domains = {
 
 config.ssh_domains = require("ssh_domains").build()
 
-config.default_workspace = "home"
+config.default_workspace = wezterm.hostname()
 
 wezterm.on("update-status", function(window, pane)
 	local colors = window:effective_config().resolved_palette
