@@ -71,6 +71,8 @@ local keys = {
 	-- Alt-v is the sole copy-mode entry: disable the default Ctrl+Shift+X
 	{ key = "X", mods = "CTRL|SHIFT", action = act.DisableDefaultAssignment },
 	{ key = "L", mods = "CTRL|SHIFT", action = act.ShowDebugOverlay },
+	-- Toggle tab
+	{ key = "Space", mods = "ALT|SHIFT", action = act.EmitEvent("toggle-tabbar") },
 }
 
 for i = 1, 9 do

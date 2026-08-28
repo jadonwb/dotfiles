@@ -82,6 +82,13 @@ wezterm.on("update-status", function(window, pane)
 	window:set_config_overrides(overrides)
 end)
 
+-- Toggle tabbar event listener
+wezterm.on("toggle-tabbar", function(window, _)
+	local overrides = window:get_config_overrides() or {}
+	overrides.enable_tab_bar = not overrides.enable_tab_bar
+	window:set_config_overrides(overrides)
+end)
+
 -- config.debug_key_events = true
 
 config.disable_default_key_bindings = true
