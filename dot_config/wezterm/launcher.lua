@@ -23,45 +23,6 @@ local function shell_path(path)
 	return shell_quote(path)
 end
 
-local function expand_session_cwd(path, domain_name)
-	if not path then
-		return nil
-	end
-
-	-- Local persistent domain: wezterm.home_dir is correct.
-	if domain_name == domains.local_name then
-		if path == "~" then
-			return wezterm.home_dir
-		end
-
-		if path:sub(1, 2) == "~/" then
-			return wezterm.home_dir .. path:sub(2)
-		end
-
-		return path
-	end
-
-	-- SSH domain: derive /home/<user> from the effective SSH config.
-	local user = domains.username(domain_name)
-
-	if not user then
-		wezterm.log_error("no SSH username for domain " .. tostring(domain_name))
-		return path
-	end
-
-	local home = "/home/" .. user
-
-	if path == "~" then
-		return home
-	end
-
-	if path:sub(1, 2) == "~/" then
-		return home .. path:sub(2)
-	end
-
-	return path
-end
-
 local function display_path(path)
 	local home = wezterm.home_dir
 
@@ -617,7 +578,7 @@ local function build_zoxide()
 						return
 					end
 
-					local path = expand_session_cwd(line, domains.local_name)
+					local path = line
 					local name = path:match("([^/]+)/?$") or path
 
 					open_workspace(w, p, name, path, nil, domains.local_name)

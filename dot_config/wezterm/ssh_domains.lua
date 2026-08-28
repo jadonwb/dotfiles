@@ -7,7 +7,7 @@ M.local_name = wezterm.hostname()
 local function include_domain(domain)
 	local host = domain.name:gsub("^SSHMUX:", ""):gsub("^SSH:", "")
 
-	return not host:match("^%.") and not host:match("/%.")
+	return not host:match("^%.") and not host:match("/%.") and not host:match("web1")
 end
 
 local all_domains = wezterm.default_ssh_domains()
