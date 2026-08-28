@@ -22,7 +22,7 @@ local common = {
 }
 
 return {
-	{ label = "home", root = true, domains = common, cwd = "~" },
+	{ label = "home", root = true, domains = common },
 	{ label = "source code", domains = common, cwd = "~/c" },
 	{ label = "dotfiles", domains = common, cwd = "~/.local/share/chezmoi", args = { "nvim" } },
 	{ label = "neovim", domains = common, cwd = "~/.config/nvim", args = { "nvim" } },
