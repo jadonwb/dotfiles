@@ -36,13 +36,15 @@ config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
 
+local domains = require("ssh_domains")
+
 config.unix_domains = {
 	{
-		name = wezterm.hostname(),
+		name = domains.local_name,
 	},
 }
 
-config.ssh_domains = require("ssh_domains").build()
+config.ssh_domains = domains.build()
 
 config.default_workspace = wezterm.hostname()
 
