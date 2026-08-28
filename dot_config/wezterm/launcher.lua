@@ -7,6 +7,30 @@ local M = {}
 
 -- ---- helpers -------------------------------------------------------------
 
+local function shell_quote(s)
+	return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
+local function shell_args(args)
+	if not args or #args == 0 then
+		return nil
+	end
+
+	local parts = {}
+
+	for _, arg in ipairs(args) do
+		parts[#parts + 1] = shell_quote(arg)
+	end
+
+	local command = table.concat(parts, " ")
+
+	return {
+		"zsh",
+		"-ic",
+		"__wezterm_set_user_var WEZTERM_PROG " .. shell_quote(args[1]) .. "; exec " .. command,
+	}
+end
+
 local function expand_tilde(path)
 	if not path then
 		return nil
@@ -100,32 +124,6 @@ local function show(window, pane, title, build)
 	)
 end
 
-local function shell_quote(arg)
-	arg = tostring(arg)
-	return "'" .. arg:gsub("'", "'\\''") .. "'"
-end
-
--- Session commands are intentionally started through an interactive login zsh.
--- This sources the normal zsh startup files and lets the launched program
--- inherit the same shell/WezTerm integration environment as an interactive
--- terminal.
-local function shell_wrap(args)
-	if not args or #args == 0 then
-		return nil
-	end
-
-	local quoted = {}
-	for _, arg in ipairs(args) do
-		quoted[#quoted + 1] = shell_quote(arg)
-	end
-
-	return {
-		"zsh",
-		"-lic",
-		"exec " .. table.concat(quoted, " "),
-	}
-end
-
 -- ---- domain state --------------------------------------------------------
 
 local function domain_names()
@@ -150,19 +148,6 @@ local function domain_names()
 	end)
 
 	return names
-end
-
-local function attached_domain_names()
-	local result = {}
-
-	for _, name in ipairs(domain_names()) do
-		local domain = wezterm.mux.get_domain(name)
-		if domain and domain:state() == "Attached" then
-			result[#result + 1] = name
-		end
-	end
-
-	return result
 end
 
 local function attach_domain(name)
@@ -290,8 +275,9 @@ local function open_session(window, pane, session, domain_name)
 				domain = {
 					DomainName = domain_name,
 				},
+
 				cwd = expand_tilde(session.cwd),
-				args = shell_wrap(session.args),
+				args = shell_args(session.args),
 			},
 		}),
 		pane
