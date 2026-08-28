@@ -291,9 +291,12 @@ local function open_session(window, pane, session, domain_name)
 		if session.args and #session.args > 0 then
 			local parts = {}
 
-			for _, arg in ipairs(session.args) do
-				parts[#parts + 1] = arg -- TODO: quoting?
-				-- parts[#parts + 1] = shell_quote(arg)
+			for i, arg in ipairs(session.args) do
+				if i == 1 then
+					parts[#parts + 1] = arg
+				else
+					parts[#parts + 1] = shell_quote(arg)
+				end
 			end
 
 			commands[#commands + 1] = table.concat(parts, " ")
