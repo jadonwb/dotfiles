@@ -31,22 +31,14 @@ config.underline_thickness = "2.75px"
 -- config.freetype_render_target = "HorizontalLcd"
 config.cell_width = 0.95
 
-local function hostname()
-	local ok, out = wezterm.run_child_process({ "hostname" })
-	if ok and out then
-		return out:gsub("%s+$", "")
-	end
-	return nil
-end
-
-config.front_end = (hostname() == "ws205") and "WebGpu" or "OpenGL"
+config.front_end = (wezterm.hostname() == "ws205") and "WebGpu" or "OpenGL"
 config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
 
 config.unix_domains = {
 	{
-		name = "unix",
+		name = wezterm.hostname(),
 	},
 }
 
