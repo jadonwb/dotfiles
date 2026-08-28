@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 
 # xdg-terminal-exec entry point for WezTerm.
-#
-# Normal terminals are deliberately ephemeral:
-#   - fresh GUI process
-#   - built-in `local` domain
-#   - not attached to the persistent mux
-#
-# Persistent sessions are entered explicitly through the Alt-s domain menu.
 
 is_float=0
 prev=""
