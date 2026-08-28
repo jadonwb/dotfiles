@@ -52,20 +52,23 @@ wezterm.on("update-status", function(window, pane)
 	local colors = window:effective_config().resolved_palette
 	local workspace = window:active_workspace()
 
+	-- Strip the domain prefix from names like "fwdt:dotfiles".
+	local display_workspace = workspace:match("^[^:]+:(.+)$") or workspace
+
 	window:set_left_status(wezterm.format({
 		{ Background = { Color = colors.tab_bar.active_tab.fg_color } },
 		{ Foreground = { Color = colors.tab_bar.active_tab.bg_color } },
-		{ Text = " " .. workspace .. " " },
+		{ Text = " " .. display_workspace .. " " },
 	}))
 
-	-- window:set_right_status(wezterm.format({
-	-- 	{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
-	-- 	{ Text = pane:get_user_vars().WEZTERM_HOST .. " " },
-	-- }))
+	window:set_right_status(wezterm.format({
+		{ Foreground = { Color = colors.tab_bar.active_tab.fg_color } },
+		{ Text = pane:get_user_vars().WEZTERM_HOST .. " " },
+	}))
 
 	-- useful debug
-	local vars = pane:get_user_vars()
-	window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
+	-- local vars = pane:get_user_vars()
+	-- window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
 end)
 
 -- Hide the scrollbar when there is no scrollback or alternate screen is active
