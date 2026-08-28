@@ -7,42 +7,27 @@ local M = {}
 
 -- ---- helpers -------------------------------------------------------------
 
-local function resolve_session_path(path)
-	if not path then
+local function shell_quote(s)
+	return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
+local function shell_args(args)
+	if not args or #args == 0 then
 		return nil
 	end
 
-	return path
-end
+	local parts = {}
 
-local function shell_args(session)
-	local cwd = resolve_session_path(session.cwd)
-
-	local commands = {}
-
-	if cwd then
-		if cwd == "~" then
-			commands[#commands + 1] = "cd ~"
-		elseif cwd:sub(1, 2) == "~/" then
-			local rest = cwd:sub(3)
-			commands[#commands + 1] = "cd ~/" .. string.format("%q", rest)
-		else
-			commands[#commands + 1] = "cd " .. string.format("%q", cwd)
-		end
+	for _, arg in ipairs(args) do
+		parts[#parts + 1] = shell_quote(arg)
 	end
 
-	if session.args and #session.args > 0 then
-		commands[#commands + 1] = "__wezterm_set_user_var WEZTERM_PROG " .. session.args[1]
-
-		commands[#commands + 1] = "exec " .. table.concat(session.args, " ")
-	else
-		commands[#commands + 1] = 'exec "$SHELL" -l'
-	end
+	local command = table.concat(parts, " ")
 
 	return {
 		"zsh",
 		"-ic",
-		table.concat(commands, " && "),
+		"__wezterm_set_user_var WEZTERM_PROG " .. shell_quote(args[1]) .. "; exec " .. command,
 	}
 end
 
@@ -291,8 +276,8 @@ local function open_session(window, pane, session, domain_name)
 					DomainName = domain_name,
 				},
 
-				cwd = nil,
-				args = shell_args(session),
+				cwd = expand_tilde(session.cwd),
+				args = shell_args(session.args),
 			},
 		}),
 		pane
