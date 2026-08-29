@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Changing this pin changes the rendered script, causing run_onchange to run.
+# wezterm sha256: {{ .wezterm.sha256 }}
+
+base_url="https://github.com/wezterm/wezterm/releases/download/nightly"
+asset="wezterm-nightly.Ubuntu24.04.tar.xz"
+
+cache="$HOME/.cache/wezterm"
+dest="$HOME/.local/bin"
+share="$HOME/.local/share/wezterm"
+icon="$HOME/.local/share/icons/hicolor/128x128/apps/org.wezfurlong.wezterm.png"
+
+mkdir -p "$cache" "$dest" "$share" "$(dirname "$icon")"
+
+archive="$cache/$asset"
+
+echo "wezterm: downloading pinned nightly"
+
+curl -fL \
+    "$base_url/$asset" \
+    -o "$archive"
+
+echo "{{ .wezterm.sha256 }}  $archive" | sha256sum -c -
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+tar -xJf "$archive" -C "$tmp"
+root="$tmp/wezterm"
+
+for bin in \
+    wezterm \
+    wezterm-gui \
+    wezterm-mux-server \
+    strip-ansi-escapes \
+    open-wezterm-here
+do
+    src="$root/usr/bin/$bin"
+    [[ -f "$src" ]] && install -m 0755 "$src" "$dest/$bin"
+done
+
+install -m 0644 \
+    "$root/etc/profile.d/wezterm.sh" \
+    "$share/shell-integration.sh"
+
+src_icon="$root/usr/share/icons/hicolor/128x128/apps/org.wezfurlong.wezterm.png"
+
+if [[ -f "$src_icon" ]]; then
+    install -m 0644 "$src_icon" "$icon"
+fi
+
+if command -v tic >/dev/null 2>&1; then
+    terminfo="$cache/wezterm.terminfo"
+
+    if curl -fsSL \
+        "https://raw.githubusercontent.com/wezterm/wezterm/main/termwiz/data/wezterm.terminfo" \
+        -o "$terminfo"
+    then
+        tic -x -o "$HOME/.terminfo" "$terminfo"
+    fi
+fi
+
+rm -f "$archive"
+
+echo "wezterm: installed $("$dest/wezterm" --version)"

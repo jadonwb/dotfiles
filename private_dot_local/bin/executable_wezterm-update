@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+asset="wezterm-nightly.Ubuntu24.04.tar.xz"
+url="https://github.com/wezterm/wezterm/releases/download/nightly"
+
+source_dir="$(chezmoi source-path)"
+data_file="$source_dir/.chezmoidata/wezterm.toml"
+
+sha="$(
+    curl -fsSL "$url/$asset.sha256" |
+        awk '{print $1}'
+)"
+
+[[ -n "$sha" ]] || {
+    echo "wezterm-update: failed to get nightly checksum" >&2
+    exit 1
+}
+
+current="$(
+    sed -n 's/^sha256 = "\(.*\)"/\1/p' "$data_file" 2>/dev/null || true
+)"
+
+if [[ "$sha" == "$current" ]]; then
+    echo "wezterm: already pinned to latest nightly"
+    exit 0
+fi
+
+mkdir -p "$(dirname "$data_file")"
+
+cat > "$data_file" <<EOF
+[wezterm]
+sha256 = "$sha"
+EOF
+
+echo "wezterm: pin updated"
+echo "$current -> $sha"
+echo
+echo "Commit/push your chezmoi changes normally."
