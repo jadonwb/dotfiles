@@ -17,6 +17,7 @@ config.colors = {
 
 config.quit_when_all_windows_are_closed = true
 
+config.enable_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = false
 config.use_fancy_tab_bar = false
 
@@ -69,24 +70,41 @@ wezterm.on("update-status", function(window, pane)
 	-- useful debug
 	-- local vars = pane:get_user_vars()
 	-- window:set_right_status("WEZTERM_PROG=" .. (vars.WEZTERM_PROG or "<nil>"))
-end)
 
--- Hide the scrollbar when there is no scrollback or alternate screen is active
-wezterm.on("update-status", function(window, pane)
+	-- Window overrides
 	local overrides = window:get_config_overrides() or {}
-	local dimensions = pane:get_dimensions()
+	local changed = false
 
-	overrides.enable_scroll_bar = dimensions.scrollback_rows > dimensions.viewport_rows
+	-- Hide the scrollbar when there is no (larger amount of) scrollback
+	-- or alternate screen is active
+	local dimensions = pane:get_dimensions()
+	local enable_scroll_bar = dimensions.scrollback_rows > (dimensions.viewport_rows + 5)
 		and not pane:is_alt_screen_active()
 
+	if overrides.enable_scroll_bar ~= enable_scroll_bar then
+		overrides.enable_scroll_bar = enable_scroll_bar
+		changed = true
+	end
+
+	if changed then
+		window:set_config_overrides(overrides)
+	end
+end)
+
+wezterm.on("toggle-tabbar", function(window, _)
+	local overrides = window:get_config_overrides() or {}
+	local enabled = window:effective_config().enable_tab_bar
+
+	overrides.enable_tab_bar = not enabled
 	window:set_config_overrides(overrides)
 end)
 
--- Toggle tabbar event listener
-wezterm.on("toggle-tabbar", function(window, _)
-	local overrides = window:get_config_overrides() or {}
-	overrides.enable_tab_bar = not overrides.enable_tab_bar
-	window:set_config_overrides(overrides)
+wezterm.on("show-tabbar", function(window, _)
+	if not window:effective_config().enable_tab_bar then
+		local overrides = window:get_config_overrides() or {}
+		overrides.enable_tab_bar = true
+		window:set_config_overrides(overrides)
+	end
 end)
 
 -- config.debug_key_events = true
