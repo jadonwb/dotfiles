@@ -21,8 +21,16 @@ hl.unbind("SUPER + RETURN")
 local float_tui = require("hypr.float-tui")
 local machine = require("hypr.host")
 
-o.bind("SUPER + RETURN", "Terminal", "wezterm --config enable_tab_bar=false start --always-new-process")
-o.bind("SUPER + ALT + RETURN", "Persistent Terminal", "wezterm start --always-new-process --domain $(hostname)")
+o.bind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar=false start --always-new-process" })
+o.bind("SUPER + ALT + RETURN", "Persistent Terminal", function()
+  local command = "wezterm start --always-new-process --domain $(hostname)"
+
+  if not o.shell_succeeds([[pgrep -u "$UID" -f '(^|/)wezterm-mux-server( |$)']]) then
+    command = command .. " --attach"
+  end
+
+  hl.exec_cmd(o.launch(command))
+end)
 
 -- FIXME!: spawns a blank window, which then intercepts the kill
 -- hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd([[notify-send 'click window to kill' && hyprctl kill]]))
