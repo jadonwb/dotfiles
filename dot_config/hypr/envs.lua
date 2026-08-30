@@ -18,7 +18,7 @@ end
 
 hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/gcr/ssh")
 
-if machine.is_work then
+if machine.hostname == "ws205" then
   hl.env("EGL_PLATFORM", "wayland")
   hl.env("GBM_BACKEND", "nvidia-drm")
   hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")

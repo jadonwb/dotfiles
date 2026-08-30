@@ -1,8 +1,8 @@
-hl.window_rule({
-  name = "chromium-browser-opacity",
-  match = { tag = "chromium-based-browser" },
-  opacity = "0.95 override 0.9 override",
-})
+-- hl.window_rule({
+--   name = "chromium-browser-opacity",
+--   match = { tag = "chromium-based-browser" },
+--   opacity = "0.95 override 0.9 override",
+-- })
 
 hl.window_rule({
   name = "wezterm-terminal-tag",
@@ -42,9 +42,9 @@ hl.window_rule({
   size = { "(monitor_w*0.8)", "(monitor_h*0.9)" },
 })
 
-hl.window_rule({
-  name = "screensaver",
-  match = { class = "org.omarchy.screensaver" },
-  no_anim = true,
-  rounding = 0,
-})
+-- hl.window_rule({
+--   name = "screensaver",
+--   match = { class = "org.omarchy.screensaver" },
+--   no_anim = true,
+--   rounding = 0,
+-- })
