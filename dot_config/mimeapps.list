@@ -1,9 +1,9 @@
 [Default Applications]
-text/html=brave-browser.desktop
-x-scheme-handler/http=brave-browser.desktop
-x-scheme-handler/https=brave-browser.desktop
-x-scheme-handler/about=brave-browser.desktop
-x-scheme-handler/unknown=brave-browser.desktop
+text/html=brave-origin.desktop
+x-scheme-handler/http=brave-origin.desktop
+x-scheme-handler/https=brave-origin.desktop
+x-scheme-handler/about=brave-origin.desktop
+x-scheme-handler/unknown=brave-origin.desktop
 application/pdf=brave-browser.desktop
 application/xhtml+xml=brave-browser.desktop
 text/plain=nvim.desktop
@@ -40,6 +40,8 @@ application/x-shellscript=nvim.desktop
 text/x-c=nvim.desktop
 text/x-c++=nvim.desktop
 application/xml=nvim.desktop
+x-scheme-handler/mailto=HEY.desktop
+x-scheme-handler/codex=chatgpt.desktop
 
 [Added Associations]
 application/x-shellscript=nvim.desktop;
