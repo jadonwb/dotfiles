@@ -59,7 +59,14 @@ local keys = {
 	{ key = "RightArrow", mods = "ALT|SHIFT", action = act.MoveTabRelative(1) },
 	-- panes / tabs
 	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = false }) },
-	{ key = "c", mods = "ALT", action = act.SpawnTab("CurrentPaneDomain") },
+	{
+		key = "c",
+		mods = "ALT",
+		action = act.Multiple({
+			act.EmitEvent("show-tabbar"),
+			act.SpawnTab("CurrentPaneDomain"),
+		}),
+	},
 	-- launcher: hub = workspaces + sessions + submenus (zoxide, machines, rename)
 	{ key = "s", mods = "ALT", action = launcher.action_main() },
 	-- scroll, or forward to neovim
