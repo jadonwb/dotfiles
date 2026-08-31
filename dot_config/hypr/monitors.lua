@@ -7,8 +7,14 @@
 -- local omarchy_monitor_scale = 1.6
 
 local machine = require("hypr.host")
+local omarchy_monitor_scale = "auto"
 
-local omarchy_monitor_scale = machine.hostname == "fwdt" and 1.3 or "auto"
+if machine.hostname == "fwdt" then
+  omarchy_monitor_scale = "1.3"
+elseif machine.hostname == "ws205" then
+  omarchy_monitor_scale = "1.22"
+end
+
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = omarchy_monitor_scale })
 
 -- Configure a specific monitor.
