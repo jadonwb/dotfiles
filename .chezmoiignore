@@ -1,5 +1,15 @@
 {{- if eq .machine.type "work" }}
 
+# omarchy quattro changes to ignore until I fix
+.pi/agent/skills/omarchy
+.config/kitty/kitty.conf
+.config/hyprland-preview-share-picker/config.yaml
+.config/hypr/hyprland.lua
+.config/alacritty/alacritty.toml
+.config/foot/foot.ini
+.config/ghostty/config
+.XCompose
+
 {{- else}}
 
 # ignore work files
@@ -14,5 +24,4 @@ c/update_source.sh
 # global
 .gitignore
 .opencode
-Documents/note.txt
 .luarc.json
