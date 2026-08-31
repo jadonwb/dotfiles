@@ -1,30 +1,26 @@
--- Toggle a floating TUI: summon to the current workspace, hide to special, or launch.
+-- Toggle a floating Omarchy TUI:
+--   visible on current workspace -> hide to special workspace
+--   hidden -> summon to current workspace
+--   visible elsewhere -> move to current workspace
+--   not running -> launch
 --
 -- Usage:
---   float_tui.new({
---     class = "org.omarchy.yazi",
---     special = "special:yazi",
---     launch = "omarchy-launch-tui yazi",
---   })
+--   float_tui.new("yazi")
+--   float_tui.new("btop")
 
 local M = {}
 
-function M.new(opts)
-  local app_class = opts.class -- e.g. "org.omarchy.yazi"
-  local special = opts.special -- e.g. "special:yazi"
-  local launch = opts.launch -- e.g. "omarchy-launch-tui yazi"
-
-  local function find_in(workspace)
-    for _, w in ipairs(hl.get_workspace_windows(workspace) or {}) do
-      if w.class == app_class then
-        return w
-      end
-    end
-    return nil
-  end
+function M.new(name)
+  local app_class = "org.omarchy." .. name
+  local special = "special:" .. name
+  local launch = "omarchy-launch-tui " .. name
 
   local function move_to(workspace, window)
-    hl.dispatch(hl.dsp.window.move({ workspace = workspace, window = window, follow = false }))
+    hl.dispatch(hl.dsp.window.move({
+      workspace = workspace,
+      window = window,
+      follow = false,
+    }))
   end
 
   local function focus(window)
@@ -37,27 +33,24 @@ function M.new(opts)
       return
     end
 
-    -- Hidden in the special drawer: bring it back to the current workspace.
-    local hidden = find_in(special)
-    if hidden then
-      move_to(ws.id, hidden)
-      focus(hidden)
-      return
-    end
+    local current, elsewhere, hidden
 
-    -- Scan for a visible instance (current workspace or elsewhere).
-    local current, elsewhere
-    for _, w in ipairs(hl.get_windows() or {}) do
-      if w.class == app_class and w.workspace and not w.workspace.special then
-        if w.workspace.id == ws.id then
-          current = w
+    for _, window in ipairs(hl.get_windows() or {}) do
+      if window.class == app_class and window.workspace then
+        if window.workspace.special then
+          hidden = window
+        elseif window.workspace.id == ws.id then
+          current = window
         else
-          elsewhere = w
+          elsewhere = window
         end
       end
     end
 
-    if current then
+    if hidden then
+      move_to(ws.id, hidden)
+      focus(hidden)
+    elseif current then
       move_to(special, current)
     elseif elsewhere then
       move_to(ws.id, elsewhere)

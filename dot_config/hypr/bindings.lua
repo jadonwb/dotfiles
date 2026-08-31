@@ -39,15 +39,6 @@ if machine.is_personal then
   o.bind("SUPER + PERIOD", "Passwords", "1password")
 end
 
--- TODO: simplify, omarchy-launch-tui auto names them org.omarchy.*, so just provide a single name and the internals will make special:* and use org.omarchy.*
-o.bind(
-  "SUPER + E",
-  "Toggle yazi",
-  float_tui.new({ class = "org.omarchy.yazi", special = "special:yazi", launch = "omarchy-launch-tui yazi" })
-)
+o.bind("SUPER + E", "Toggle yazi", float_tui.new("yazi"))
 
-o.bind(
-  "SUPER + CTRL + T",
-  "Toggle btop",
-  float_tui.new({ class = "org.omarchy.btop", special = "special:btop", launch = "omarchy-launch-tui btop" })
-)
+o.bind("SUPER + CTRL + T", "Toggle btop", float_tui.new("btop"))
