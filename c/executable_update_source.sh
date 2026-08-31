@@ -169,6 +169,12 @@ build_imv() {
   ninja -C build install
 }
 
+build_tensaku() {
+  printf '\n==> Building imv\n'
+  cargo install --locked tensaku
+  tensaku --install-desktop # add the icon + desktop entry
+}
+
 build_neovim() {
   printf '\n==> Building neovim\n'
   cd "$NEOVIM_DIR"
@@ -354,6 +360,9 @@ main() {
       update_repo "$IMV_DIR"
       build_imv
       ;;
+    tensaku)
+      build_tensaku
+      ;;
     xdg-terminal-exec)
       update_repo "$XDG_TERMINAL_EXEC_DIR"
       build_xdg_terminal_exec
@@ -393,6 +402,7 @@ main() {
   build_mako
   build_quickshell
   build_imv
+  build_tensaku
   build_neovim
   build_foot
   build_xdg_terminal_exec

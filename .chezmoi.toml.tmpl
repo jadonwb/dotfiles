@@ -14,6 +14,10 @@
     ]
 
 [diff]
+    command = "nvim"
+    args = [
+        {{ printf "%q" "+DiffviewDiffFiles {{ .Destination }} {{ .Target }}" }},
+    ]
     exclude = ["scripts"]
 
 [status]
