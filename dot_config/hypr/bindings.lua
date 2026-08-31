@@ -25,7 +25,7 @@ o.bind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar
 o.bind("SUPER + ALT + RETURN", "Persistent Terminal", function()
   local command = "wezterm start --always-new-process --domain $(hostname)"
 
-  if not o.shell_succeeds([[pgrep -u "$UID" -f '(^|/)wezterm-mux-server( |$)']]) then
+  if not o.shell_succeeds([[pgrep -u "$(id -u)" -f '(^|/)wezterm-mux-server( |$)']]) then
     command = command .. " --attach"
   end
 
