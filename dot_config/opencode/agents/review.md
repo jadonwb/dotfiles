@@ -1,7 +1,6 @@
 ---
 description: Read-only code reviewer. Checks the requested change against its specification and surrounding project behavior, then reports actionable findings.
 mode: subagent
-hidden: true
 model: opencode/deepseek-v4-pro
 color: "warning"
 steps: 30

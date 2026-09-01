@@ -1,7 +1,7 @@
 ---
 description: Primary implementation agent. Applies the user's request or latest agreed specification, edits files, and validates the result.
 mode: primary
-model: opencode/deepseek-v4-pro
+model: deepseek/deepseek-v4-pro
 color: "secondary"
 permission:
   edit: allow
