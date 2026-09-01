@@ -1,24 +1,33 @@
 {
-    "$schema": "https://opencode.ai/config.json",
-    "model": "deepseek/deepseek-v4-pro",
-    "small_model": "deepseek/deepseek-v4-flash",
-    "default_agent": "plan",
-    "agent": {
-        "general": {
-            "disable": true
-        },
-        "explore": {
-            "disable": true
-        },
-        "scout": {
-            "disable": true
-        },
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4-pro",
+  "small_model": "opencode/deepseek-v4-flash",
+  "default_agent": "plan",
+  "agent": {
+    "general": {
+      "disable": true
     },
-    "compaction": {
-        "auto": true,
-        "prune": true,
-        "tail_turns": 12,
-        "preserve_recent_tokens": 25000,
-        "reserved": 15000
+    "explore": {
+      "disable": true
     },
+    "scout": {
+      "disable": true
+    }
+  },
+  "mcp": {
+    "fff": {
+      "type": "local",
+      "command": [
+        "fff-mcp"
+      ],
+      "enabled": true
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "tail_turns": 12,
+    "preserve_recent_tokens": 25000,
+    "reserved": 15000
+  }
 }
