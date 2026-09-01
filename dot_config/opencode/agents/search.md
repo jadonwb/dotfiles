@@ -1,8 +1,7 @@
 ---
 description: Focused research agent for codebase search, git investigation, and web research. Returns concise evidence to the calling agent and retains useful context when resumed.
 mode: subagent
-hidden: true
-model: opencode/deepseek-v4-flash
+model: deepseek/deepseek-v4-flash
 color: "accent"
 tools:
   "fff_*": true
