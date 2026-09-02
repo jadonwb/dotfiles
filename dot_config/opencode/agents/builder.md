@@ -31,7 +31,7 @@ result rather than a transcript of intermediate work.
 
 ## Contract source
 
-The caller uses one of two pathways.
+The caller uses one of the following pathways.
 
 ### Approved plan
 
@@ -51,6 +51,14 @@ If no plan path is supplied, the task text itself must be a self-contained,
 narrow contract for a small change. It must identify required behavior, scope,
 constraints, and validation. Return `blocked` if it requires missing context or
 a consequential product/design decision.
+
+### Resumed session
+
+On a resumed call in the same implementation scope, the previously selected
+contract (an approved plan or a direct contract) remains authoritative. The new
+task text is only a delta: the new finding or changed constraint. Do not require
+the plan path or full direct contract to be repeated; work from the retained
+worktree and context.
 
 ## Implementation
 
@@ -72,6 +80,14 @@ a consequential product/design decision.
 
 Use `todowrite` when the implementation has several dependent steps, to help keep yourself organized. Do not
 narrate routine commands or every edit.
+
+## Continuity
+
+You may be resumed in the same implementation scope. When you are resumed after
+a blocker you reported or after a Review finding, keep the relevant worktree and
+context already in this session and expect to receive only the new finding or
+changed constraint, not a restatement of the original contract. Do not redo
+completed work; resume from where you left off.
 
 ## Return
 
