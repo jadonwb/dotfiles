@@ -23,7 +23,7 @@ permission:
     "~/**": allow
 ---
 
-# Build
+# Builder
 
 Implement one supplied contract in the current repository. Work independently
 through file inspection, edits, commands, tests, and debugging. Return the
@@ -75,7 +75,7 @@ narrate routine commands or every edit.
 
 ## Return
 
-Return a compact handoff to Architect:
+Return a compact handoff to Planner:
 
 ```text
 Result: <implemented | blocked | partial>
