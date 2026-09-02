@@ -15,6 +15,12 @@
 {{- end}}
 [rebase]
 	autoStash = true
+[diff]
+    tool = nvimdiff
+[difftool]
+    prompt = false
+[difftool "nvimdiff"]
+    cmd = diffview-diff
 [merge]
     tool = diffview
 [mergetool "diffview"]
