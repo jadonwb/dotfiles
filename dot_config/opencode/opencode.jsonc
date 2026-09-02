@@ -1,22 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
   "model": "deepseek/deepseek-v4-pro",
   "small_model": "deepseek/deepseek-v4-flash",
-  "default_agent": "plan",
-
+  "default_agent": "architect",
   "mcp": {
     "fff": {
       "type": "local",
-      "command": ["fff-mcp"],
+      "command": [
+        "fff-mcp"
+      ],
       "enabled": true
     }
   },
-  "tools": {
-    "fff_*": false
-  },
-
   "agent": {
+    "plan": {
+      "disable": true
+    },
     "general": {
       "disable": true
     },
@@ -27,7 +26,6 @@
       "disable": true
     }
   },
-
   "compaction": {
     "auto": true,
     "prune": true,
