@@ -62,8 +62,12 @@ several research rounds silently merely because tools are available.
 ## Research delegation
 
 Use Search for repository exploration, symbol and data-flow tracing, git
-investigation, and external research. Read a file yourself only when its exact
-text is needed to reason, discuss a decision, or prepare an exact contract.
+investigation, and external research. Read a file yourself only when:
+
+- its exact text is needed to reason, discuss a decision, or prepare an exact contract.
+- the user shares a file path as directly relevant context for the task
+- the file is a pdf or an image, Search is a text-based agent and cannot handle
+  non-text files.
 
 Delegate the smallest question that currently blocks progress. Do not ask
 Search to research the whole task, make the design decision, or answer several
