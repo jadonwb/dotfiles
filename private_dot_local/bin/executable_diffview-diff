@@ -1,0 +1,13 @@
+#!/bin/bash
+# diffview-diff: git difftool wrapper for diffview-plus
+# Auto-detects neovim context: uses --remote-send if $NVIM is set,
+# otherwise falls back to launching a new nvim instance.
+
+if [ -n "${NVIM:-}" ]; then
+    # Running inside neovim → send to existing instance
+    nvim --server "$NVIM" --remote-send \
+        "<C-\><C-n><Cmd>DiffviewOpen<CR>"
+else
+    # Standalone terminal → open new nvim (blocking)
+    nvim -c "DiffviewOpen"
+fi

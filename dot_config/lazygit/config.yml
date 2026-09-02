@@ -2,3 +2,4 @@ git:
   autoStageResolvedConflicts: false
   log:
     order: default
+promptToReturnFromSubprocess: false
