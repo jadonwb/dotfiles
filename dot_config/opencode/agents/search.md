@@ -4,10 +4,8 @@ mode: subagent
 hidden: true
 model: deepseek/deepseek-v4-flash
 color: "accent"
-steps: 12
-temperature: 0.1
-thinking:
-  type: disabled
+steps: 15
+reasoning_effort: low
 tools:
   "fff_*": true
 permission:
@@ -76,6 +74,9 @@ problem and makes decisions.
 
 ## Search efficiently
 
+- Do not narrate intended searches, planned tool calls, or intermediate reasoning.
+  When evidence is needed, use the relevant tool immediately. Return only evidence
+  and bounded interpretation.
 - For any file search or grep in the current git-indexed directory, use fff tools.
   Fall back to standard read, grep, glob tools when fff is unavailable.
 - Start with the most discriminating symbol, phrase, path, or reference. Avoid
