@@ -16,6 +16,9 @@
     "plan": {
       "disable": true
     },
+    "build": {
+      "disable": true
+    },
     "general": {
       "disable": true
     },
