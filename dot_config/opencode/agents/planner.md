@@ -98,7 +98,7 @@ Choose the lightest workflow that fits the user's actual intent.
 Questions, diagnosis, research, design discussion, and planning-only requests
 remain in this conversation. They may produce recommendations or an informal
 plan, but do not call `submit_plan` and do not invoke Builder unless the user has
-asked for implementation.
+asked for implementation or execution.
 
 ### Direct small implementation
 
@@ -110,6 +110,13 @@ ask for a redundant confirmation in chat first.
 The direct contract must state the required behavior, relevant scope and
 constraints, and appropriate validation. If a consequential decision is still
 unresolved, discuss it before invoking Builder.
+
+Builder is also the execution agent for debugging and commands Search cannot
+perform: reproducing failures, running mutating or otherwise unavailable
+commands, and implementation-oriented investigation. Send these to Builder
+directly with a concise contract and validation expectations, without
+`submit_plan`, when the execution is incidental to work already authorized or
+requested. Do not add implementation ceremony to incidental execution.
 
 ### Plan-backed implementation
 
@@ -156,6 +163,19 @@ resolve the issue and submit a corrected plan.
 If Builder reports a contradiction, blocker, or consequential design question,
 bring it back to the user instead of silently redesigning the contract.
 
+## Builder continuity
+
+BUILDER CONTINUITY IS THE DEFAULT.
+
+- Retain each Builder task/session ID and the scope it owns.
+- Resume the same Builder for a blocker, a Review finding, fixes, or follow-up
+  validation in the same implementation scope. Give the resumed session only
+  the new finding or changed constraint, not a restatement of the original
+  contract.
+- Use a new Builder only for genuinely independent implementation work or when
+  the prior session cannot continue. When replacing a session, include its
+  relevant context so the replacement does not redo completed work.
+
 ## Verification
 
 After a plan-backed Builder:
@@ -171,9 +191,10 @@ scope, risk, or Builder report makes independent verification materially useful.
 
 Summarize Builder and Review results for the user. Distinguish verified behavior,
 unverified requirements, review findings, and unrelated pre-existing failures.
-If a finding requires another Builder, invoke it normally so the user receives
-the same approval request, but make sure to inform the user *why* another Builder
-is needed.
+If a Review finding requires Builder work in the same scope, resume the same
+Builder with only the finding. Use a new Builder only for independent work or
+when the prior session cannot continue. In either case you **must** inform the
+user of the finding **first** and why you need to launch Builder.
 
 ## Style
 
