@@ -18,8 +18,8 @@ hl.unbind("SUPER + CTRL + T")
 hl.unbind("SUPER + ALT + RETURN")
 hl.unbind("SUPER + RETURN")
 
-local float_tui = require("hypr.float-tui")
 local machine = require("hypr.host")
+local window_toggle = require("hypr.window-toggle")
 
 o.bind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar=false start --always-new-process" })
 o.bind("SUPER + ALT + RETURN", "Persistent Terminal", function()
@@ -39,6 +39,16 @@ if machine.is_personal then
   o.bind("SUPER + PERIOD", "Passwords", "1password")
 end
 
-o.bind("SUPER + E", "Toggle yazi", float_tui.new("yazi"))
+o.bind("SUPER + E", "Toggle yazi", window_toggle.tui("yazi"))
 
-o.bind("SUPER + CTRL + T", "Toggle btop", float_tui.new("btop"))
+o.bind("SUPER + CTRL + T", "Toggle btop", window_toggle.tui("btop"))
+
+o.bind(
+  "SUPER + Q",
+  "Toggle calculator",
+  window_toggle.new({
+    class = "org.gnome.Calculator",
+    special = "special:calculator",
+    launch = "gnome-calculator",
+  })
+)
