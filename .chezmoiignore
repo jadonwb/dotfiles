@@ -25,3 +25,8 @@ c/update_source.sh
 .gitignore
 .opencode
 .luarc.json
+
+.config/opencode/agents/builder(1).md
+.config/opencode/agents/planner(2).md
+.config/opencode/agents/review(3).md
+.config/opencode/agents/search(4).md
