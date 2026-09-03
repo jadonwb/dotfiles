@@ -13,6 +13,16 @@ run = "plugin close-and-restore-tab restore"
 desc = "Restore previously closed tab"
 
 [[mgr.prepend_keymap]]
+on = "<A-j>"
+run = "seek 2"
+desc = "Scroll preview down"
+
+[[mgr.prepend_keymap]]
+on = "<A-k>"
+run = "seek -2"
+desc = "Scroll preview up"
+
+[[mgr.prepend_keymap]]
 on = ["c", "m"]
 run = "plugin chmod"
 desc = "Chmod on selected files"
