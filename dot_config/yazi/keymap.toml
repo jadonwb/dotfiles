@@ -50,7 +50,7 @@ desc = "Go to dotfiles"
 [[mgr.prepend_keymap]]
 on = ["g", "s"]
 run = "cd ~/c"
-desc = "Go to dotfiles"
+desc = "Go to source code"
 
 [[mgr.prepend_keymap]]
 on = "M"
