@@ -14,12 +14,12 @@ desc = "Restore previously closed tab"
 
 [[mgr.prepend_keymap]]
 on = "<A-j>"
-run = "seek 2"
+run = "seek 1"
 desc = "Scroll preview down"
 
 [[mgr.prepend_keymap]]
 on = "<A-k>"
-run = "seek -2"
+run = "seek -1"
 desc = "Scroll preview up"
 
 [[mgr.prepend_keymap]]
