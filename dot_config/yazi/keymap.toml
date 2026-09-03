@@ -38,6 +38,21 @@ run = "cd ~/.local/share/Trash/files"
 desc = "Go to Trash"
 
 [[mgr.prepend_keymap]]
+on = ["g", "l"]
+run = "cd ~/.local"
+desc = "Go to user local"
+
+[[mgr.prepend_keymap]]
+on = ["g", "d"]
+run = "cd ~/.local/share/chezmoi"
+desc = "Go to dotfiles"
+
+[[mgr.prepend_keymap]]
+on = ["g", "s"]
+run = "cd ~/c"
+desc = "Go to dotfiles"
+
+[[mgr.prepend_keymap]]
 on = "M"
 run = "plugin mount"
 
