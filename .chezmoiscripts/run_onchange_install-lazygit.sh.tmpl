@@ -1,0 +1,34 @@
+{{- if eq .machine.type "work" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Changing these pins changes the rendered script, causing run_onchange to run.
+# lazygit version: {{ .lazygit.version }} sha256: {{ .lazygit.sha256 }}
+
+version="{{ .lazygit.version }}"
+sha256="{{ .lazygit.sha256 }}"
+
+base_url="https://github.com/jesseduffield/lazygit/releases/download/v${version}"
+asset="lazygit_${version}_linux_x86_64.tar.gz"
+
+dest="$HOME/.local/bin"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+archive="$tmp/$asset"
+
+echo "lazygit: downloading pinned release ${version}"
+
+curl -fL "$base_url/$asset" -o "$archive"
+
+echo "${sha256}  $archive" | sha256sum -c -
+
+mkdir -p "$dest"
+
+tar -xzf "$archive" -C "$tmp" lazygit
+
+install -m 0755 "$tmp/lazygit" "$dest/lazygit"
+
+echo "lazygit: installed $("$dest/lazygit" --version)"
+{{- end -}}

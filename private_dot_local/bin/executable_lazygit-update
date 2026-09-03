@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+api_url="https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
+
+source_dir="$(chezmoi source-path)"
+data_file="$source_dir/.chezmoidata/lazygit.toml"
+
+version="$(
+    curl -fsSL "$api_url" |
+        sed -n 's/^[[:space:]]*"tag_name": "v\([^"]*\)",$/\1/p' |
+        head -n1
+)"
+
+[[ -n "$version" ]] || {
+    echo "lazygit-update: failed to determine latest release" >&2
+    exit 1
+}
+
+checksums_url="https://github.com/jesseduffield/lazygit/releases/download/v${version}/checksums.txt"
+
+sha="$(
+    curl -fsSL "$checksums_url" |
+        awk -v asset="lazygit_${version}_linux_x86_64.tar.gz" '$2 == asset { print $1 }'
+)"
+
+[[ -n "$sha" ]] || {
+    echo "lazygit-update: failed to find checksum for lazygit_${version}_linux_x86_64.tar.gz" >&2
+    exit 1
+}
+
+current_version="$(
+    sed -n 's/^version = "\(.*\)"/\1/p' "$data_file" 2>/dev/null || true
+)"
+
+if [[ "$version" == "$current_version" ]]; then
+    echo "lazygit: already pinned to latest stable release (${version})"
+    exit 0
+fi
+
+tmp="$(mktemp "$data_file.XXXXXX")"
+trap 'rm -f "$tmp"' EXIT
+
+cat > "$tmp" <<EOF
+[lazygit]
+version = "$version"
+sha256 = "$sha"
+EOF
+
+mv "$tmp" "$data_file"
+
+echo "lazygit: pin updated"
+echo "${current_version:-<unset>} -> ${version}"
+echo
+echo "Commit/push your chezmoi changes normally."
