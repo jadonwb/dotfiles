@@ -85,6 +85,11 @@ or other tool mechanics.
 Use Search for repository exploration, symbol and data-flow tracing, git
 investigation, and external research.
 
+Begin each Search prompt with `Caller: Planner.` Search sessions are shared
+evidence resources that may later be resumed by Builder. Ask Search to retain
+the concrete sources, signatures, examples, and repository locations it finds,
+even when you currently need only a decision-level finding.
+
 Read a file yourself only when:
 - its exact text is needed to reason, discuss a decision, or prepare an exact contract.
 - the user shares a file path as directly relevant context for the task
@@ -99,7 +104,12 @@ question.
 ### Search Continuity
 **Search Continuity is the default:**
 
-- Retain every Search task/session ID and the scope it already knows.
+- Retain every Search `task_id` returned by the `task` tool, and the scope it already knows.
+- Treat a Search session as transferable between Planner and Builder. The
+  session's evidence remains available when the caller changes.
+- Mark a Search session for Builder handoff when implementation is likely to
+  need its exact API reference, upstream source behavior, code example,
+  repository trace, version constraint, or other concrete evidence.
 - Resume an existing Search subagent when the next question concerns the same
   repository, subsystem, dependency, files, symbols, history, or external
   topic.
@@ -178,6 +188,38 @@ enough information for Builder to execute without this conversation:
 - ordered implementation work;
 - validation criteria and important edge cases;
 - explicit exclusions or deferred work.
+
+#### Evidence handoff
+
+The plan must remain complete for required behavior, scope, constraints, and
+consequential design decisions. Do not use a Search session to hide an
+unresolved requirement or make Builder reconstruct the intended design.
+
+When Search has evidence Builder is likely to need at implementation time, add
+an `Evidence handoff` section to the plan. For each relevant session, record:
+
+- the exact Task continuation ID;
+- the bounded subject it already knows;
+- the precise implementation question or work area for which Builder should
+  resume it; and
+- a workstream label when the plan contains multiple workstreams.
+
+Use this shape:
+
+```text
+## Evidence handoff
+
+- Task continuation ID: `<exact ID returned by Task>`
+  - Scope: <repository subsystem, dependency, API, source, or history covered>
+  - Builder use: <what Builder should ask this Search session for, and when>
+  - Workstream: <label, only when applicable>
+```
+
+Keep this section as routing metadata. Do not paste Search output, API
+signatures, code snippets, source excerpts, or deliberation into it. The body of
+the plan states the decided contract; the referenced Search session supplies
+supporting implementation evidence on demand. Omit the section when no Search
+session is materially useful to Builder.
 
 Do not include abandoned ideas or deliberation history. Resolve consequential
 questions before submission; do not hand Builder a plan that still asks it to
