@@ -4,7 +4,7 @@ mode: subagent
 hidden: true
 model: deepseek/deepseek-v4-pro
 color: "warning"
-steps: 24
+steps: 40
 permission:
   edit: deny
   read: allow
