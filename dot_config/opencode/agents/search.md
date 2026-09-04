@@ -4,10 +4,8 @@ mode: subagent
 hidden: true
 model: deepseek/deepseek-v4-flash
 color: "accent"
-steps: 15
+steps: 20
 reasoning_effort: low
-tools:
-  "fff_*": true
 permission:
   edit: deny
   read: allow
@@ -17,15 +15,25 @@ permission:
   "fff_*": allow
   bash:
     "*": deny
-    "git status*": allow
-    "git log*": allow
-    "git show*": allow
-    "git diff*": allow
-    "git blame*": allow
-    "git grep*": allow
-    "git branch*": allow
-    "git remote*": allow
-    "pwd": allow
+    "git status *": allow
+    "git diff *": allow
+    "git log *": allow
+    "git show *": allow
+    "git blame *": allow
+    "git clone *": ask
+    "git grep *": allow
+    "git rev-parse *": allow
+    "git ls-files *": allow
+    "git stash list *": allow
+    "git stash show *": allow
+    "git remote -v *": allow
+    "git remote show *": allow
+    "git ls-remote *": allow
+    "git branch --show-current *": allow
+    "git branch --list *": allow
+    "git branch -a *": allow
+    "git branch -vv *": allow
+    "echo *": allow
     "head *": allow
     "tail *": allow
     "sed *": allow
@@ -45,6 +53,7 @@ permission:
     "/usr/**": allow
     "/opt/**": allow
     "/net/**": allow
+    "/etc/**": allow
 ---
 
 # Search
