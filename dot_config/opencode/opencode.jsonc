@@ -3,6 +3,7 @@
   "model": "opencode/gpt-5.6-sol",
   "small_model": "deepseek/deepseek-v4-flash",
   "default_agent": "planner",
+  "subagent_depth": 2,
   "mcp": {
     "fff": {
       "type": "local",
