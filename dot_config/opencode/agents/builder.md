@@ -2,9 +2,9 @@
 description: Isolated implementation worker for approved plans and command-only execution contracts.
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-pro
+model: opencode/glm-5.3-flash
 color: "secondary"
-steps: 50
+reasoning_effort: max
 permission:
   edit: allow
   read: allow

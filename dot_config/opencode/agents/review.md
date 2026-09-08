@@ -2,9 +2,9 @@
 description: Risk-scaled verifier for approved-plan compliance and code correctness.
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-pro
+model: opencode/glm-5.3-flash
 color: "warning"
-steps: 40
+reasoning_effort: max
 permission:
   edit: deny
   read: allow

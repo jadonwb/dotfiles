@@ -2,9 +2,9 @@
 description: Bounded, persistent evidence retriever for code, git, and external research.
 mode: subagent
 hidden: true
-model: deepseek/deepseek-v4-flash
+model: opencode/glm-5.3-flash
 color: "accent"
-steps: 20
+steps: 30
 reasoning_effort: low
 permission:
   edit: deny
