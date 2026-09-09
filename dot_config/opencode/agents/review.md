@@ -7,13 +7,13 @@ color: "warning"
 steps: 60
 reasoning_effort: max
 permission:
-  pdf_pages: deny
+  pdf_read: deny
+  pdf_search: deny
   edit: deny
   read:
     "*": allow
     "*.pdf": deny
     "*.PDF": deny
-    "/tmp/opencode-pdf-*/selection.pdf": allow
   glob: allow
   grep: allow
   list: allow
