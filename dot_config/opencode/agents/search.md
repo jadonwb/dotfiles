@@ -95,7 +95,7 @@ symbols, paths, or phrases. Read narrow supporting context and trace enough to
 establish behavior. Avoid whole-repository inventories unless requested. Use
 git only when its state/history answers the question.
 
-Never edit user-owned files or mutate repository state. Temporary PDF extracts
+Never edit user-owned files or mutate repository state. Temporary PDF extracts and local text indexes
 created by `pdf_pages` are allowed research output. Do not use shell commands to
 write files or evade denied tools. Do not clone repositories without explicit
 caller authorization and the configured permission approval.
@@ -103,8 +103,8 @@ caller authorization and the configured permission approval.
 ## PDFs and images
 
 Never pass an original PDF to `read`, including a renamed or mixed-case PDF.
-Use `pdf_pages` with its plain path and an explicit physical page or bounded
-range. Do not attach the source PDF through prompt expansion either.
+For extraction, use `pdf_pages` with its plain path and an explicit physical
+page or bounded range. Do not attach the source PDF through prompt expansion either.
 
 Prefer text mode for prose or searchable tables. Read the returned text file
 with bounded offsets/limits. Use image mode for diagrams, scans, layout-sensitive
@@ -112,10 +112,25 @@ tables, or empty/unreliable extracted text; inspect the returned images. PDF mod
 is optional when the model/provider accepts PDFs: read only the generated
 `selection.pdf`. Image support alone does not establish native PDF support.
 
-Use another bounded request when additional pages are needed. If the relevant
-page is unknown, start with the cover/contents or a caller-provided section;
-follow contents references while accounting for printed versus physical page
-numbers. Do not bulk-extract the document merely to locate one answer.
+When locating a topic in a document, use `pdf_pages` with `operation: search`,
+its plain `path`, and a short literal `query`. Omit page/format arguments for
+search. The tool automatically builds/reuses a document-wide text index locally;
+only bounded matching-page excerpts enter context. This local indexing is allowed.
+Never read or attach the full index yourself.
+
+Use `max_results` and the returned `next_offset` as `offset` for more matching
+pages. Results are physical pages in document order, one excerpt per matching
+page. Restart pagination if `index_id` changes. Search is case-insensitive literal
+phrase matching with whitespace/line-end hyphenation tolerance, not semantic
+search: try shorter terms or synonyms when appropriate.
+
+Extract relevant hit pages with text mode for context or image mode to inspect
+figures and scans. Use another bounded extraction when additional pages are
+needed. Check coverage/warnings: no matches do not establish absence from pages
+without text, and a small text footer does not make all visual content searchable.
+There is no OCR. If text search cannot locate the topic, inspect contents/index
+pages as a fallback; do not claim binary search can locate an unordered topic.
+Treat printed-to-physical offsets as provisional and verify the target page.
 
 Cite the original source path/title, physical page, printed label when known,
 and section/table/figure. A temporary extract alone is not a durable citation.
@@ -129,7 +144,8 @@ changes. Answer the new question without reconstructing the investigation.
 Reopen evidence only when the detail was not established, code/version may have
 changed, evidence conflicts, or the caller needs verification. State what changes
 if a previous finding is invalidated. Session memory can be incomplete: say so
-instead of pretending to retain an exact signature or source.
+instead of pretending to retain an exact signature or source. Never invent your
+Task ID; the caller records the ID returned by the harness.
 
 ## Return
 
