@@ -30,6 +30,7 @@
   },
   "permission": {
     "pdf_read": "deny",
-    "pdf_search": "deny"
+    "pdf_search": "deny",
+    "save_evidence": "deny"
   }
 }
