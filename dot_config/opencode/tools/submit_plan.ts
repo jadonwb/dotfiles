@@ -34,7 +34,7 @@ function safeName(value: string): string {
 export default tool({
   description:
     "Submit a complete implementation plan for interactive review in plannotator-tui. " +
-    "The tool waits for explicit approval or revision feedback and never starts implementation.",
+    "Waits for approval or revision feedback and returns the saved plan path. Does not start Builder; its Task permission separately controls execution approval.",
   args: {
     plan: tool.schema
       .string()
@@ -156,7 +156,7 @@ export default tool({
       return [
         "PLAN_APPROVED",
         "The user approved this exact plan in the TUI workflow.",
-        "Approval does not authorize or start implementation.",
+        "Plan approval is complete. Invoke Builder with the Plan path through its configured Task permission for separate execution approval. This tool has not started implementation.",
         `Plan: ${planPath}`,
       ].join("\n")
     }
