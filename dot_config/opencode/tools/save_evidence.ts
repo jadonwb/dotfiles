@@ -11,10 +11,11 @@ export default tool({
     "Save a focused Markdown research note for another worker to read. " +
     "Returns its absolute path without repeating its contents. Each call creates " +
     "a new note; existing notes and project files cannot be edited by this tool. " +
+    "The title is written as the note's H1 heading; do not repeat it in the content. " +
     "Use inline answers for brief evidence. Maximum note size: 64 KiB UTF-8.",
   args: {
     title: tool.schema.string().trim().min(1).max(160)
-      .describe("A short, single-line subject for the note."),
+      .describe("A short, single-line subject for the note. It becomes the note's H1 heading."),
     content: tool.schema.string().trim().min(1).max(MAX_BYTES)
       .describe("Focused Markdown findings with descriptive headings, exact implementation details, source references, and limitations."),
   },
