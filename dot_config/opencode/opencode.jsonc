@@ -36,5 +36,8 @@
     "tail_turns": 12,
     "preserve_recent_tokens": 25000,
     "reserved": 15000
+  },
+  "permission": {
+    "pdf_pages": "deny"
   }
 }
