@@ -4,6 +4,7 @@ git:
   log:
     order: default
 promptToReturnFromSubprocess: false
+notARepository: skip
 
 keybinding:
   universal:
