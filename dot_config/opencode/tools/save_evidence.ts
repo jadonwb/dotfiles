@@ -11,7 +11,7 @@ export default tool({
     "Save a focused Markdown research note for another worker to read. " +
     "Returns its absolute path without repeating its contents. Each call creates " +
     "a new note; existing notes and project files cannot be edited by this tool. " +
-    "The title is written as the note's H1 heading; do not repeat it in the content. " +
+    "The title is written as the note's H1 heading; do not write your own H1 heading in the content. " +
     "Use inline answers for brief evidence. Maximum note size: 64 KiB UTF-8.",
   args: {
     title: tool.schema.string().trim().min(1).max(160)
