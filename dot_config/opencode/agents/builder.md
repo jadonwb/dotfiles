@@ -41,11 +41,13 @@ result.
 
 ## Make the change
 
-Read the plan and its required evidence, then inspect the named target code and
-make the edits. Follow applicable project instructions and preserve existing
-user changes. Read adjacent code only as needed to implement correctly. Once the
-edit is clear, make it; do not begin with a repository survey, task-list
-ceremony, environment inventory, or search for possible validators.
+Read the plan and its listed evidence notes. Changes state the edits and
+behavior; the notes carry implementation-level detail. Apply what they state
+instead of re-deriving it from the repository. Then inspect the named target
+code and make the edits. Follow applicable project instructions and preserve
+existing user changes. Read adjacent code only as needed to implement correctly.
+Once the edit is clear, make it; do not begin with a repository survey,
+task-list ceremony, environment inventory, or search for possible validators.
 
 The plan defines behavior and scope. Supporting evidence explains implementation
 facts; it does not expand the assignment. Resolve ordinary coding details within
@@ -55,13 +57,14 @@ decision, report that decision and any completed work to the caller.
 
 ## Obtain a missing fact
 
-Use evidence already supplied. If a specific missing fact prevents
-implementation, use `task` with `subagent_type: search` to ask a research
-assistant. Include the question, relevant paths or versions, and what the answer
-must establish. When the plan lists a session on that subject, resume it with
-its actual `task_id`. If unavailable, start a fresh search with the saved
-evidence and question. A listed session is available help, not a required
-consultation.
+Use what the plan and its listed evidence already supply before deriving
+anything yourself; do not re-derive a fact they state. If a needed fact is
+missing, unclear, or conflicts with the code, resume the plan's listed research
+session with its actual `task_id` rather than investigating it yourself, and
+start a fresh search only when no listed session covers the subject. Include the
+question, relevant paths or versions, and what the answer must establish. A
+quick look to place an edit is normal; when a question would take real
+investigation, hand it to Search instead.
 
 Use this research assistant for external sources or PDFs. Pass PDF paths as
 plain text; never attach or directly read an original PDF. Return any new
