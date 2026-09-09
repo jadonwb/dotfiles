@@ -4,15 +4,6 @@
   "small_model": "opencode/glm-5.3-flash",
   "default_agent": "planner",
   "subagent_depth": 2,
-  "mcp": {
-    "fff": {
-      "type": "local",
-      "command": [
-        "fff-mcp"
-      ],
-      "enabled": true
-    }
-  },
   "agent": {
     "plan": {
       "disable": true
