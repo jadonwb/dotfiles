@@ -181,10 +181,10 @@ export default tool({
     "Search a PDF using operation=search and query (cached local text; bounded page hits), or " +
     "extract explicit PDF pages into temporary text, PNGs, or a page-only PDF. " +
     "Never attaches or returns the original PDF. Returns paths and original page mappings; " +
-    "use read on those outputs. Physical pages are 1-based, not printed labels. Max 5 pages.",
+    "Read only returned output files, never the original PDF or full text index. Physical pages are 1-based, not printed labels. Extraction allows at most 5 pages per call; search covers document text locally.",
   args: {
     path: tool.schema.string().min(1).describe("Local source PDF path; relative paths use the session directory."),
-    operation: tool.schema.enum(["extract", "search"]).optional().describe("Default extract preserves existing calls. Search indexes locally and returns only page hits."),
+    operation: tool.schema.enum(["extract", "search"]).optional().describe("Defaults to extract. Search returns matching-page excerpts from a local text index; omit page and format arguments."),
     query: tool.schema.string().min(1).max(200).optional().describe("Required for search: literal case-insensitive phrase, not a regex."),
     max_results: tool.schema.number().int().min(1).max(20).optional().describe("Search matching pages per response; default 10."),
     offset: tool.schema.number().int().min(0).optional().describe("Search pagination offset; use returned next_offset, default 0."),
