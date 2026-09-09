@@ -17,7 +17,6 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  "fff_*": allow
   bash:
     "*": deny
     "git status *": allow
@@ -99,11 +98,9 @@ findings and the precise unresolved question.
 
 ## Retrieval
 
-Use fff, the indexed repository search tools, for file/text searches. Use ordinary
-tools when fff is unavailable, fails, or does not cover the target. Start with
-distinctive symbols, paths, or phrases, read relevant context, and trace enough to
-establish behavior. Avoid whole-repository inventories unless requested. Use git
-when repository state or history helps answer the question.
+Start with distinctive symbols, paths, or phrases, read relevant context, and trace
+enough to establish behavior. Avoid whole-repository inventories unless requested.
+Use git when repository state or history helps answer the question.
 
 Do not edit user files or change repository state. Do not use shell commands to
 write files or bypass denied tools. The PDF tools' temporary extracts and
