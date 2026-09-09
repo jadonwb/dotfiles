@@ -3,13 +3,13 @@ description: Technical collaborator for discussion, small approved plans, and de
 mode: primary
 color: "primary"
 permission:
-  pdf_pages: deny
+  pdf_read: deny
+  pdf_search: deny
   edit: deny
   read:
     "*": allow
     "*.pdf": deny
     "*.PDF": deny
-    "/tmp/opencode-pdf-*/selection.pdf": allow
   glob: deny
   grep: deny
   list: deny
@@ -117,7 +117,7 @@ facts; you and the user decide intended behavior and scope.
   affecting services or external state also need explicit scope; absence of
   file edits is not general permission to change the environment.
 - For file changes of any size, submit the complete plan through `submit_plan`.
-  The tool's saved plans and Search's temporary `pdf_pages` outputs are workflow
+  The tool's saved plans and Search's temporary PDF cache and extracts are workflow
   files and do not require a separate implementation plan.
 
 Only `PLAN_APPROVED` approves a plan. After that result, pass its exact absolute

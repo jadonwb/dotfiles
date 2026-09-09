@@ -6,13 +6,13 @@ model: opencode/glm-5.3-flash
 color: "secondary"
 reasoning_effort: max
 permission:
-  pdf_pages: deny
+  pdf_read: deny
+  pdf_search: deny
   edit: allow
   read:
     "*": allow
     "*.pdf": deny
     "*.PDF": deny
-    "/tmp/opencode-pdf-*/selection.pdf": allow
   glob: allow
   grep: allow
   list: allow

@@ -7,13 +7,13 @@ color: "accent"
 steps: 45
 reasoning_effort: low
 permission:
-  pdf_pages: allow
+  pdf_read: allow
+  pdf_search: allow
   edit: deny
   read:
     "*": allow
     "*.pdf": deny
     "*.PDF": deny
-    "/tmp/opencode-pdf-*/selection.pdf": allow
   glob: allow
   grep: allow
   list: allow
@@ -106,47 +106,39 @@ establish behavior. Avoid whole-repository inventories unless requested. Use git
 when repository state or history helps answer the question.
 
 Do not edit user files or change repository state. Do not use shell commands to
-write files or bypass denied tools. The `pdf_pages` tool's temporary extracts and
-local search indexes are allowed research output. Clone a repository only with
+write files or bypass denied tools. The PDF tools' temporary extracts and
+local text cache are allowed research output. Clone a repository only with
 explicit caller authorization and the configured permission approval.
 
 ## PDFs and images
 
-Never pass an original PDF to `read`, even if renamed or given a different-case
-extension. Pass its path as plain text to `pdf_pages`; do not attach or expand the
-PDF into a prompt. If extraction fails, report the error without uploading the
-original. Read relevant standalone images directly.
+Use `pdf_search` to locate text and `pdf_read` to inspect selected pages. Pass the
+original PDF path as plain `filePath` text. Never attach the original PDF to a
+prompt or pass it to the default `read` tool, even if renamed. Standalone images
+can be read directly.
 
-To locate a topic, call `pdf_pages` with `operation: search`, `path`, and a short
-literal `query`. Omit page and format arguments. Search processes document text
-locally and returns bounded excerpts from matching pages. Never read or attach
-the full local index.
+`pdf_search` accepts a literal `query` and optional inclusive `first_page` and
+`last_page`. Use a known page range to avoid unnecessary extraction. Otherwise
+search the document. Results contain source-page locations and suggested read
+offsets. Continue with `next_cursor`, keeping the source, query, and range the
+same. A stale cursor requires restarting the search.
 
-Use the returned `next_offset` as `offset` for more results, with the same query.
-`max_results` limits matching pages per response. Restart at offset 0 if `index_id`
-changes. Search ignores case and tolerates whitespace and common line-end
-hyphenation; it does not match meanings or perform OCR. Try shorter terms or
-synonyms when useful. No match does not prove absence from scanned or visual
-content, even on pages with some extracted text.
+`pdf_read` returns 1–3 selected pages directly. Use text by default, image for
+scans/diagrams or unreliable text, and pdf only when the active model/provider
+is known to accept native PDFs. Text output provides line numbers and an exact
+continuation call when truncated. Use that call without changing the selected
+range; its `source_id` detects document changes. For unreadable image detail,
+request high resolution on the relevant page.
 
-To inspect a page, use `operation: extract`, `path`, and `first_page`; optionally
-include `last_page` for an inclusive range of at most five pages. Physical pages
-start at 1 and may differ from printed page labels. Verify any assumed offset.
+Physical page numbers start at 1 and can differ from printed labels. Verify
+assumed offsets. Search is literal, not semantic, and has no OCR: no match cannot
+prove absence from scans or visual content, even if a page contains a text footer.
+Inspect likely contents/index pages when text search cannot locate a topic.
 
-- `format: text` is the default. Use it for prose and searchable tables; read
-  returned text files with bounded offsets and limits.
-- `format: image` is for diagrams, scans, layout-sensitive tables, or unreliable
-  text. Read the returned images and respect resolution warnings.
-- `format: pdf` returns only selected pages. Use it only when the active model
-  and provider are known to accept native PDFs; read only `selection.pdf`.
-
-Extract useful search hits for full context. If text search cannot locate a topic,
-inspect likely contents/index pages and follow their references. Further bounded
-page selections are allowed when needed; avoid scanning the document indiscriminately.
-
-Cite the original source path/title, physical page, printed label when known,
-and relevant section/table/figure. A temporary output path alone is not a source
-citation. Check tool warnings before drawing conclusions about missing content.
+Cite the original source, physical page, printed label when known, and relevant
+section/table/figure. Respect truncation, coverage, and resolution warnings. The
+tools manage their own cache; never read the full cache. On failure, report the
+error rather than falling back to uploading the original PDF.
 
 ## Follow-ups and reporting
 

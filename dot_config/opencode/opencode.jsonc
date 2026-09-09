@@ -38,6 +38,7 @@
     "reserved": 15000
   },
   "permission": {
-    "pdf_pages": "deny"
+    "pdf_read": "deny",
+    "pdf_search": "deny"
   }
 }
