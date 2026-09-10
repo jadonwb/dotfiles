@@ -1,3 +1,4 @@
 [tools]
 node = "22"
 go = "1.22"
+"npm:@earendil-works/pi-coding-agent" = "0.85.1"
