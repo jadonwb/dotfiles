@@ -1,5 +1,5 @@
 # editor
-export EDITOR='nvim'
+export EDITOR='nvim-editor'
 export SUDO_EDITOR="$EDITOR"
 
 export PATH="$HOME/.local/bin:$PATH"

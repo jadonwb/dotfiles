@@ -1,0 +1,3 @@
+#!/bin/sh
+export NVIM_LAUNCH_MODE=transient
+exec nvim "$@"
