@@ -11,12 +11,6 @@
     ],
     "skills": [
       "./skills"
-    ],
-    "prompts": [
-      "./prompts"
-    ],
-    "themes": [
-      "./themes"
     ]
   },
   "peerDependencies": {
@@ -25,7 +19,6 @@
     "typebox": "*"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "@mozilla/readability": "^0.6.0",
     "@types/jsdom": "^28.0.0",
     "@types/turndown": "^5.0.6",
