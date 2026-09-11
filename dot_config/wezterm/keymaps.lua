@@ -50,13 +50,11 @@ local keys = {
 	{ key = "Insert", mods = "CTRL", action = wezterm.action.CopyTo("Clipboard") },
 	{ key = "Insert", mods = "SHIFT", action = wezterm.action.PasteFrom("Clipboard") },
 	-- tab navigation
-	{ key = "LeftArrow", mods = "ALT", action = act.ActivateTabRelative(-1) },
-	{ key = "RightArrow", mods = "ALT", action = act.ActivateTabRelative(1) },
 	{ key = "p", mods = "ALT", action = act.ActivateTabRelative(-1) },
 	{ key = "n", mods = "ALT", action = act.ActivateTabRelative(1) },
 	-- tab move/swap
-	{ key = "LeftArrow", mods = "ALT|SHIFT", action = act.MoveTabRelative(-1) },
-	{ key = "RightArrow", mods = "ALT|SHIFT", action = act.MoveTabRelative(1) },
+	{ key = "p", mods = "ALT|SHIFT", action = act.MoveTabRelative(-1) },
+	{ key = "n", mods = "ALT|SHIFT", action = act.MoveTabRelative(1) },
 	-- panes / tabs
 	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = false }) },
 	{
