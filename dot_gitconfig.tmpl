@@ -20,7 +20,7 @@
 [difftool]
     prompt = false
 [difftool "nvimdiff"]
-    cmd = diffview-diff
+    cmd = diffview-diff \"$LOCAL\" \"$REMOTE\"
 [merge]
     tool = diffview
 [mergetool "diffview"]
