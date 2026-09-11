@@ -1,13 +1,128 @@
 #!/bin/bash
 # diffview-diff: git difftool wrapper for diffview-plus
-# Auto-detects neovim context: uses --remote-send if $NVIM is set,
-# otherwise falls back to launching a new nvim instance.
+# Opens the compared files as a two-file Diffview in the already-running
+# Neovim and returns immediately, so Git/lazygit resume without waiting for
+# the diff to be closed. Git exports the compared files as $LOCAL/$REMOTE
+# in the difftool.<tool>.cmd shell and deletes its temporary files as soon
+# as this command exits, so their exact content is first copied into a
+# private directory that the Neovim helper owns until its diff view closes;
+# the copies are view-only and never write back to the working tree. When
+# no existing Neovim accepts the request, fall back to a dedicated blocking
+# Neovim, which must stay alive for the whole viewing session for the same
+# reason.
 
-if [ -n "${NVIM:-}" ]; then
-    # Running inside neovim → send to existing instance
-    nvim --server "$NVIM" --remote-send \
-        "<C-\><C-n><Cmd>DiffviewOpen<CR>"
-else
-    # Standalone terminal → open new nvim (blocking)
-    nvim -c "DiffviewOpen"
+# The compared files arrive as argv (the difftool.<tool>.cmd template expands
+# $LOCAL/$REMOTE in its shell).
+LOCAL="${1:-}"
+REMOTE="${2:-}"
+
+if [ -z "$LOCAL" ] || [ -z "$REMOTE" ]; then
+    echo "diffview-diff: git difftool did not pass \$LOCAL and \$REMOTE" >&2
+    exit 1
 fi
+
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/diffview-diff.XXXXXX")" || exit 1
+# Absolute form: the remote helper resolves the copies in Neovim, whose
+# working directory may differ from this shell's.
+tmpdir="$(cd -- "$tmpdir" && pwd -P)" || exit 1
+
+clean() {
+    rm -rf -- "$tmpdir"
+}
+
+# Keep a useful basename for filetype detection. Diffview expands its
+# arguments with Vim's expand(), which eats literal backslashes, so replace
+# those with underscores; the name stays recognizable.
+base_of() {
+    local base
+    base="$(basename -- "$1")" || return 1
+    printf '%s' "${base//\\/_}"
+}
+
+# Copy one side under its own subdirectory. When the source is /dev/null
+# (added or removed file), write an empty copy named after the other side's
+# file, so both buffers keep the same name.
+copy_side() {
+    # $1 = source (or /dev/null), $2 = destination directory, $3 = basename
+    if [ "$1" = /dev/null ]; then
+        : >"$2/$3" || return 1
+    else
+        cp -- "$1" "$2/$3" || return 1
+    fi
+}
+
+if [ "$LOCAL" = /dev/null ] && [ "$REMOTE" = /dev/null ]; then
+    left_base=empty
+    right_base=empty
+elif [ "$LOCAL" = /dev/null ]; then
+    right_base="$(base_of "$REMOTE")" || {
+        clean
+        exit 1
+    }
+    left_base="$right_base"
+elif [ "$REMOTE" = /dev/null ]; then
+    left_base="$(base_of "$LOCAL")" || {
+        clean
+        exit 1
+    }
+    right_base="$left_base"
+else
+    left_base="$(base_of "$LOCAL")" || {
+        clean
+        exit 1
+    }
+    right_base="$(base_of "$REMOTE")" || {
+        clean
+        exit 1
+    }
+fi
+
+mkdir -- "$tmpdir/left" "$tmpdir/right" || {
+    clean
+    exit 1
+}
+copy_side "$LOCAL" "$tmpdir/left" "$left_base" || {
+    clean
+    exit 1
+}
+copy_side "$REMOTE" "$tmpdir/right" "$right_base" || {
+    clean
+    exit 1
+}
+
+# Quote the directory path as a Lua string literal: only the directory
+# travels remotely — the helper resolves the single copy on each side
+# itself, so the original paths need no Ex-command escaping.
+lua_quote() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\'/\\\'}"
+    printf "'%s'" "$s"
+}
+
+# Hand the copies to the running Neovim (e.g. the editor running lazygit in
+# this terminal, which exports its socket as $NVIM). The helper reports an
+# open failure through the expression's error, which the client reflects in
+# its exit status together with connection failures; nothing about the
+# result is parsed or waited on.
+if [ -n "$NVIM" ]; then
+    if nvim --server "$NVIM" --remote-expr \
+        "v:lua.NVDiffview.open_difftool($(lua_quote "$tmpdir"))" >/dev/null; then
+        # Delivered: the helper owns the directory now and deletes it when
+        # its diff view closes. Leaving it in place is what keeps the exact
+        # content alive for Diffview's scheduled reads.
+        exit 0
+    fi
+    # Nothing accepted the request: no server, an unreachable socket, or the
+    # helper failed before opening a view (it deletes the copies itself in
+    # that case). Remove what is left here and fall back below.
+    clean
+fi
+
+# Hand the paths to the child through dedicated environment variables: no
+# Ex-command escaping for spaces or special characters. NVIM_LAUNCH_MODE gives
+# the dedicated process the existing difftool close/quit behavior. Git
+# deletes its temporary files only when this command exits, so exec'ing
+# Neovim keeps Git/lazygit waiting until the user closes the diff.
+export DIFFVIEW_LOCAL="$LOCAL" DIFFVIEW_REMOTE="$REMOTE" NVIM_LAUNCH_MODE=difftool
+exec nvim -c "lua require('diffview').diff_files({ vim.env.DIFFVIEW_LOCAL, vim.env.DIFFVIEW_REMOTE })"
