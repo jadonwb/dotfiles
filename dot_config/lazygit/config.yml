@@ -5,7 +5,3 @@ git:
     order: default
 promptToReturnFromSubprocess: false
 notARepository: skip
-
-keybinding:
-  universal:
-    toggleWhitespaceInDiffView: "ctrl+tab"
