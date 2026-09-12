@@ -1,24 +1,131 @@
 #!/bin/bash
 # diffview-diff: git difftool wrapper for diffview-plus
-# Opens the compared files as a two-file Diffview in the already-running
-# Neovim and returns immediately, so Git/lazygit resume without waiting for
-# the diff to be closed. Git exports the compared files as $LOCAL/$REMOTE
-# in the difftool.<tool>.cmd shell and deletes its temporary files as soon
-# as this command exits, so their exact content is first copied into a
-# private directory that the Neovim helper owns until its diff view closes;
-# the copies are view-only and never write back to the working tree. When
-# no existing Neovim accepts the request, fall back to a dedicated blocking
-# Neovim, which must stay alive for the whole viewing session for the same
-# reason.
+# Opens the compared files as a Diffview in the already-running Neovim and
+# returns immediately, so Git/lazygit resume without waiting for the diff to
+# be closed. When the comparison can be reproduced faithfully against the
+# real working-tree file (lazygit's Files-panel unstaged and staged-only
+# difftool calls), the selected path is classified and handed to Neovim to
+# open as an editable worktree diff without copying anything. Otherwise Git
+# exports the compared files as $LOCAL/$REMOTE temporary files: Git deletes
+# them as soon as this command exits, so their exact content is first copied
+# into a private directory that the Neovim helper owns until its diff view
+# closes; the copies are view-only and never write back to the working tree.
+# When no existing Neovim accepts the request, fall back to a dedicated
+# blocking Neovim, which must stay alive for the whole viewing session for
+# the same reason.
 
 # The compared files arrive as argv (the difftool.<tool>.cmd template expands
-# $LOCAL/$REMOTE in its shell).
+# $LOCAL/$REMOTE/$MERGED in its shell).
 LOCAL="${1:-}"
 REMOTE="${2:-}"
+MERGED="${3:-}"
 
 if [ -z "$LOCAL" ] || [ -z "$REMOTE" ]; then
     echo "diffview-diff: git difftool did not pass \$LOCAL and \$REMOTE" >&2
     exit 1
+fi
+
+# Quote a value as a Lua string literal: user data travels to Neovim only
+# inside these literals, never interpolated into an Ex command line.
+lua_quote() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\'/\\\'}"
+    printf "'%s'" "$s"
+}
+
+# Editable fast-path classification. Sets wt_path/wt_rev/wt_root and returns
+# 0 only when the compared pair can be reproduced faithfully by opening the
+# selected working-tree file in place:
+#   - index vs worktree (unstaged change)              -> wt_rev=""
+#   - HEAD vs index with a clean worktree (staged-only) -> wt_rev="HEAD"
+# Everything else — historical commit comparisons, --dir-diff directories,
+# deletes, staged adds, missing index/HEAD entries, unclassifiable renames,
+# Vim-expansion-sensitive paths, ambiguous or absent worktree sides, and any
+# failed command — returns 1 and the copied-file fallback below runs.
+classify_worktree_diff() {
+    # Need the selected repository-relative path ($MERGED) and its repo root.
+    [ -n "$MERGED" ] || return 1
+    wt_root="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
+    wt_path="$MERGED"
+
+    # Diffview re-interprets its path arguments with Vim's expand(), so skip
+    # anything expansion-sensitive; those keep the copy fallback (whose
+    # copied basenames are already sanitized the same way).
+    case "$wt_path" in
+        *[*?\[\]{}%~#]*) return 1 ;;
+    esac
+
+    # Only an existing regular worktree file can be opened in place.
+    [ -f "$wt_root/$wt_path" ] || return 1
+
+    # Identify which difftool side is the real working-tree file: Git passes
+    # the actual path instead of a temporary exactly when it borrows the
+    # worktree file, which happens for unstaged diffs and for --cached with a
+    # clean worktree. Both sides matching, or neither, stays ambiguous.
+    resolve() { realpath -m -- "$1" 2>/dev/null; }
+    wt_abs="$(resolve "$wt_root/$wt_path")" || return 1
+    [ -n "$wt_abs" ] || return 1
+    side=""
+    for s in "$LOCAL" "$REMOTE"; do
+        [ -n "$s" ] && [ "$s" != /dev/null ] && [ -f "$s" ] || continue
+        if [ "$(resolve "$s")" = "$wt_abs" ]; then
+            [ -z "$side" ] || return 1
+            side="$s"
+        fi
+    done
+    [ -n "$side" ] || return 1
+
+    # Compare content snapshots, not current status: hash each side through
+    # the path's clean filter so the worktree and temporary forms compare
+    # equal to the stored index/HEAD blob OIDs.
+    idx_blob="$(git -C "$wt_root" rev-parse --verify --quiet ":$wt_path" 2>/dev/null)"
+    head_blob="$(git -C "$wt_root" rev-parse --verify --quiet "HEAD:$wt_path" 2>/dev/null)"
+    wt_snap="$(git -C "$wt_root" hash-object --path="$wt_path" -- "$wt_root/$wt_path" 2>/dev/null)"
+    other="$REMOTE"
+    [ "$side" = "$REMOTE" ] && other="$LOCAL"
+    other_snap=""
+    [ "$other" = /dev/null ] ||
+        other_snap="$(git -C "$wt_root" hash-object --path="$wt_path" -- "$other" 2>/dev/null)"
+    [ -n "$wt_snap" ] && [ -n "$other_snap" ] || return 1
+
+    if [ -n "$idx_blob" ] && [ "$other_snap" = "$idx_blob" ]; then
+        wt_rev=""
+    elif [ -n "$head_blob" ] && [ -n "$idx_blob" ] \
+        && [ "$wt_snap" = "$idx_blob" ] && [ "$other_snap" = "$head_blob" ]; then
+        wt_rev="HEAD"
+    else
+        return 1
+    fi
+    return 0
+}
+
+# Fast-path dispatch, before any temporary allocation: hand the classified
+# comparison to Neovim instead of copying Git's files.
+if classify_worktree_diff; then
+    if [ -n "$NVIM" ]; then
+        # Hand the comparison to the running Neovim (e.g. the editor running
+        # lazygit in this terminal, which exports its socket as $NVIM). The
+        # entry point errors on failure, which the client reflects in its
+        # exit status together with connection failures; nothing about the
+        # result is parsed or waited on.
+        if nvim --server "$NVIM" --remote-expr \
+            "v:lua.NVDiffview.open_worktree($(lua_quote "$wt_path"), $(lua_quote "$wt_rev"), $(lua_quote "$wt_root"))" >/dev/null; then
+            exit 0
+        fi
+        # Nothing accepted the request: no server, an unreachable socket, or
+        # the view failed to open. Git's temporary files still exist while
+        # this command runs, so continue with the copied-file path below.
+    else
+        # Hand the paths to the child through dedicated environment variables:
+        # no Ex-command escaping for spaces or special characters.
+        # NVIM_LAUNCH_MODE gives the dedicated process the existing difftool
+        # close/quit behavior. Git deletes its temporary files only when this
+        # command exits, so exec'ing Neovim keeps Git/lazygit waiting until
+        # the user closes the diff.
+        export DIFFVIEW_PATH="$wt_path" DIFFVIEW_REV="$wt_rev" DIFFVIEW_ROOT="$wt_root" NVIM_LAUNCH_MODE=difftool
+        exec nvim -c "lua NVDiffview.open_worktree(vim.env.DIFFVIEW_PATH, vim.env.DIFFVIEW_REV, vim.env.DIFFVIEW_ROOT)"
+    fi
 fi
 
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/diffview-diff.XXXXXX")" || exit 1
@@ -88,16 +195,6 @@ copy_side "$LOCAL" "$tmpdir/left" "$left_base" || {
 copy_side "$REMOTE" "$tmpdir/right" "$right_base" || {
     clean
     exit 1
-}
-
-# Quote the directory path as a Lua string literal: only the directory
-# travels remotely — the helper resolves the single copy on each side
-# itself, so the original paths need no Ex-command escaping.
-lua_quote() {
-    local s="$1"
-    s="${s//\\/\\\\}"
-    s="${s//\'/\\\'}"
-    printf "'%s'" "$s"
 }
 
 # Hand the copies to the running Neovim (e.g. the editor running lazygit in
