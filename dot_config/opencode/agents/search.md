@@ -2,7 +2,7 @@
 description: Answers focused research questions with cited, reusable evidence.
 mode: subagent
 hidden: true
-model: opencode/glm-5.3-flash
+model: deepseek/deepseek-v4.1-flash
 color: "accent"
 steps: 30
 reasoning_effort: low
