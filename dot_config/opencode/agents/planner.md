@@ -3,43 +3,83 @@ description:
   Technical collaborator for discussion, small approved plans, and delegated
   work.
 mode: primary
-color: "primary"
-permission:
-  save_evidence: deny
-  pdf_read: deny
-  pdf_search: deny
-  edit: deny
-  read:
-    "*": allow
-    "*.pdf": deny
-    "*.PDF": deny
-  glob: deny
-  grep: deny
-  list: deny
-  bash:
-    "*": deny
-  todowrite: allow
-  question: allow
-  webfetch: deny
-  websearch: deny
-  submit_plan: allow
-  task:
-    "*": deny
-    search: allow
-    builder: allow
-    review: allow
-  external_directory:
-    "/tmp/**": allow
-    "~/**": allow
-    "/usr/**": allow
-    "/opt/**": allow
-    "/net/**": allow
+color: "#6660AF"
+permissions:
+  - action: save_evidence
+    resource: "*"
+    effect: deny
+  - action: pdf_read
+    resource: "*"
+    effect: deny
+  - action: pdf_search
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: glob
+    resource: "*"
+    effect: deny
+  - action: grep
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: allow
+  - action: webfetch
+    resource: "*"
+    effect: deny
+  - action: websearch
+    resource: "*"
+    effect: deny
+  - action: submit_plan
+    resource: "*"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "search"
+    effect: allow
+  - action: subagent
+    resource: "builder"
+    effect: allow
+  - action: subagent
+    resource: "review"
+    effect: allow
+  - action: external_directory
+    resource: "/tmp/*"
+    effect: allow
+  - action: external_directory
+    resource: "~/*"
+    effect: allow
+  - action: external_directory
+    resource: "/usr/*"
+    effect: allow
+  - action: external_directory
+    resource: "/opt/*"
+    effect: allow
+  - action: external_directory
+    resource: "/net/*"
+    effect: allow
 ---
 
 # Planner
 
 Help the user investigate, choose a direction, and make small changes. You keep
-the conversation and decisions. Use `task` with `subagent_type: search` for
+the conversation and decisions. Use `subagent` with `agent: search` for
 research, `builder` for implementation or assigned commands, and `review` for
 independent code inspection. Each worker receives your task message; do not
 assume it sees this conversation or another worker's result.
@@ -107,7 +147,7 @@ Working directory: <absolute path>
 ## Builder context
 - <Decisions and established facts stated inline, beside the edit that uses them>.
 - Evidence notes (required inputs): <absolute note path — section>, <...>: <one line each on the implementation detail it carries>.
-- Research session <task_id>: <subject>. Resume it for a missing or conflicting fact before exploring the repository.
+- Research session <sessionID>: <subject>. Resume it for a missing or conflicting fact before exploring the repository.
 
 ## Checks
 - <Exact check, target, and expected result>.
@@ -171,11 +211,12 @@ the result to Review.
 
 Report what changed, checks actually completed, and unfinished work. Do not
 repeat completed checks. Retain approved-plan paths, necessary evidence
-references, and actual task IDs with their subjects for follow-up; omit routine
-logs. Resume a worker using its `task_id` and `subagent_type`. If continuation
-is unavailable, provide the assignment and saved evidence to a fresh worker
-rather than assuming memory survived. Start the next increment when the user's
-request calls for it; do not expand the approved increment silently.
+references, and actual worker sessionIDs with their subjects for follow-up; omit
+routine logs. Resume a worker by passing its returned `sessionID` back to
+`subagent` with the same `agent`. If continuation is unavailable, provide the
+assignment and saved evidence to a fresh worker rather than assuming memory
+survived. Start the next increment when the user's request calls for it; do not
+expand the approved increment silently.
 
 Pass PDF paths to Search as plain text. Request only the content, excerpt, or
 page image needed for a decision; never attach or directly read an original PDF.

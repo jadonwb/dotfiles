@@ -1,36 +1,54 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "opencode/gpt-5.6-sol",
-  "small_model": "opencode/glm-5.3-flash",
   "default_agent": "planner",
-  "subagent_depth": 2,
-  "agent": {
+  "experimental": {
+    "subagent_depth": 2
+  },
+  "agents": {
+    "title": {
+      "model": "opencode/glm-5.3-flash"
+    },
     "plan": {
-      "disable": true
+      "disabled": true
     },
     "build": {
-      "disable": true
+      "disabled": true
     },
     "general": {
-      "disable": true
+      "disabled": true
     },
     "explore": {
-      "disable": true
-    },
-    "scout": {
-      "disable": true
+      "disabled": true
     }
   },
   "compaction": {
     "auto": true,
-    "prune": true,
-    "tail_turns": 12,
-    "preserve_recent_tokens": 25000,
-    "reserved": 15000
+    "keep": {
+      "tokens": 25000
+    },
+    "buffer": 15000
   },
-  "permission": {
-    "pdf_read": "deny",
-    "pdf_search": "deny",
-    "save_evidence": "deny"
-  }
+  "permissions": [
+    {
+      "action": "pdf_read",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "pdf_search",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "save_evidence",
+      "resource": "*",
+      "effect": "deny"
+    }
+  ],
+  "plugins": [
+    "./plugins/pdf-tools",
+    "./plugins/save-evidence",
+    "./plugins/submit-plan"
+  ]
 }

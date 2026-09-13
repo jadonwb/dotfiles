@@ -1,29 +1,57 @@
 ---
 description: Test agent
 mode: primary
-model: opencode/glm-5.3-flash
-color: "secondary"
-permission:
-  save_evidence: allow
-  pdf_read: allow
-  pdf_search: allow
-  edit: allow
-  read:
-    "*": allow
-    "*.pdf": deny
-    "*.PDF": deny
-  glob: allow
-  grep: allow
-  list: allow
-  bash: allow
-  todowrite: allow
-  question: allow
-  webfetch: allow
-  websearch: allow
-  task: allow
-  external_directory:
-    "/tmp/**": allow
-    "~/**": allow
+model: opencode/glm-5.3-flash#default
+color: "#4A74A8"
+permissions:
+  - action: save_evidence
+    resource: "*"
+    effect: allow
+  - action: pdf_read
+    resource: "*"
+    effect: allow
+  - action: pdf_search
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
+  - action: question
+    resource: "*"
+    effect: allow
+  - action: webfetch
+    resource: "*"
+    effect: allow
+  - action: websearch
+    resource: "*"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: allow
+  - action: external_directory
+    resource: "/tmp/*"
+    effect: allow
+  - action: external_directory
+    resource: "~/*"
+    effect: allow
 ---
 
 # Tester
