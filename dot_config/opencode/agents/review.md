@@ -2,7 +2,7 @@
 description: Checks approved changes for correctness and regressions.
 mode: subagent
 hidden: true
-model: opencode/glm-5.3-flash#max
+model: deepseek/deepseek-flash#max
 steps: 60
 permissions:
   - action: save_evidence

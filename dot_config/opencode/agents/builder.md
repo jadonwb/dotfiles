@@ -2,7 +2,7 @@
 description: Implements approved plans and runs scoped command-only assignments.
 mode: subagent
 hidden: true
-model: opencode/glm-5.3-flash#max
+model: deepseek/deepseek-flash#default
 permissions:
   - action: save_evidence
     resource: "*"
