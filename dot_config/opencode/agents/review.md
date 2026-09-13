@@ -2,42 +2,90 @@
 description: Checks approved changes for correctness and regressions.
 mode: subagent
 hidden: true
-model: opencode/glm-5.3-flash
+model: opencode/glm-5.3-flash#max
 steps: 60
-reasoning_effort: max
-permission:
-  save_evidence: deny
-  pdf_read: deny
-  pdf_search: deny
-  edit: deny
-  read:
-    "*": allow
-    "*.pdf": deny
-    "*.PDF": deny
-  glob: allow
-  grep: allow
-  list: allow
-  bash:
-    "*": deny
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git blame*": allow
-    "git grep*": allow
-    "rg *": allow
-    "fd *": allow
-    "wc *": allow
-    "head *": allow
-    "tail *": allow
-  todowrite: allow
-  question: deny
-  webfetch: deny
-  websearch: deny
-  task: deny
-  external_directory:
-    "/tmp/**": allow
-    "~/**": allow
+permissions:
+  - action: save_evidence
+    resource: "*"
+    effect: deny
+  - action: pdf_read
+    resource: "*"
+    effect: deny
+  - action: pdf_search
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "git status *"
+    effect: allow
+  - action: shell
+    resource: "git diff *"
+    effect: allow
+  - action: shell
+    resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "git show *"
+    effect: allow
+  - action: shell
+    resource: "git blame *"
+    effect: allow
+  - action: shell
+    resource: "git grep *"
+    effect: allow
+  - action: shell
+    resource: "rg *"
+    effect: allow
+  - action: shell
+    resource: "fd *"
+    effect: allow
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: question
+    resource: "*"
+    effect: deny
+  - action: webfetch
+    resource: "*"
+    effect: deny
+  - action: websearch
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: external_directory
+    resource: "/tmp/*"
+    effect: allow
+  - action: external_directory
+    resource: "~/*"
+    effect: allow
 ---
 
 # Review

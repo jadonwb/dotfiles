@@ -2,62 +2,150 @@
 description: Answers focused research questions with cited, reusable evidence.
 mode: subagent
 hidden: true
-model: deepseek/deepseek-flash
+model: deepseek/deepseek-flash#low
 steps: 30
-reasoning_effort: low
-permission:
-  save_evidence: allow
-  pdf_read: allow
-  pdf_search: allow
-  edit: deny
-  read:
-    "*": allow
-    "*.pdf": deny
-    "*.PDF": deny
-  glob: allow
-  grep: allow
-  list: allow
-  bash:
-    "*": deny
-    "git status *": allow
-    "git diff *": allow
-    "git log *": allow
-    "git show *": allow
-    "git blame *": allow
-    "git clone *": ask
-    "git grep *": allow
-    "git rev-parse *": allow
-    "git ls-files *": allow
-    "git stash list *": allow
-    "git stash show *": allow
-    "git remote -v *": allow
-    "git remote show *": allow
-    "git ls-remote *": allow
-    "git branch --show-current *": allow
-    "git branch --list *": allow
-    "git branch -a *": allow
-    "git branch -vv *": allow
-    "echo *": allow
-    "head *": allow
-    "tail *": allow
-    "sed *": allow
-    "wc *": allow
-    "file *": allow
-    "stat *": allow
-    "realpath *": allow
-    "readlink *": allow
-  webfetch: allow
-  websearch: allow
-  task: deny
-  question: deny
-  todowrite: deny
-  external_directory:
-    "/tmp/**": allow
-    "~/**": allow
-    "/usr/**": allow
-    "/opt/**": allow
-    "/net/**": allow
-    "/etc/**": allow
+permissions:
+  - action: save_evidence
+    resource: "*"
+    effect: allow
+  - action: pdf_read
+    resource: "*"
+    effect: allow
+  - action: pdf_search
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "git status *"
+    effect: allow
+  - action: shell
+    resource: "git diff *"
+    effect: allow
+  - action: shell
+    resource: "git log *"
+    effect: allow
+  - action: shell
+    resource: "git show *"
+    effect: allow
+  - action: shell
+    resource: "git blame *"
+    effect: allow
+  - action: shell
+    resource: "git clone *"
+    effect: ask
+  - action: shell
+    resource: "git grep *"
+    effect: allow
+  - action: shell
+    resource: "git rev-parse *"
+    effect: allow
+  - action: shell
+    resource: "git ls-files *"
+    effect: allow
+  - action: shell
+    resource: "git stash list *"
+    effect: allow
+  - action: shell
+    resource: "git stash show *"
+    effect: allow
+  - action: shell
+    resource: "git remote -v *"
+    effect: allow
+  - action: shell
+    resource: "git remote show *"
+    effect: allow
+  - action: shell
+    resource: "git ls-remote *"
+    effect: allow
+  - action: shell
+    resource: "git branch --show-current *"
+    effect: allow
+  - action: shell
+    resource: "git branch --list *"
+    effect: allow
+  - action: shell
+    resource: "git branch -a *"
+    effect: allow
+  - action: shell
+    resource: "git branch -vv *"
+    effect: allow
+  - action: shell
+    resource: "echo *"
+    effect: allow
+  - action: shell
+    resource: "head *"
+    effect: allow
+  - action: shell
+    resource: "tail *"
+    effect: allow
+  - action: shell
+    resource: "sed *"
+    effect: allow
+  - action: shell
+    resource: "wc *"
+    effect: allow
+  - action: shell
+    resource: "file *"
+    effect: allow
+  - action: shell
+    resource: "stat *"
+    effect: allow
+  - action: shell
+    resource: "realpath *"
+    effect: allow
+  - action: shell
+    resource: "readlink *"
+    effect: allow
+  - action: webfetch
+    resource: "*"
+    effect: allow
+  - action: websearch
+    resource: "*"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: deny
+  - action: external_directory
+    resource: "/tmp/*"
+    effect: allow
+  - action: external_directory
+    resource: "~/*"
+    effect: allow
+  - action: external_directory
+    resource: "/usr/*"
+    effect: allow
+  - action: external_directory
+    resource: "/opt/*"
+    effect: allow
+  - action: external_directory
+    resource: "/net/*"
+    effect: allow
+  - action: external_directory
+    resource: "/etc/*"
+    effect: allow
 ---
 
 # Search
@@ -75,10 +163,10 @@ established. Do not turn a question into a repository inventory, complete
 history, redesign, or validation project. Do not change project files or
 repository state.
 
-Batch independent tool calls, and prefer one targeted read or grep over broad
-sweeps. Aim to finish in roughly a dozen tool calls; when the question needs
-more, report what is established and name the single remaining gap instead of
-expanding scope.
+Batch independent tool calls — Code Mode `execute` can run several in parallel —
+and prefer one targeted read or grep over broad sweeps. Aim to finish in roughly
+a dozen tool calls; when the question needs more, report what is established and
+name the single remaining gap instead of expanding scope.
 
 ## Return an answer that can be used
 

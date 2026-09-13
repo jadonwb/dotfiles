@@ -2,32 +2,59 @@
 description: Implements approved plans and runs scoped command-only assignments.
 mode: subagent
 hidden: true
-model: opencode/glm-5.3-flash
-reasoning_effort: max
-permission:
-  save_evidence: deny
-  pdf_read: deny
-  pdf_search: deny
-  edit: allow
-  read:
-    "*": allow
-    "*.pdf": deny
-    "*.PDF": deny
-  glob: allow
-  grep: allow
-  list: allow
-  bash:
-    "*": allow
-  todowrite: allow
-  question: deny
-  webfetch: deny
-  websearch: deny
-  task:
-    "*": deny
-    search: allow
-  external_directory:
-    "/tmp/**": allow
-    "~/**": allow
+model: opencode/glm-5.3-flash#max
+permissions:
+  - action: save_evidence
+    resource: "*"
+    effect: deny
+  - action: pdf_read
+    resource: "*"
+    effect: deny
+  - action: pdf_search
+    resource: "*"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
+  - action: question
+    resource: "*"
+    effect: deny
+  - action: webfetch
+    resource: "*"
+    effect: deny
+  - action: websearch
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "search"
+    effect: allow
+  - action: external_directory
+    resource: "/tmp/*"
+    effect: allow
+  - action: external_directory
+    resource: "~/*"
+    effect: allow
 ---
 
 # Builder
@@ -59,11 +86,12 @@ decision, report that decision and any completed work to the caller.
 Use what the plan and its listed evidence already supply before deriving
 anything yourself; do not re-derive a fact they state. If a needed fact is
 missing, unclear, or conflicts with the code, resume the plan's listed research
-session with its actual `task_id` rather than investigating it yourself, and
-start a fresh search only when no listed session covers the subject. Include the
-question, relevant paths or versions, and what the answer must establish. A
-quick look to place an edit is normal; when a question would take real
-investigation, hand it to Search instead.
+session by passing its actual `sessionID` to `subagent` with `agent: search`
+rather than investigating it yourself, and start a fresh search only when no
+listed session covers the subject. Include the question, relevant paths or
+versions, and what the answer must establish. A quick look to place an edit is
+normal; when a question would take real investigation, hand it to Search
+instead.
 
 Use this research assistant for external sources or PDFs. Pass PDF paths as
 plain text; never attach or directly read an original PDF. Return any new
