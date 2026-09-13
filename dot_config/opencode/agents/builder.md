@@ -3,7 +3,6 @@ description: Implements approved plans and runs scoped command-only assignments.
 mode: subagent
 hidden: true
 model: opencode/glm-5.3-flash
-color: "secondary"
 reasoning_effort: max
 permission:
   save_evidence: deny

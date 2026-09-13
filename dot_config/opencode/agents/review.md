@@ -3,7 +3,6 @@ description: Checks approved changes for correctness and regressions.
 mode: subagent
 hidden: true
 model: opencode/glm-5.3-flash
-color: "warning"
 steps: 60
 reasoning_effort: max
 permission:

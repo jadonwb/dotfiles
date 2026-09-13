@@ -3,7 +3,6 @@ description: Answers focused research questions with cited, reusable evidence.
 mode: subagent
 hidden: true
 model: deepseek/deepseek-flash
-color: "accent"
 steps: 30
 reasoning_effort: low
 permission:
