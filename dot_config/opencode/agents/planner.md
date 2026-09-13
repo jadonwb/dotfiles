@@ -3,7 +3,6 @@ description:
   Technical collaborator for discussion, small approved plans, and delegated
   work.
 mode: primary
-color: "#6660AF"
 permissions:
   - action: save_evidence
     resource: "*"
