@@ -107,7 +107,12 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Aliases
-alias oc="opencode"
+
+# TODO: put back when mise is up to date
+alias opencode="${HOME}/.opencode/bin/opencode"
+alias oc='opencode'
+
+# alias oc="opencode"
 alias vim='nvim'
 alias vi='nvim'
 alias c='clear'
