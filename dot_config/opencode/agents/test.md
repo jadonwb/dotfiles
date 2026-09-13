@@ -2,7 +2,6 @@
 description: Test agent
 mode: primary
 model: opencode/glm-5.3-flash#default
-color: "#4A74A8"
 permissions:
   - action: save_evidence
     resource: "*"
