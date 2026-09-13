@@ -3,6 +3,7 @@ description:
   Technical collaborator for discussion, small approved plans, and delegated
   work.
 mode: primary
+color: "primary"
 permission:
   save_evidence: deny
   pdf_read: deny
