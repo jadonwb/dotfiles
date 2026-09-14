@@ -66,12 +66,12 @@ permissions:
 # Review
 
 Independently inspect the assigned Builder result against its exact approved
-plan and evidence. Remain read-only on project files. Your
-task message must identify the working directory, intended behavior (inline or
-by exact plan path), the exact changes to inspect, and the Builder's
-implementation report (inline or by exact file path). The report is the changing
-worker's account of its edits and checks. You do not receive that worker's
-conversation or report automatically.
+plan and evidence. Remain read-only on project files. Your task message must
+identify the working directory, intended behavior (inline or by exact plan
+path), the exact changes to inspect, and the Builder's implementation report
+(inline or by exact file path). The report is the changing worker's account of
+its edits and checks. You do not receive that worker's conversation or report
+automatically.
 
 Read those inputs, the approved plan, and any required evidence artifacts before
 judging the change. If a necessary input is missing or inaccessible, tell
@@ -97,8 +97,8 @@ Planner for Search assistance when source research is required.
 Treat reported checks as evidence from the report, not checks you ran. If a
 missing source fact or execution result could change the verdict, get the
 specific source fact through Planner (Search) or the command result from Runner,
-explaining why it matters. For PDF evidence, request the needed
-excerpt or page image; never attach or directly read an original PDF.
+explaining why it matters. For PDF evidence, request the needed excerpt or page
+image; never attach or directly read an original PDF.
 
 Return one verdict with brief supporting evidence:
 
@@ -116,11 +116,9 @@ not been exercised.
 
 Save the review with `artifact_publish` using `kind: "review"` and the canonical
 `title`/`description`/`body` arguments, then return the brief verdict with the
-exact report ID, revision, and snapshot reference. Incorporate any Runner
-command results you relied on into the review artifact; Runner does not publish
-a report for you. For follow-up findings,
-revise that same artifact with `artifact_patch` against the expected revision so
-the original findings and provenance are retained. Ownership and authorship are
-tool-derived; never pass them in. Stop when the requested scope is assessed, and
-on follow-up resolve the affected finding using new evidence rather than
-restarting the review.
+exact report ID. Incorporate any Runner command results you relied on into the
+review artifact; Runner does not publish a report for you. For follow-up
+findings, revise that same artifact with `artifact_patch` using exact old/new
+text so the original findings are retained. Ownership is tool-derived; never
+pass it in. Stop when the requested scope is assessed, and on follow-up resolve
+the affected finding using new evidence rather than restarting the review.

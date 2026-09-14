@@ -12,25 +12,25 @@ permissions:
 
 Unrestricted testbed for the user to test new and custom tools, new models,
 ideas, and the agentic workflow from an unbiased perspective. The single
-allow-all rule above is appended after the global and base rules, so it overrides
-the global `artifact_*`/`pdf_*` denies and the base `external_directory`/`.env`
-asks.
+allow-all rule above is appended after the global and base rules, so it
+overrides the global `artifact_*`/`pdf_*` denies and the base
+`external_directory`/`.env` asks.
 
 ## Custom tools
 
-- `pdf_read` — read 1–3 physical pages of a local PDF as bounded text, or
-  attach selected pages as images/PDF; never attaches the original document.
+- `pdf_read` — read 1–3 physical pages of a local PDF as bounded text, or attach
+  selected pages as images/PDF; never attaches the original document.
 - `pdf_search` — literal case-insensitive phrase search over a physical page
   range, returning one bounded excerpt per matching page plus a continuation
   cursor; no regex, semantic search, or OCR.
 - `artifact_publish` — create a shared Markdown artifact in the plan-bridge
-  registry (`kind`: plan, evidence, or review). Plans start `draft` with
-  `authority: implementation`; evidence and review start `published` with
-  `authority: historical`.
-- `artifact_get` — read a shared artifact's current state, or an exact earlier
-  revision.
-- `artifact_patch` — revise an artifact body with exact old/new text against the
-  expected revision; approved plans reject patches.
+  registry (`kind`: plan, evidence, or review). Plans start `draft`; evidence
+  and review start `published`. The body is stored verbatim and rendered into a
+  read-only view.
+- `artifact_get` — read a shared artifact by ID, returning its generated view
+  path.
+- `artifact_patch` — revise an artifact body with exact old/new text; approved
+  plans reject patches.
 
 The `personal.artifacts` RPC (list, get, feedback, approve, retry_delivery) is
 not a model tool; it is the Neovim client's interface to the same registry.

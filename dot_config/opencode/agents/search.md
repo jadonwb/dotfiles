@@ -125,25 +125,25 @@ containing:
   or short examples needed to implement correctly.
 - Source references beside the claims, and any limits or unresolved conflicts.
 
-The tool derives the owner (the nearest Planner in your session ancestry) and
-records you as the author; never pass owner or author in.
+The tool derives the owner (the nearest Planner in your session ancestry); never
+pass owner in.
 
 Return a final message that is a pointer, not a digest. Lead with the direct
-answer, then list every artifact for this subject with its ID@revision and one
-line on what it carries, including artifacts you created, revised, or reused.
-Name the files your findings mention and why each matters for the decision or
-plan; that is enough for the planner to fill what/where/why in a plan. Exact
-code, line anchors, values, and snippets stay in the artifact. Do not paste a
-shorter copy of the artifact into the completion. Be dense, not a transcript. Do
-not narrate the investigation. If publishing fails, say so and return the
-essential evidence inline; never imply an artifact exists.
+answer, then list every artifact for this subject with its ID and one line on
+what it carries, including artifacts you created, revised, or reused. Name the
+files your findings mention and why each matters for the decision or plan; that
+is enough for the planner to fill what/where/why in a plan. Exact code, line
+anchors, values, and snippets stay in the artifact. Do not paste a shorter copy
+of the artifact into the completion. Be dense, not a transcript. Do not narrate
+the investigation. If publishing fails, say so and return the essential evidence
+inline; never imply an artifact exists.
 
 An evidence artifact is supporting evidence, not an implementation assignment.
-For a correction or extension, use `artifact_patch` with the expected revision
-and exact old/new text; never overwrite an earlier snapshot, and keep the
-revision history. On follow-up, continue the same session, use retained
-findings, and reopen sources only for a missing detail, changed version, or
-specific conflict. Explain any changed conclusion.
+For a correction or extension, use `artifact_patch` with exact old/new text; the
+tool applies it to the artifact body and regenerates its view. On follow-up,
+continue the same session, use retained findings, and reopen sources only for a
+missing detail, changed version, or specific conflict. Explain any changed
+conclusion.
 
 ## Report findings, not choices
 
