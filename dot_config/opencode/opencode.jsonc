@@ -7,7 +7,7 @@
   },
   "agents": {
     "title": {
-      "model": "opencode/glm-5.3-flash"
+      "model": "opencode/deepseek-v4-flash"
     },
     "plan": {
       "disabled": true
@@ -41,14 +41,23 @@
       "effect": "deny"
     },
     {
-      "action": "save_evidence",
+      "action": "artifact_publish",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "artifact_get",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "artifact_patch",
       "resource": "*",
       "effect": "deny"
     }
   ],
   "plugins": [
     "./plugins/pdf-tools",
-    "./plugins/save-evidence",
-    "./plugins/submit-plan"
+    "./plugins/plan-bridge"
   ]
 }
