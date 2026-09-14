@@ -41,7 +41,7 @@ test("canonical revision fixtures", () => {
   for (const item of fixtures.revisionCases) {
     assert.equal(canonicalInput(item.identity, item.body), item.canonicalInput, item.name)
     assert.equal(canonicalRevision(item.identity, item.body), item.revision, item.name)
-    assert.match(item.revision, /^sha256:[a-f0-9]{64}$/)
+    assert.match(item.revision, /^[a-f0-9]{8}$/)
     if (item.sameRevisionAs) {
       assert.equal(item.revision, byName(item.sameRevisionAs).revision, item.name)
     }

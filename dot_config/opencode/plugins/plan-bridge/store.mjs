@@ -1,17 +1,11 @@
 // Plan-bridge registry: a Node-compatible, filesystem-backed store for
 // Markdown artifacts exchanged between sessions and the Neovim client.
 //
-// Two document formats share one registry (same root, same artifacts/
-// directory):
-//
-// - shared-markdown-v1 (`art_` IDs): the frontmatter format in ./format.mjs,
-//   kinds plan|evidence|review, owner = Planner session, per-revision author
-//   provenance, and lean history metadata that references immutable snapshot
-//   files instead of embedding content. Served by `artifact_publish/get/patch`
-//   and `personal.artifacts`.
-// - raw-markdown (`pln_` IDs): Markdown with no frontmatter, revision hashed
-//   over the exact raw bytes, history entries embedding full content. Read-only:
-//   the generic reads below expose these documents and never rewrite them.
+// One document format: shared-markdown (`art_` IDs), the frontmatter format
+// in ./format.mjs, with kinds plan|evidence|review, owner = Planner session,
+// per-revision author provenance, and lean history metadata that references
+// immutable snapshot files instead of embedding content. Served by
+// `artifact_publish/get/patch` and `personal.artifacts`.
 //
 // Authority: a record-only `authority` field distinguishes plans that authorize
 // Builder once approved ("implementation") from records that do not
@@ -29,8 +23,7 @@
 //   record. It is replaced atomically (temp file + rename) and is always the
 //   last file written by a mutation. Derived files (current.md, snapshots)
 //   are written first, so an interrupted write is reconciled from the record:
-//   raw-markdown records recreate them from embedded history content, and
-//   shared-markdown-v1 regenerates current.md from the committed snapshot and
+//   shared-markdown regenerates current.md from the committed snapshot and
 //   lifecycle state. A missing snapshot is unrecoverable data loss and fails
 //   visibly; the store never fabricates content.
 // - Mutations serialize on an exclusive per-artifact lock file. An existing
@@ -40,7 +33,7 @@
 //   is discarded.
 // - Pure Node (node:*) so `node --test` can exercise it without Bun.
 
-import { createHash, randomBytes } from "node:crypto"
+import { randomBytes } from "node:crypto"
 import { chmod, mkdir, open, readFile, readdir, rename, unlink } from "node:fs/promises"
 import { homedir } from "node:os"
 import { basename, dirname, isAbsolute, join, resolve as resolvePath } from "node:path"
@@ -53,11 +46,6 @@ import {
   parseDocument,
   serializeDocument,
 } from "./format.mjs"
-
-/** Record version of raw-markdown documents. */
-const SCHEMA_VERSION = 1
-/** Registry record schema version of shared artifacts. */
-const SCHEMA_VERSION_SHARED = 2
 
 /**
  * Record-only authority values. `implementation` plans authorize Builder
@@ -72,10 +60,9 @@ const DIR_MODE = 0o700
 const FILE_MODE = 0o600
 const SNAPSHOT_MODE = 0o400
 
-const RAW_ID_PATTERN = /^pln_[A-Za-z0-9_-]{8,64}$/
-const SHARED_ID_PATTERN = /^art_[A-Za-z0-9_-]{8,64}$/
-const ARTIFACT_ID_PATTERN = /^(pln|art)_[A-Za-z0-9_-]{8,64}$/
-const REVISION_PATTERN = /^sha256:[a-f0-9]{64}$/
+const SHARED_ID_PATTERN = /^art_[a-f0-9]{8}$/
+const ARTIFACT_ID_PATTERN = /^art_[a-f0-9]{8}$/
+const REVISION_PATTERN = /^[a-f0-9]{8}$/
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$/
 
 const MAX_MARKDOWN_LENGTH = 2_000_000
@@ -87,10 +74,8 @@ const MAX_QUESTION_BYTES = 16 * 1024
 /** User-selected excerpt limit (UTF-8 bytes). */
 const MAX_SELECTION_BYTES = 64 * 1024
 
-/** Format marker of raw-markdown files: raw Markdown, no frontmatter. */
-const ARTIFACT_FORMAT_RAW = "raw-markdown"
-/** Format marker of shared-markdown-v1 files: see ./format.mjs. */
-const ARTIFACT_FORMAT_SHARED = "shared-markdown-v1"
+/** Format marker of shared-markdown files: see ./format.mjs. */
+const ARTIFACT_FORMAT_SHARED = "shared-markdown"
 
 /** Error with a stable machine-readable code used by tools and RPC handlers. */
 export class StoreError extends Error {
@@ -108,17 +93,8 @@ export function defaultStateRoot() {
   return join(base, "opencode", "plan-bridge")
 }
 
-/**
- * Revision identity of a raw-markdown document: derived from the exact
- * UTF-8 Markdown contents. Shared artifacts use the canonical revision from
- * ./format.mjs instead.
- */
-export function revisionID(content) {
-  return "sha256:" + createHash("sha256").update(content, "utf8").digest("hex")
-}
-
 function newSharedArtifactID() {
-  return "art_" + randomBytes(16).toString("base64url")
+  return "art_" + randomBytes(4).toString("hex")
 }
 
 function nowISO() {
@@ -242,9 +218,9 @@ export function createStore(options = {}) {
   function currentPathOf(artifactID) {
     return join(artifactDirOf(artifactID), "current.md")
   }
-  // Snapshot file names use the bare hex digest; ":" is not filesystem-safe.
+  // Snapshot file names are the bare revision.
   function snapshotPathOf(artifactID, revision) {
-    return join(artifactDirOf(artifactID), "revisions", revision.slice("sha256:".length) + ".md")
+    return join(artifactDirOf(artifactID), "revisions", revision + ".md")
   }
   function lockPathOf(artifactID) {
     return join(artifactDirOf(artifactID), "lock")
@@ -319,39 +295,10 @@ export function createStore(options = {}) {
     }
   }
 
-  function validateRawRecord(record, artifactID) {
-    if (record.schemaVersion !== SCHEMA_VERSION) return "unsupported schemaVersion"
+  function validateRecord(record, artifactID) {
+    if (record === null || typeof record !== "object" || Array.isArray(record)) return "record must be an object"
     if (record.id !== artifactID) return "record id does not match directory"
-    if (typeof record.id !== "string" || !RAW_ID_PATTERN.test(record.id)) return "invalid raw-markdown artifact id"
-    if (typeof record.ownerSessionID !== "string" || record.ownerSessionID.length === 0) return "missing ownerSessionID"
-    if (typeof record.location !== "string" || record.location.length === 0) return "missing location"
-    if (typeof record.title !== "string") return "missing title"
-    if (record.status !== "draft" && record.status !== "approved") return "invalid status"
-    if (typeof record.revision !== "string" || !REVISION_PATTERN.test(record.revision)) return "invalid revision"
-    if (!Array.isArray(record.history) || record.history.length === 0) return "history must be a non-empty array"
-    for (const entry of record.history) {
-      if (!entry || typeof entry !== "object") return "history entries must be objects"
-      if (typeof entry.revision !== "string" || !REVISION_PATTERN.test(entry.revision)) return "invalid history revision"
-      if (typeof entry.content !== "string") return "history entry missing content"
-      if (typeof entry.createdAt !== "string") return "history entry missing createdAt"
-    }
-    if (!Array.isArray(record.feedback)) return "feedback must be an array"
-    for (const entry of record.feedback) {
-      if (!entry || typeof entry !== "object") return "feedback entries must be objects"
-      if (typeof entry.requestID !== "string" || !REQUEST_ID_PATTERN.test(entry.requestID)) return "invalid feedback requestID"
-      if (typeof entry.revision !== "string" || !REVISION_PATTERN.test(entry.revision)) return "invalid feedback revision"
-      if (!entry.delivery || typeof entry.delivery.state !== "string") return "feedback entry missing delivery state"
-    }
-    if (record.approval !== null && (typeof record.approval !== "object" || !record.approval || typeof record.approval.requestID !== "string")) {
-      return "invalid approval"
-    }
-    return null
-  }
-
-  function validateSharedRecord(record, artifactID) {
-    if (record.schemaVersion !== SCHEMA_VERSION_SHARED) return "unsupported schemaVersion"
-    if (record.id !== artifactID) return "record id does not match directory"
-    if (typeof record.id !== "string" || !SHARED_ID_PATTERN.test(record.id)) return "invalid shared artifact id"
+    if (typeof record.id !== "string" || !SHARED_ID_PATTERN.test(record.id)) return "invalid artifact id"
     if (typeof record.kind !== "string" || !ARTIFACT_KINDS.includes(record.kind)) return "invalid kind"
     if (typeof record.ownerSessionID !== "string" || record.ownerSessionID.length === 0) return "missing ownerSessionID"
     if (typeof record.location !== "string" || record.location.length === 0) return "missing location"
@@ -368,7 +315,7 @@ export function createStore(options = {}) {
       if (typeof entry.revision !== "string" || !REVISION_PATTERN.test(entry.revision)) return "invalid history revision"
       if (typeof entry.createdAt !== "string" || entry.createdAt.length === 0) return "history entry missing createdAt"
       if (typeof entry.authorSessionID !== "string" || entry.authorSessionID.length === 0) return "history entry missing authorSessionID"
-      if ("content" in entry) return "shared history entries reference snapshots and must not embed content"
+      if ("content" in entry) return "history entries reference snapshots and must not embed content"
     }
     if (!Array.isArray(record.feedback)) return "feedback must be an array"
     for (const entry of record.feedback) {
@@ -381,13 +328,6 @@ export function createStore(options = {}) {
       return "invalid approval"
     }
     return null
-  }
-
-  function validateRecord(record, artifactID) {
-    if (record === null || typeof record !== "object" || Array.isArray(record)) return "record must be an object"
-    if (record.schemaVersion === SCHEMA_VERSION) return validateRawRecord(record, artifactID)
-    if (record.schemaVersion === SCHEMA_VERSION_SHARED) return validateSharedRecord(record, artifactID)
-    return "unsupported schemaVersion"
   }
 
   async function readRecord(artifactID) {
@@ -409,13 +349,8 @@ export function createStore(options = {}) {
     return record
   }
 
-  function currentContent(record) {
-    const entry = record.history[record.history.length - 1]
-    return entry.content
-  }
-
   /**
-   * Read and integrity-check one authoritative shared-markdown-v1 snapshot. A missing
+   * Read and integrity-check one authoritative shared-markdown snapshot. A missing
    * or corrupt snapshot is visible data loss, never fabricated content.
    */
   async function readSharedSnapshot(artifactID, entry) {
@@ -453,7 +388,7 @@ export function createStore(options = {}) {
     return { text, body: parsed.body }
   }
 
-  /** Derive the current document of a shared-markdown-v1 record from committed state. */
+  /** Derive the current document of a shared-markdown record from committed state. */
   async function derivedCurrentDocument(artifactID, record) {
     const current = record.history[record.history.length - 1]
     const snapshot = await readSharedSnapshot(artifactID, current)
@@ -488,38 +423,21 @@ export function createStore(options = {}) {
    * Derived-file repair. Must be called while holding the artifact lock (or
    * before the record exists at publish time). The record is authoritative:
    * current.md is rewritten whenever its bytes differ from the record's
-   * committed state, and missing snapshots are recreated (raw-markdown) or
-   * reported as unrecoverable data loss (shared-markdown-v1).
+   * committed state, and missing snapshots are reported as unrecoverable data
+   * loss.
    */
   async function reconcileDerived(artifactID, record) {
-    if (record.schemaVersion === SCHEMA_VERSION_SHARED) {
-      const names = await listSnapshotNames(artifactID)
-      for (const entry of record.history) {
-        if (!names.includes(entry.revision.slice("sha256:".length) + ".md")) {
-          throw new StoreError(
-            "io",
-            `Authoritative snapshot for revision ${entry.revision} is missing: ${snapshotPathOf(artifactID, entry.revision)}`,
-            { revision: entry.revision, path: snapshotPathOf(artifactID, entry.revision) },
-          )
-        }
-      }
-      await rewriteCurrentFromRecord(artifactID, record)
-      return
-    }
-    const content = currentContent(record)
-    const current = currentPathOf(artifactID)
-    let existing = null
-    try {
-      existing = await readFile(current, "utf8")
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error
-    }
-    if (existing !== content) {
-      await writeFileAtomic(current, content, FILE_MODE)
-    }
+    const names = await listSnapshotNames(artifactID)
     for (const entry of record.history) {
-      await writeFileExclusive(snapshotPathOf(artifactID, entry.revision), entry.content, SNAPSHOT_MODE)
+      if (!names.includes(entry.revision + ".md")) {
+        throw new StoreError(
+          "io",
+          `Authoritative snapshot for revision ${entry.revision} is missing: ${snapshotPathOf(artifactID, entry.revision)}`,
+          { revision: entry.revision, path: snapshotPathOf(artifactID, entry.revision) },
+        )
+      }
     }
+    await rewriteCurrentFromRecord(artifactID, record)
   }
 
   /**
@@ -569,42 +487,23 @@ export function createStore(options = {}) {
     return record
   }
 
-  /** Generic summary: shared-markdown-v1 as stored, raw-markdown with derived defaults. */
+  /** Generic summary: shared-markdown as stored. */
   function artifactSummaryOf(record) {
-    if (record.schemaVersion === SCHEMA_VERSION_SHARED) {
-      const current = record.history[record.history.length - 1]
-      return {
-        id: record.id,
-        kind: record.kind,
-        title: record.title,
-        description: record.description,
-        status: record.status,
-        revision: record.revision,
-        path: currentPathOf(record.id),
-        ownerSessionID: record.ownerSessionID,
-        authorSessionID: current.authorSessionID,
-        createdAt: record.createdAt,
-        updatedAt: record.updatedAt,
-        format: ARTIFACT_FORMAT_SHARED,
-        schemaVersion: SCHEMA_VERSION_SHARED,
-        authority: authorityOf(record),
-      }
-    }
+    const current = record.history[record.history.length - 1]
     return {
       id: record.id,
-      kind: "plan",
+      kind: record.kind,
       title: record.title,
-      description: null,
+      description: record.description,
       status: record.status,
       revision: record.revision,
       path: currentPathOf(record.id),
       ownerSessionID: record.ownerSessionID,
-      authorSessionID: null,
+      authorSessionID: current.authorSessionID,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      format: ARTIFACT_FORMAT_RAW,
-      schemaVersion: SCHEMA_VERSION,
-      authority: AUTHORITY_HISTORICAL,
+      format: ARTIFACT_FORMAT_SHARED,
+      authority: authorityOf(record),
     }
   }
 
@@ -628,7 +527,7 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Publish a shared-markdown-v1 shared artifact. The body is supplied separately and
+   * Publish a shared-markdown artifact. The body is supplied separately and
    * stored verbatim behind the frontmatter (no H1 is inserted); identity,
    * kind, owner and timestamps are tool-managed.
    */
@@ -673,7 +572,6 @@ export function createStore(options = {}) {
       throw new StoreError("io", "generated snapshot does not match its revision")
     }
     const record = {
-      schemaVersion: SCHEMA_VERSION_SHARED,
       id: artifactID,
       kind,
       ownerSessionID,
@@ -741,8 +639,8 @@ export function createStore(options = {}) {
 
   /**
    * Generic get: current state, or the exact earlier revision when one is
-   * requested. Earlier shared-markdown-v1 content comes from the immutable snapshot
-   * (creation-time status header); current shared-markdown-v1 content is derived from
+   * requested. Earlier shared-markdown content comes from the immutable snapshot
+   * (creation-time status header); current shared-markdown content is derived from
    * the committed revision and lifecycle state.
    */
   async function getArtifact({ artifactID, location, revision }) {
@@ -752,20 +650,14 @@ export function createStore(options = {}) {
     await ensureDirectories()
     const record = await loadScoped(artifactID, normalizedLocation, { label: "artifact" })
     if (revision === undefined || revision === null) {
-      const content =
-        record.schemaVersion === SCHEMA_VERSION_SHARED
-          ? await derivedCurrentDocument(artifactID, record)
-          : currentContent(record)
+      const content = await derivedCurrentDocument(artifactID, record)
       return artifactViewOf(record, content, null, snapshotPathOf(artifactID, record.revision))
     }
     const entry = record.history.find((candidate) => candidate.revision === revision)
     if (!entry) {
       throw new StoreError("not_found", `Artifact ${artifactID} has no revision ${revision}`, { artifactID, revision })
     }
-    const content =
-      record.schemaVersion === SCHEMA_VERSION_SHARED
-        ? (await readSharedSnapshot(artifactID, entry)).text
-        : entry.content
+    const content = (await readSharedSnapshot(artifactID, entry)).text
     return {
       ...artifactViewOf(record, content, revision, snapshotPathOf(artifactID, revision)),
       revision,
@@ -773,7 +665,7 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Shared-markdown-v1 patch: applies unambiguous replacements to the body only and
+   * Shared-markdown patch: applies unambiguous replacements to the body only and
    * optionally updates title/description through explicit structured fields
    * (never frontmatter text edits). Identity, kind, owner and timestamps are
    * tool-managed; the acting author is recorded on the new revision. The
@@ -814,9 +706,6 @@ export function createStore(options = {}) {
     await ensureDirectories()
     return withLock(artifactID, async () => {
       const record = await loadScoped(artifactID, normalizedLocation, { label: "artifact" })
-      if (record.schemaVersion !== SCHEMA_VERSION_SHARED) {
-        throw new StoreError("forbidden", `Artifact ${artifactID} is a raw-markdown record; it is read-only`, { artifactID })
-      }
       if (record.ownerSessionID !== ownerSessionID) {
         throw new StoreError(
           "forbidden",
@@ -918,10 +807,8 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Feedback core. Raw-markdown documents stay readable and accept feedback;
-   * shared-markdown-v1 records behave as before. Byte limits are enforced before
-   * anything is recorded, request IDs deduplicate, and stale displayed
-   * revisions are rejected.
+   * Feedback core. Byte limits are enforced before anything is recorded,
+   * request IDs deduplicate, and stale displayed revisions are rejected.
    */
   async function addFeedbackCore({ artifactID, location, revision, requestID, question, selectedText, selectedRange }) {
     assertArtifactID(artifactID)
@@ -998,13 +885,13 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Approval core. Only plan artifacts can be approved (raw-markdown records are
-   * always plans). Approval validates the displayed content revision under
-   * lock, records that exact revision, and — for shared-markdown-v1 — regenerates the
-   * current frontmatter with status "approved" without changing the content
-   * revision. Manual frontmatter edits never authorize or reopen anything:
-   * authorization is this recorded decision. Authority is never changed here;
-   * a plan that is not implementation freezes as a decision and does not authorize Builder.
+   * Approval core. Only plan artifacts can be approved. Approval validates the
+   * displayed content revision under lock, records that exact revision, and
+   * regenerates the current frontmatter with status "approved" without changing
+   * the content revision. Manual frontmatter edits never authorize or reopen
+   * anything: authorization is this recorded decision. Authority is never
+   * changed here; a plan that is not implementation freezes as a decision and
+   * does not authorize Builder.
    */
   async function approveCore({ artifactID, location, revision, requestID }) {
     assertArtifactID(artifactID)
@@ -1015,7 +902,7 @@ export function createStore(options = {}) {
     await ensureDirectories()
     return withLock(artifactID, async () => {
       const record = await loadScoped(artifactID, normalizedLocation)
-      if (record.schemaVersion === SCHEMA_VERSION_SHARED && record.kind !== "plan") {
+      if (record.kind !== "plan") {
         throw new StoreError("validation", `Only plan artifacts can be approved; ${artifactID} has kind ${record.kind}`, {
           artifactID,
           kind: record.kind,
@@ -1057,12 +944,10 @@ export function createStore(options = {}) {
       record.approval = approval
       record.status = "approved"
       record.updatedAt = createdAt
-      if (record.schemaVersion === SCHEMA_VERSION_SHARED) {
-        // Regenerate the displayed frontmatter from lifecycle state. The
-        // content revision is unchanged: updated_at and status are excluded
-        // from the canonical hash.
-        await rewriteCurrentFromRecord(artifactID, record)
-      }
+      // Regenerate the displayed frontmatter from lifecycle state. The content
+      // revision is unchanged: updated_at and status are excluded from the
+      // canonical hash.
+      await rewriteCurrentFromRecord(artifactID, record)
       await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
       return { requestID, deduplicated: false, delivery: approval.delivery, approval, summary: summarize() }
     })
@@ -1113,7 +998,7 @@ export function createStore(options = {}) {
     })
   }
 
-  // Generic shared-artifact surface (shared-markdown-v1 records, raw-markdown readable).
+  // Generic shared-artifact surface (shared-markdown records).
   async function addArtifactFeedback(args) {
     const result = await addFeedbackCore(args)
     return { requestID: result.requestID, deduplicated: result.deduplicated, delivery: result.delivery, feedback: result.feedback, artifact: result.summary }
@@ -1131,7 +1016,7 @@ export function createStore(options = {}) {
 
   return {
     root,
-    // Shared artifact surface (shared-markdown-v1, with generic reads over both).
+    // Shared artifact surface (shared-markdown).
     publishArtifact,
     listArtifacts,
     getArtifact,

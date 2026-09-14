@@ -8,7 +8,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import test from "node:test"
 
-import { createStore, defaultStateRoot, revisionID, StoreError } from "./store.mjs"
+import { createStore, defaultStateRoot, StoreError } from "./store.mjs"
 import { canonicalRevision, documentRevision, parseDocument } from "./format.mjs"
 
 const FIXTURE_BASE = join("/tmp", "opencode")
@@ -35,41 +35,6 @@ const SHARED_BODY = [
 
 const BODY_WITHOUT_FINAL_NEWLINE = "## Observation\n- Kept exactly as supplied."
 
-/**
- * Write a raw-markdown historical raw-markdown record directly to disk. There is
- * no store write path for raw-markdown documents: these fixtures exercise the read-only
- * historical view.
- */
-async function writeRawFixture(store, { id, location = LOCATION_A, title = "Saved plan", contents, status = "draft" }) {
-  const history = contents.map((content, index) => ({
-    revision: revisionID(content),
-    content,
-    createdAt: `2026-09-13T10:00:0${index}.000Z`,
-  }))
-  const record = {
-    schemaVersion: 1,
-    id,
-    ownerSessionID: OWNER,
-    location,
-    title,
-    status,
-    revision: history[history.length - 1].revision,
-    createdAt: history[0].createdAt,
-    updatedAt: history[history.length - 1].createdAt,
-    history,
-    feedback: [],
-    approval: null,
-  }
-  const dir = join(store.root, "artifacts", id)
-  await mkdir(join(dir, "revisions"), { recursive: true })
-  await writeFile(join(dir, "record.json"), JSON.stringify(record, null, 2) + "\n")
-  await writeFile(join(dir, "current.md"), history[history.length - 1].content)
-  for (const entry of history) {
-    await writeFile(join(dir, "revisions", entry.revision.slice("sha256:".length) + ".md"), entry.content)
-  }
-  return { id, record, revision: record.revision, path: join(dir, "current.md") }
-}
-
 function expectSharedDocument(text, { id, kind, title, description, owner, author, status }) {
   const parsed = parseDocument(text)
   assert.equal(parsed.header.id, id)
@@ -90,7 +55,7 @@ test("default root is under the opencode state directory", () => {
 })
 
 // ---------------------------------------------------------------------------
-// Shared artifacts (shared-markdown-v1)
+// Shared artifacts (shared-markdown)
 // ---------------------------------------------------------------------------
 
 test("publish stores frontmatter documents; plans start draft and implementation, evidence/review published and historical", async (t) => {
@@ -105,7 +70,7 @@ test("publish stores frontmatter documents; plans start draft and implementation
     description: "A shared plan artifact.",
     body: SHARED_BODY,
   })
-  assert.match(plan.artifactID, /^art_[A-Za-z0-9_-]{8,64}$/)
+  assert.match(plan.artifactID, /^art_[a-f0-9]{8}$/)
   assert.equal(plan.status, "draft")
   assert.equal(plan.kind, "plan")
   assert.equal(plan.ownerSessionID, OWNER)
@@ -179,7 +144,6 @@ test("summaries, views and describe expose authority; a new plan is implementati
 
   const view = await store.getArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
   assert.equal(view.authority, "implementation")
-  assert.equal(view.schemaVersion, 2)
 
   const described = await store.describeArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
   assert.equal(described.authority, "implementation")
@@ -277,7 +241,7 @@ test("shared patch applies body replacements, tracks the acting author, and pres
   assert.equal(patched.authorSessionID, OTHER_OWNER)
   assert.equal(patched.title, "Shared plan")
   assert.equal(patched.authority, "implementation")
-  assert.match(patched.snapshot, /revisions\/[a-f0-9]{64}\.md$/)
+  assert.match(patched.snapshot, /revisions\/[a-f0-9]{8}\.md$/)
 
   // The snapshot for the new revision is immutable and complete.
   const snapshot = parseDocument(await readFile(patched.snapshot, "utf8"))
@@ -344,7 +308,7 @@ test("shared patch rejects invalid input without mutating", async (t) => {
     (error) => error instanceof StoreError && error.code === "patch_conflict",
   )
   await assert.rejects(
-    store.patchArtifact({ ...base, expectedRevision: "sha256:" + "0".repeat(64), replacements: [{ oldText: "Second item.", newText: "two" }] }),
+    store.patchArtifact({ ...base, expectedRevision: "00000000", replacements: [{ oldText: "Second item.", newText: "two" }] }),
     (error) => error instanceof StoreError && error.code === "stale_revision",
   )
   await assert.rejects(
@@ -430,7 +394,7 @@ test("approval regenerates the frontmatter with status approved but keeps the co
     store.approveArtifact({
       artifactID: published.artifactID,
       location: LOCATION_A,
-      revision: "sha256:" + "3".repeat(64),
+      revision: "33333333",
       requestID: "req_shared-approve-0003",
     }),
     (error) => error instanceof StoreError && error.code === "stale_revision",
@@ -490,7 +454,7 @@ test("historical revisions come from immutable snapshots; missing snapshots fail
   assert.equal(parseDocument(first.content).header.author_session_id, OWNER)
   assert.equal(first.snapshot, published.snapshot)
 
-  const unknownRevision = "sha256:" + "4".repeat(64)
+  const unknownRevision = "44444444"
   await assert.rejects(
     store.getArtifact({ artifactID: published.artifactID, location: LOCATION_A, revision: unknownRevision }),
     (error) => error instanceof StoreError && error.code === "not_found",
@@ -503,7 +467,7 @@ test("historical revisions come from immutable snapshots; missing snapshots fail
   assert.equal(listed.length, 1, "summaries do not load snapshot contents")
   const currentRevision = listed[0].revision
   assert.notEqual(currentRevision, published.revision)
-  await rm(join(revisionsDir, currentRevision.slice("sha256:".length) + ".md"))
+  await rm(join(revisionsDir, currentRevision + ".md"))
   await assert.rejects(
     store.getArtifact({ artifactID: published.artifactID, location: LOCATION_A }),
     (error) => error instanceof StoreError && error.code === "io",
@@ -527,7 +491,7 @@ test("historical revisions come from immutable snapshots; missing snapshots fail
   assert.equal(stillListed.length, 1, "summaries do not load snapshot contents")
 })
 
-test("shared-markdown-v1 interrupted writes: current.md is rebuilt from record and snapshot", async (t) => {
+test("shared-markdown interrupted writes: current.md is rebuilt from record and snapshot", async (t) => {
   const { store, root } = await makeStore(t)
   const published = await store.publishArtifact({
     kind: "plan",
@@ -599,79 +563,18 @@ test("describeArtifact returns record-only metadata without touching snapshots",
   assert.equal(described.content, undefined, "no content without a snapshot read")
 
   // Record-only reads survive snapshot loss.
-  await rm(join(root, "artifacts", published.artifactID, "revisions", published.revision.slice(7) + ".md"), { force: true })
+  await rm(join(root, "artifacts", published.artifactID, "revisions", published.revision + ".md"), { force: true })
   const stillDescribed = await store.describeArtifact({ artifactID: published.artifactID, location: LOCATION_A })
   assert.equal(stillDescribed.revision, published.revision)
 })
 
 // ---------------------------------------------------------------------------
-// Raw-markdown records (read-only)
+// Malformed IDs are validation errors
 // ---------------------------------------------------------------------------
 
-const HISTORICAL_TEXT = ["# Historical plan", "", "## Changes", "- First item.", ""].join("\n")
-
-test("raw-markdown historical records are readable through generic reads with authority historical", async (t) => {
+test("malformed IDs are validation errors (path traversal cannot escape the store)", async (t) => {
   const { store } = await makeStore(t)
-  const historical = await writeRawFixture(store, {
-    id: "pln_historical00000000001",
-    contents: [HISTORICAL_TEXT, HISTORICAL_TEXT.replace("- First item.", "- First item, revised.")],
-  })
-
-  const summaries = await store.listArtifacts({ location: LOCATION_A })
-  assert.equal(summaries.length, 1)
-  const summary = summaries[0]
-  assert.equal(summary.id, historical.id)
-  assert.equal(summary.kind, "plan")
-  assert.equal(summary.format, "raw-markdown")
-  assert.equal(summary.schemaVersion, 1)
-  assert.equal(summary.authority, "historical")
-  assert.equal(summary.description, null)
-  assert.equal(summary.authorSessionID, null)
-
-  const view = await store.getArtifact({ artifactID: historical.id, location: LOCATION_A })
-  assert.equal(view.content, HISTORICAL_TEXT.replace("- First item.", "- First item, revised."))
-  assert.equal(view.revision, revisionID(HISTORICAL_TEXT.replace("- First item.", "- First item, revised.")))
-  assert.equal(view.authority, "historical")
-  assert.equal(view.revisions.length, 2)
-
-  const earlier = await store.getArtifact({ artifactID: historical.id, location: LOCATION_A, revision: revisionID(HISTORICAL_TEXT) })
-  assert.equal(earlier.content, HISTORICAL_TEXT)
-})
-
-test("raw-markdown records reject generic patching and stay byte-identical through approval", async (t) => {
-  const { store } = await makeStore(t)
-  const historical = await writeRawFixture(store, {
-    id: "pln_historical00000000002",
-    contents: [HISTORICAL_TEXT],
-  })
-
-  await assert.rejects(
-    store.patchArtifact({
-      artifactID: historical.id,
-      location: LOCATION_A,
-      ownerSessionID: OWNER,
-      authorSessionID: OWNER,
-      expectedRevision: historical.revision,
-      replacements: [{ oldText: "First", newText: "Third" }],
-    }),
-    (error) => error instanceof StoreError && error.code === "forbidden",
-  )
-
-  const approved = await store.approveArtifact({
-    artifactID: historical.id,
-    location: LOCATION_A,
-    revision: historical.revision,
-    requestID: "req_raw-approve-1",
-  })
-  assert.equal(approved.artifact.status, "approved")
-  assert.equal(approved.artifact.authority, "historical")
-  assert.equal(approved.artifact.revision, historical.revision)
-  assert.equal(await readFile(historical.path, "utf8"), HISTORICAL_TEXT, "historical bytes are never rewritten")
-})
-
-test("raw-markdown malformed IDs are validation errors (path traversal cannot escape the store)", async (t) => {
-  const { store } = await makeStore(t)
-  for (const bad of ["../../etc", "pln_../../etc/passwd", "", "pln_", "sha256:deadbeef", "pln_" + "x".repeat(100)]) {
+  for (const bad of ["../../etc", "", "art_0000000", "art_0000000g", "art_" + "a".repeat(26), "ART_00000001", "art_00000001extra"]) {
     await assert.rejects(
       store.getArtifact({ artifactID: bad, location: LOCATION_A }),
       (error) => error instanceof StoreError && error.code === "validation",
@@ -681,7 +584,7 @@ test("raw-markdown malformed IDs are validation errors (path traversal cannot es
 })
 
 // ---------------------------------------------------------------------------
-// Feedback, delivery bookkeeping and locks (shared-markdown-v1, raw-markdown reads)
+// Feedback, delivery bookkeeping and locks (shared-markdown)
 // ---------------------------------------------------------------------------
 
 test("feedback deduplicates by request ID and rejects stale displayed revisions", async (t) => {
@@ -726,7 +629,7 @@ test("feedback deduplicates by request ID and rejects stale displayed revisions"
     store.addArtifactFeedback({
       artifactID: published.artifactID,
       location: LOCATION_A,
-      revision: "sha256:" + "1".repeat(64),
+      revision: "11111111",
       requestID: "req_test-feedback-0002",
       question: "Stale",
     }),

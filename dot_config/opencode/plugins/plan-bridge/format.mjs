@@ -1,4 +1,4 @@
-// Shared artifact Markdown format ("shared-markdown-v1"): a dependency-free
+// Shared artifact Markdown format ("shared-markdown"): a dependency-free
 // Markdown document format with a fixed YAML-style frontmatter block whose
 // scalars are JSON-quoted strings, plus the canonical revision (hash)
 // algorithm shared by every implementation (store, tools, and later the
@@ -56,15 +56,15 @@
 //       ---\n
 //       <exact body bytes, final-newline distinction preserved>
 //
-//   The revision is prefixed "sha256:". The revision is never an input to its
-//   own hash; the artifact ID is random, so embedding it is safe.
+//   The revision is the first 8 lowercase hex characters of the SHA-256
+//   digest. The revision is never an input to its own hash; the artifact ID
+//   is random, so embedding it is safe.
 //
 // Pure Node (node:*) so `node --test` can exercise it without Bun.
 
 import { createHash } from "node:crypto"
 
-export const FORMAT_NAME = "shared-markdown-v1"
-export const FORMAT_VERSION = 1
+export const FORMAT_NAME = "shared-markdown"
 
 export const OPEN_FENCE = "---"
 export const CLOSE_FENCE = "---"
@@ -253,9 +253,9 @@ export function canonicalInput(identity, body) {
   return `${lines.join("\n")}\n${CLOSE_FENCE}\n${body}`
 }
 
-/** Content revision of an identity header + body: "sha256:" + hex digest. */
+/** Content revision of an identity header + body: the first 8 hex digits of the SHA-256 digest. */
 export function canonicalRevision(identity, body) {
-  return "sha256:" + createHash("sha256").update(canonicalInput(identity, body), "utf8").digest("hex")
+  return createHash("sha256").update(canonicalInput(identity, body), "utf8").digest("hex").slice(0, 8)
 }
 
 /**
