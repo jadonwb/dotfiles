@@ -22,6 +22,7 @@ c/update_source.sh
 {{- end}}
 
 # global
+.repos
 .gitignore
 .opencode
 .luarc.json
