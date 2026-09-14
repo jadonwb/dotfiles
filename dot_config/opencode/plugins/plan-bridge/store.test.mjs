@@ -58,7 +58,7 @@ test("default root is under the opencode state directory", () => {
 // Shared artifacts (shared-markdown)
 // ---------------------------------------------------------------------------
 
-test("publish stores frontmatter documents; plans start draft and implementation, evidence/review published and historical", async (t) => {
+test("publish stores frontmatter documents; plans start draft, evidence/review published", async (t) => {
   const { store } = await makeStore(t)
 
   const plan = await store.publishArtifact({
@@ -75,7 +75,6 @@ test("publish stores frontmatter documents; plans start draft and implementation
   assert.equal(plan.kind, "plan")
   assert.equal(plan.ownerSessionID, OWNER)
   assert.equal(plan.authorSessionID, OWNER)
-  assert.equal(plan.authority, "implementation")
 
   // The file is exactly the frontmatter document; the body is verbatim, no H1
   // is inserted, and the final-newline distinction is preserved.
@@ -91,8 +90,6 @@ test("publish stores frontmatter documents; plans start draft and implementation
   })
   assert.equal(parsed.body, SHARED_BODY)
   assert.ok(onDisk.endsWith("- Second item.\n"))
-  // Authority is record-only: never in the Markdown document.
-  assert.ok(!onDisk.includes("authority"))
   // The revision covers the identity header plus the exact body bytes.
   assert.equal(plan.revision, canonicalRevision(parsed.header, parsed.body))
   // The immutable snapshot is a complete document with creation-time status.
@@ -110,7 +107,6 @@ test("publish stores frontmatter documents; plans start draft and implementation
     body: BODY_WITHOUT_FINAL_NEWLINE,
   })
   assert.equal(evidence.status, "published")
-  assert.equal(evidence.authority, "historical")
   const evidenceText = await readFile(evidence.path, "utf8")
   assert.ok(evidenceText.endsWith("Kept exactly as supplied."), "a body without final newline stays without one")
   const review = await store.publishArtifact({
@@ -123,10 +119,9 @@ test("publish stores frontmatter documents; plans start draft and implementation
     body: SHARED_BODY,
   })
   assert.equal(review.status, "published")
-  assert.equal(review.authority, "historical")
 })
 
-test("summaries, views and describe expose authority; a new plan is implementation", async (t) => {
+test("summaries, views and describe expose record metadata", async (t) => {
   const { store } = await makeStore(t)
   const plan = await store.publishArtifact({
     kind: "plan",
@@ -140,81 +135,15 @@ test("summaries, views and describe expose authority; a new plan is implementati
 
   const summaries = await store.listArtifacts({ location: LOCATION_A })
   assert.equal(summaries.length, 1)
-  assert.equal(summaries[0].authority, "implementation")
 
   const view = await store.getArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
-  assert.equal(view.authority, "implementation")
+  assert.equal(view.revision, plan.revision)
 
   const described = await store.describeArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
-  assert.equal(described.authority, "implementation")
   assert.equal(described.content, undefined, "no content without a snapshot read")
 })
 
-test("authority is record-only and never caller-writable", async (t) => {
-  const { store } = await makeStore(t)
-  // Caller attempts to force historical: ignored; the kind decides.
-  const plan = await store.publishArtifact({
-    kind: "plan",
-    ownerSessionID: OWNER,
-    authorSessionID: OWNER,
-    location: LOCATION_A,
-    title: "Shared plan",
-    description: "A shared plan artifact.",
-    body: SHARED_BODY,
-    authority: "historical",
-  })
-  assert.equal(plan.authority, "implementation")
-
-  // Caller attempts to change authority through patch: ignored.
-  await store.patchArtifact({
-    artifactID: plan.artifactID,
-    location: LOCATION_A,
-    ownerSessionID: OWNER,
-    authorSessionID: OWNER,
-    expectedRevision: plan.revision,
-    replacements: [{ oldText: "First item.", newText: "First item, revised." }],
-    authority: "historical",
-  })
-  const view = await store.getArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
-  assert.equal(view.authority, "implementation")
-
-  // A record with the field removed reads as historical.
-  const recordPath = join(store.root, "artifacts", plan.artifactID, "record.json")
-  const record = JSON.parse(await readFile(recordPath, "utf8"))
-  delete record.authority
-  await writeFile(recordPath, JSON.stringify(record, null, 2) + "\n")
-  const historical = await store.getArtifact({ artifactID: plan.artifactID, location: LOCATION_A })
-  assert.equal(historical.authority, "historical")
-})
-
-test("approval of a historical (authority-absent) plan stays historical and does not become implementation", async (t) => {
-  const { store } = await makeStore(t)
-  const plan = await store.publishArtifact({
-    kind: "plan",
-    ownerSessionID: OWNER,
-    authorSessionID: OWNER,
-    location: LOCATION_A,
-    title: "Plan under review",
-    description: "A plan without the authority field.",
-    body: SHARED_BODY,
-  })
-  const recordPath = join(store.root, "artifacts", plan.artifactID, "record.json")
-  const record = JSON.parse(await readFile(recordPath, "utf8"))
-  delete record.authority
-  await writeFile(recordPath, JSON.stringify(record, null, 2) + "\n")
-
-  const approved = await store.approveArtifact({
-    artifactID: plan.artifactID,
-    location: LOCATION_A,
-    revision: plan.revision,
-    requestID: "req_historical-approve-1",
-  })
-  assert.equal(approved.artifact.status, "approved")
-  assert.equal(approved.artifact.authority, "historical", "an approval never becomes implementation")
-  assert.equal(approved.artifact.revision, plan.revision)
-})
-
-test("shared patch applies body replacements, tracks the acting author, and preserves authority", async (t) => {
+test("shared patch applies body replacements and tracks the acting author", async (t) => {
   const { store } = await makeStore(t)
   const published = await store.publishArtifact({
     kind: "plan",
@@ -240,7 +169,6 @@ test("shared patch applies body replacements, tracks the acting author, and pres
   assert.equal(parsed.header.author_session_id, OTHER_OWNER, "the new revision records the acting author")
   assert.equal(patched.authorSessionID, OTHER_OWNER)
   assert.equal(patched.title, "Shared plan")
-  assert.equal(patched.authority, "implementation")
   assert.match(patched.snapshot, /revisions\/[a-f0-9]{8}\.md$/)
 
   // The snapshot for the new revision is immutable and complete.
@@ -269,7 +197,6 @@ test("shared patch applies body replacements, tracks the acting author, and pres
 
   const view = await store.getArtifact({ artifactID: published.artifactID, location: LOCATION_A })
   assert.equal(view.revisions.length, 3)
-  assert.equal(view.authority, "implementation")
   assert.deepEqual(
     view.revisions.map((entry) => entry.authorSessionID),
     [OWNER, OTHER_OWNER, OWNER],
@@ -332,7 +259,7 @@ test("shared patch rejects invalid input without mutating", async (t) => {
   assert.equal(view.revisions.length, 1)
 })
 
-test("approval regenerates the frontmatter with status approved but keeps the content revision and authority", async (t) => {
+test("approval regenerates the frontmatter with status approved but keeps the content revision", async (t) => {
   const { store } = await makeStore(t)
   const published = await store.publishArtifact({
     kind: "plan",
@@ -353,7 +280,6 @@ test("approval regenerates the frontmatter with status approved but keeps the co
   })
   assert.equal(approved.deduplicated, false)
   assert.equal(approved.artifact.status, "approved")
-  assert.equal(approved.artifact.authority, "implementation")
   assert.equal(approved.artifact.revision, published.revision, "approval does not change the content revision")
 
   // The current file shows the lifecycle status; the snapshot keeps its
@@ -558,7 +484,6 @@ test("describeArtifact returns record-only metadata without touching snapshots",
   assert.equal(described.status, "published")
   assert.equal(described.ownerSessionID, OWNER)
   assert.equal(described.authorSessionID, OTHER_OWNER)
-  assert.equal(described.authority, "historical")
   assert.equal(described.location, LOCATION_A)
   assert.equal(described.content, undefined, "no content without a snapshot read")
 
@@ -609,7 +534,6 @@ test("feedback deduplicates by request ID and rejects stale displayed revisions"
   })
   assert.equal(first.deduplicated, false)
   assert.equal(first.delivery.state, "pending")
-  assert.equal(first.artifact.authority, "implementation")
 
   const duplicate = await store.addArtifactFeedback({
     artifactID: published.artifactID,

@@ -1,10 +1,9 @@
 # plan-bridge
 
 A filesystem-backed registry for passing Markdown artifacts between OpenCode
-sessions and Neovim, and the authoritative implementation-approval gate. A plan
-artifact whose `artifact_get` shows `status=approved`,
-`authority=implementation`, and the exact approved revision is what authorizes
-Builder.
+sessions and Neovim, and the authoritative plan-approval gate. A plan artifact
+whose `artifact_get` shows `status=approved`, `kind=plan`, and the exact
+approved revision is what authorizes Builder.
 
 ## Artifacts
 
@@ -16,9 +15,6 @@ Every artifact is Markdown plus a small record:
   document frontmatter.
 - `status` — plans start `draft`; evidence and reviews start `published`; a
   plan becomes `approved` when its displayed revision is approved.
-- `authority` — record-only. New plans record `implementation`; evidence and
-  reviews record `historical`. Only an approved `implementation` plan
-  authorizes Builder.
 - `revision` — the content revision (see below).
 - `ownerSessionID` — the session that owns feedback/approval routing: the
   nearest Planner ancestor, or the author session when none exists.
@@ -79,18 +75,16 @@ to its own hash; the artifact ID is random.
 Shared artifacts (permission actions; globally denied, allowed per agent):
 
 - `artifact_publish` — publish `kind`/`title`/`description`/`body`; plans
-  start `draft` with `authority: "implementation"`, evidence and reviews
-  start `published` with `authority: "historical"`. Returns the artifact ID,
-  owner, author, current path, content revision, authority and immutable
-  snapshot reference.
+  start `draft`, evidence and reviews start `published`. Returns the artifact
+  ID, owner, author, current path, content revision and immutable snapshot
+  reference.
 - `artifact_get` — current state by default, or an exact revision
   (`revisions/<hex>.md`) whose content carries its creation-time status header.
-  Reports `Status` and `Authority`.
+  Reports `Status`.
 - `artifact_patch` — expected revision + unambiguous body replacements only,
   plus optional structured `title`/`description` updates (never frontmatter
-  text edits). Identity, kind, owner, authority and timestamps are
-  tool-managed; each revision records the acting author. Approved plans reject
-  patches.
+  text edits). Identity, kind, owner and timestamps are tool-managed; each
+  revision records the acting author. Approved plans reject patches.
 
 Authorization (`artifact-tools.ts`): the acting author is the calling session
 from the tool context. The owner is the nearest Planner in the server-assigned
@@ -114,7 +108,7 @@ through Planner. Search, Runner, Builder, and Review run as catalog-visible
 worker may launch Search, Builder, or Review.
 
 - **Planner** (primary) authors `plan` artifacts, acts on the user's approval,
-  and launches Builder only from an approved `implementation` plan at the exact
+  and launches Builder only from an approved plan at the exact
   revision. It does not edit project files. It assigns Search, Builder and
   Review, and may call Runner directly for a user-facing command question.
 - **Search** researches source files and documentation read-only and authors
@@ -151,10 +145,8 @@ caller.
 
 ## RPC contract
 
-`personal.artifacts` (outputs use `artifacts`/`artifact` and include
-`authority`):
-`list` — summaries with kind, description, provenance, authority and format
-marker;
+`personal.artifacts` (outputs use `artifacts`/`artifact`):
+`list` — summaries with kind, description, provenance and format marker;
 `get` — current state or an exact revision/snapshot reference;
 `feedback` — question/selection against the displayed content revision;
 `approve` — plans only (evidence/review kinds are rejected); validates the
@@ -192,8 +184,8 @@ location.
   submission returns the recorded one instead of creating a duplicate.
 - Feedback and approval carry the revision the user was actually viewing;
   stale requests are rejected instead of being applied silently.
-- An approval freezes the exact revision it was recorded against. Only a plan
-  whose authority is `implementation` then authorizes Builder.
+- An approval freezes the exact revision it was recorded against. An approved
+  plan then authorizes Builder.
 - Byte limits: question ≤ 16384 UTF-8 bytes, selected excerpt ≤ 65536 UTF-8
   bytes; oversized input is rejected with a `validation` error and leaves no
   submission behind.
@@ -210,12 +202,11 @@ completion). The compact builders emit:
 - `text` — model-visible: feedback carries the artifact `ID@revision`, the user
   question, and exactly one optional context representation (quoted selected
   excerpt, otherwise the selected line range, otherwise general feedback).
-  Approval text is at most two lines: an `implementation` approval names the
-  approved `artifactID@revision` and that the Planner should launch ONE
-  background Builder for that exact revision; a `historical` approval states
-  the freeze and that it does not authorize Builder.
+  Approval text is one line: an approval names the approved
+  `artifactID@revision`; the Planner then launches ONE background Builder for
+  that exact revision.
 - `metadata` — model-invisible bookkeeping: `artifactID`, `revision`,
-  `requestID`, `kind`, `authority`, `submission`, `source`.
+  `requestID`, `kind`, `submission`, `source`.
 
 Delivery state is recorded per submission (`pending` → `delivered` |
 `failed`) with the original request IDs, so failed deliveries can be retried

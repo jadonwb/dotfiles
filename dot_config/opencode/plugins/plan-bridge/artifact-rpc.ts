@@ -6,8 +6,8 @@
 // Runtime note (v2.0.3): a plain structural object with `events: {}` is
 // required (the documented `@opencode/plugin/rpc` import does not resolve for
 // local dir plugins on this build). Outputs use `artifacts`/`artifact` and
-// include kind, description, authority, provenance, snapshot references and
-// delivery summaries.
+// include kind, description, provenance, snapshot references and delivery
+// summaries.
 
 const artifactSummary = {
   type: "object",
@@ -24,10 +24,6 @@ const artifactSummary = {
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
     format: { type: "string", description: "shared-markdown" },
-    authority: {
-      type: "string",
-      description: "implementation for plans that authorize Builder once approved; historical for records that do not authorize Builder",
-    },
   },
 }
 

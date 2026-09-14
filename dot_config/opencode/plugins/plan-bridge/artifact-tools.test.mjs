@@ -187,26 +187,22 @@ test("feedback message: full ID@revision, user question, exactly one context rep
   assert.equal(general.split("\n").length, 4)
 })
 
-test("approval message is one brief status line naming the identity and authority", () => {
-  const implementation = artifactApprovalMessage({ authority: "implementation", artifactID: "art_x", revision: "bbbbbbbb" })
-  assert.equal(implementation, "approval delivered: art_x@bbbbbbbb (implementation)")
-
-  const historical = artifactApprovalMessage({ authority: "historical", artifactID: "art_y", revision: "cccccccc" })
-  assert.equal(historical, "approval delivered: art_y@cccccccc (historical)")
+test("approval message is one brief status line naming the identity", () => {
+  const message = artifactApprovalMessage({ artifactID: "art_x", revision: "bbbbbbbb" })
+  assert.equal(message, "approval delivered: art_x@bbbbbbbb")
 })
 
-test("delivery description is a short title-bearing label; metadata carries request IDs and authority", () => {
+test("delivery description is a short title-bearing label; metadata carries request IDs and provenance", () => {
   assert.equal(artifactDeliveryDescription({ action: "feedback", title: "My plan" }), "Feedback: My plan")
   assert.equal(artifactDeliveryDescription({ action: "approval", title: "My plan" }), "Approval: My plan")
   const long = artifactDeliveryDescription({ action: "feedback", title: "x".repeat(300) })
   assert.ok(long.length <= "Feedback: ".length + 80, "label is capped")
-  const metadata = artifactDeliveryMetadata({ artifactID: "art_x", revision: "c0c0c0c0", requestID: "req_1", kind: "plan", authority: "implementation", submission: "feedback" })
+  const metadata = artifactDeliveryMetadata({ artifactID: "art_x", revision: "c0c0c0c0", requestID: "req_1", kind: "plan", submission: "feedback" })
   assert.deepEqual(metadata, {
     artifactID: "art_x",
     revision: "c0c0c0c0",
     requestID: "req_1",
     kind: "plan",
-    authority: "implementation",
     submission: "feedback",
     source: "personal.artifacts",
   })
@@ -244,7 +240,7 @@ test("artifact publish/patch/get flow: provenance resolved, results carry kind/t
   assert.match(plannerPublish.content, /Title: Shared plan/)
   assert.match(plannerPublish.content, /Revision: [a-f0-9]{8}/)
   assert.match(plannerPublish.content, /Snapshot: /)
-  assert.doesNotMatch(plannerPublish.content, /Owner:|Author:|Current markdown:|Status:|Authority:/, "no provenance/authority essay")
+  assert.doesNotMatch(plannerPublish.content, /Owner:|Author:|Current markdown:|Status:/, "no provenance essay")
   const plannerID = /Artifact: (art_\S+)/.exec(plannerPublish.content)[1]
   const plannerRevision = /Revision: (\S+)/.exec(plannerPublish.content)[1]
   for (const line of plannerPublish.content.split("\n")) {
@@ -381,7 +377,7 @@ async function setupPlugin(t, { sessions = {} } = {}) {
   return { tools, contracts, syntheticCalls, sessions }
 }
 
-test("RPC surface exposes authority and delivers compact queued synthetic messages", async (t) => {
+test("RPC surface delivers compact queued synthetic messages", async (t) => {
   const sessions = { [PLANNER_SESSION]: sessionInfo() }
   const { contracts, tools, syntheticCalls } = await setupPlugin(t, { sessions })
   const rpc = contracts.find((entry) => entry.contract.id === "personal.artifacts").handlers
@@ -394,7 +390,6 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   const list = await rpc.list({}, { error: () => { throw new Error("no") } })
   assert.equal(list.artifacts.length, 1)
   const artifact = list.artifacts[0]
-  assert.equal(artifact.authority, "implementation")
 
   const feedback = await rpc.feedback(
     { artifactID: artifact.id, revision: artifact.revision, requestID: "req_feedback-mocked-1", question: "Is this complete?", selectedText: "- Item." },
@@ -404,7 +399,6 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   assert.equal(feedback.kind, "feedback")
   assert.equal(feedback.delivery.state, "delivered")
   assert.equal(feedback.artifact.id, artifact.id)
-  assert.equal(feedback.artifact.authority, "implementation")
   assert.equal(syntheticCalls.length, 1)
   const call = syntheticCalls[0]
   assert.equal(call.sessionID, PLANNER_SESSION)
@@ -417,7 +411,6 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   assert.equal(call.metadata.requestID, "req_feedback-mocked-1")
   assert.equal(call.metadata.artifactID, artifact.id)
   assert.equal(call.metadata.revision, artifact.revision)
-  assert.equal(call.metadata.authority, "implementation")
 
   // A duplicate request ID never sends again.
   const duplicate = await rpc.feedback(
@@ -445,15 +438,13 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   assert.equal(approved.kind, "approval")
   assert.equal(approved.delivery.state, "delivered")
   assert.equal(approved.artifact.status, "approved")
-  assert.equal(approved.artifact.authority, "implementation")
   assert.equal(syntheticCalls.length, 2)
   const approvalCall = syntheticCalls[1]
   assert.equal(approvalCall.delivery, "queue")
   assert.equal(approvalCall.resume, true)
   assert.equal(approvalCall.description, "Approval: Shared plan")
-  assert.equal(approvalCall.text, `approval delivered: ${artifact.id}@${artifact.revision} (implementation)`)
+  assert.equal(approvalCall.text, `approval delivered: ${artifact.id}@${artifact.revision}`)
   assert.equal(approvalCall.metadata.requestID, "req_approve-mocked-1")
-  assert.equal(approvalCall.metadata.authority, "implementation")
 
   // Approving the same revision again deduplicates without re-delivering.
   const again = await rpc.approve(
@@ -494,7 +485,6 @@ test("approval through the RPC regenerates the frontmatter and rejects evidence 
   const evidenceID = /Artifact: (art_\S+)/.exec(evidence.content)[1]
   const list = await rpc.list({}, { error: () => { throw new Error("no") } })
   const artifact = list.artifacts.find((entry) => entry.id === evidenceID)
-  assert.equal(artifact.authority, "historical")
   await assert.rejects(
     rpc.approve(
       { artifactID: artifact.id, revision: artifact.revision, requestID: "req_approve-evidence-1" },
@@ -512,11 +502,9 @@ test("approval through the RPC regenerates the frontmatter and rejects evidence 
   )
   const planID = /Artifact: (art_\S+)/.exec(planPublish.content)[1]
   const before = await rpc.get({ artifactID: planID }, { error: () => { throw new Error("no") } })
-  assert.equal(before.artifact.authority, "implementation")
   await rpc.approve({ artifactID: planID, revision: before.artifact.revision, requestID: "req_approve-plan-1" }, { error: () => { throw new Error("no") } })
   const after = await rpc.get({ artifactID: planID }, { error: () => { throw new Error("no") } })
   assert.equal(after.artifact.status, "approved")
-  assert.equal(after.artifact.authority, "implementation")
   assert.equal(after.artifact.revision, before.artifact.revision, "content revision unchanged by approval")
   assert.equal(after.artifact.content.split("\n").some((line) => line === 'status: "approved"'), true)
 

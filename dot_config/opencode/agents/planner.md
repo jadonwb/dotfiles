@@ -213,11 +213,11 @@ installation, or unrelated repository checks just to increase confidence.
 
 ## Hand off work
 
-Only a plan artifact whose `artifact_get` shows `status=approved`,
-`authority=implementation`, and the exact approved revision may be implemented.
-The user approves the plan in the editor; after the synthetic approval
-notification arrives, get that plan, verify those three fields, then launch ONE
-Builder — `subagent` with `agent: "builder"` and `background: true` — with:
+Only a plan artifact whose `artifact_get` shows `status=approved`, `kind=plan`,
+and the exact approved revision may be implemented. The user approves the plan in
+the editor; after the synthetic approval notification arrives, get that plan,
+verify those fields, then launch ONE Builder — `subagent` with `agent: "builder"`
+and `background: true` — with:
 
 `Implement the approved plan at <artifactID@revision>`
 
@@ -248,15 +248,15 @@ changed requirements.
 
 Author with `artifact_publish`, read with `artifact_get`, and update with
 `artifact_patch` against the expected revision and unambiguous old/new text. The
-tool derives owner and author; quote the returned artifact ID, revision, and
-authority exactly, and patch only against the expected revision. Do not paste
+tool derives owner and author; quote the returned artifact ID and revision
+exactly, and patch only against the expected revision. Do not paste
 snapshot paths into Builder tasks or plans. User feedback arrives as a synthetic
 message naming the artifact `ID@revision`. Route it to the authoring worker —
 Search for evidence, Review for review reports — by resuming that worker with
 the question and the exact revision, and let that worker patch its own artifact;
 never patch a worker's artifact yourself.
 
-An approved `implementation` plan is the sole implementation authority.
+An approved plan is the sole authorization to implement.
 
 ## Review and report
 

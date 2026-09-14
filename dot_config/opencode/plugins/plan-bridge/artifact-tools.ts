@@ -235,14 +235,10 @@ export function artifactFeedbackMessage(input: {
 
 /**
  * Approval text is one line: delivery status plus the artifact identity. An
- * implementation plan authorizes Builder for that exact revision; a historical
- * record is a freeze only.
+ * approved plan is what authorizes Builder for that exact revision.
  */
-export function artifactApprovalMessage(input: { authority: string; artifactID: string; revision: string }): string {
-  const identity = `${input.artifactID}@${input.revision}`
-  return input.authority === "implementation"
-    ? `approval delivered: ${identity} (implementation)`
-    : `approval delivered: ${identity} (historical)`
+export function artifactApprovalMessage(input: { artifactID: string; revision: string }): string {
+  return `approval delivered: ${input.artifactID}@${input.revision}`
 }
 
 export function artifactDeliveryMetadata(input: {
@@ -250,7 +246,6 @@ export function artifactDeliveryMetadata(input: {
   revision: string
   requestID: string
   kind: string
-  authority: string
   submission: "feedback" | "approval"
 }): Record<string, string> {
   return {
@@ -258,7 +253,6 @@ export function artifactDeliveryMetadata(input: {
     revision: input.revision,
     requestID: input.requestID,
     kind: input.kind,
-    authority: input.authority,
     submission: input.submission,
     source: "personal.artifacts",
   }
@@ -281,7 +275,6 @@ export type ArtifactSummary = {
   createdAt: string
   updatedAt: string
   format: string
-  authority: string
 }
 
 export type PatchResult = {
@@ -294,7 +287,6 @@ export type PatchResult = {
   kind: string
   ownerSessionID: string
   authorSessionID: string
-  authority: string
   snapshot: string
 }
 
