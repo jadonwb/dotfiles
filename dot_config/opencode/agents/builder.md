@@ -65,8 +65,8 @@ intent is not a result.
 
 ## Make the change
 
-Read the plan and its required evidence artifacts by exact snapshot path or with
-`artifact_get` at the exact revision. Changes state the edits and behavior; the
+Load the plan and its listed evidence with `artifact_get` at the given revision,
+then read the path that tool returns. Changes state the edits and behavior; the
 artifacts carry implementation-level detail. Apply what they state instead of
 re-deriving it from the repository. Then inspect the named target code and make
 the edits. Follow applicable project instructions and preserve existing user
