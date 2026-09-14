@@ -4,10 +4,9 @@
 // artifact_patch) and the personal.artifacts RPC contract so Neovim can list
 // artifacts, ask questions, and record approvals.
 //
-// Authority: a plan artifact with status "approved" and authority
-// "implementation" is the sole implementation gate. Approving a draft plan
-// records the exact displayed revision; only an implementation plan authorizes
-// Builder.
+// A plan artifact with status "approved" is the sole implementation gate.
+// Approving a draft plan records the exact displayed revision; only an
+// approved plan authorizes Builder.
 //
 // Registry logic lives in ./store.mjs; tool/authorization logic in
 // ./artifact-tools.ts; the contract lives in ./artifact-rpc.ts.
@@ -62,7 +61,6 @@ export default {
       kind: string
       title: string
       revision: string
-      authority: string
       requestID: string
       ownerSessionID: string
       question?: string | null
@@ -77,7 +75,6 @@ export default {
       const text =
         input.submission === "approval"
           ? artifactApprovalMessage({
-              authority: input.authority,
               artifactID: input.artifactID,
               revision: input.revision,
             })
@@ -96,7 +93,6 @@ export default {
         revision: input.revision,
         requestID: input.requestID,
         kind: input.kind,
-        authority: input.authority,
         submission: input.submission,
       })
       const markDelivery = store.markArtifactDelivery
@@ -202,7 +198,6 @@ export default {
           kind: submission.artifact.kind,
           title: submission.artifact.title,
           revision: submission.feedback.revision,
-          authority: submission.artifact.authority,
           requestID,
           ownerSessionID: submission.artifact.ownerSessionID,
           question: submission.feedback.question,
@@ -240,7 +235,6 @@ export default {
           kind: submission.artifact.kind,
           title: submission.artifact.title,
           revision: submission.approval.revision,
-          authority: submission.artifact.authority,
           requestID: submission.requestID,
           ownerSessionID: submission.artifact.ownerSessionID,
         })
@@ -278,7 +272,6 @@ export default {
           kind: record.kind,
           title: record.title,
           revision: entry.revision,
-          authority: record.authority,
           requestID: input.requestID,
           ownerSessionID: record.ownerSessionID,
           question: entry.question,

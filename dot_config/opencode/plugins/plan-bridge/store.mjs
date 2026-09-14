@@ -7,12 +7,6 @@
 // immutable snapshot files instead of embedding content. Served by
 // `artifact_publish/get/patch` and `personal.artifacts`.
 //
-// Authority: a record-only `authority` field distinguishes plans that authorize
-// Builder once approved ("implementation") from records that do not
-// ("historical", the default when the field is absent). It is never part of the
-// Markdown frontmatter or the content hash, and patch, feedback, and approval
-// never accept or change it from callers or file bytes.
-//
 // Design rules:
 // - All paths are derived internally from the store root plus generated IDs;
 //   callers never supply filesystem paths.
@@ -46,15 +40,6 @@ import {
   parseDocument,
   serializeDocument,
 } from "./format.mjs"
-
-/**
- * Record-only authority values. `implementation` plans authorize Builder
- * after approval; `historical` plans are freezes only. Absent fields never
- * authorize and read as `historical`.
- */
-const AUTHORITY_HISTORICAL = "historical"
-const AUTHORITY_IMPLEMENTATION = "implementation"
-const AUTHORITIES = [AUTHORITY_HISTORICAL, AUTHORITY_IMPLEMENTATION]
 
 const DIR_MODE = 0o700
 const FILE_MODE = 0o600
@@ -191,11 +176,6 @@ function sharedHeaderOf(record, authorSessionID, updatedAt, status) {
   }
 }
 
-/** Authority of a record: absent fields never authorize and read as historical. */
-function authorityOf(record) {
-  return record.authority === AUTHORITY_IMPLEMENTATION ? AUTHORITY_IMPLEMENTATION : AUTHORITY_HISTORICAL
-}
-
 /**
  * Create a registry bound to `root` (defaults to the shared state root).
  * `root` is store configuration (tests point it at a fixture directory);
@@ -308,7 +288,6 @@ export function createStore(options = {}) {
     if (typeof record.revision !== "string" || !REVISION_PATTERN.test(record.revision)) return "invalid revision"
     if (typeof record.createdAt !== "string" || record.createdAt.length === 0) return "missing createdAt"
     if (typeof record.updatedAt !== "string" || record.updatedAt.length === 0) return "missing updatedAt"
-    if (record.authority !== undefined && record.authority !== null && !AUTHORITIES.includes(record.authority)) return "invalid authority"
     if (!Array.isArray(record.history) || record.history.length === 0) return "history must be a non-empty array"
     for (const entry of record.history) {
       if (!entry || typeof entry !== "object") return "history entries must be objects"
@@ -503,7 +482,6 @@ export function createStore(options = {}) {
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
       format: ARTIFACT_FORMAT_SHARED,
-      authority: authorityOf(record),
     }
   }
 
@@ -580,8 +558,6 @@ export function createStore(options = {}) {
       description: trimmedDescription,
       status,
       revision,
-      // Plan publications are authoritative; evidence/review never authorize.
-      authority: kind === "plan" ? AUTHORITY_IMPLEMENTATION : AUTHORITY_HISTORICAL,
       createdAt,
       updatedAt: createdAt,
       history: [{ revision, createdAt, authorSessionID }],
@@ -607,7 +583,6 @@ export function createStore(options = {}) {
       kind: record.kind,
       ownerSessionID: record.ownerSessionID,
       authorSessionID,
-      authority: authorityOf(record),
       snapshot: snapshotPathOf(artifactID, revision),
     }
   }
@@ -800,7 +775,6 @@ export function createStore(options = {}) {
         kind: record.kind,
         ownerSessionID: record.ownerSessionID,
         authorSessionID,
-        authority: authorityOf(record),
         snapshot: snapshotPathOf(artifactID, newRevision),
       }
     })
@@ -889,9 +863,7 @@ export function createStore(options = {}) {
    * displayed content revision under lock, records that exact revision, and
    * regenerates the current frontmatter with status "approved" without changing
    * the content revision. Manual frontmatter edits never authorize or reopen
-   * anything: authorization is this recorded decision. Authority is never
-   * changed here; a plan that is not implementation freezes as a decision and
-   * does not authorize Builder.
+   * anything: authorization is this recorded decision.
    */
   async function approveCore({ artifactID, location, revision, requestID }) {
     assertArtifactID(artifactID)
