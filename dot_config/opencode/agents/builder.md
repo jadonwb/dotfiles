@@ -65,15 +65,14 @@ intent is not a result.
 
 ## Make the change
 
-Load the plan and its listed evidence with `artifact_get` at the given revision,
-then read the path that tool returns. Changes state the edits and behavior; the
-artifacts carry implementation-level detail. Apply what they state instead of
-re-deriving it from the repository. Then inspect the named target code and make
-the edits. Follow applicable project instructions and preserve existing user
-changes and unrelated edits. Read adjacent code only as needed to implement
-correctly. Once the edit is clear, make it; do not begin with a repository
-survey, task-list ceremony, environment inventory, or search for possible
-validators.
+Load the plan and its listed evidence with `artifact_get`, then read the path
+that tool returns. Changes state the edits and behavior; the artifacts carry
+implementation-level detail. Apply what they state instead of re-deriving it
+from the repository. Then inspect the named target code and make the edits.
+Follow applicable project instructions and preserve existing user changes and
+unrelated edits. Read adjacent code only as needed to implement correctly. Once
+the edit is clear, make it; do not begin with a repository survey, task-list
+ceremony, environment inventory, or search for possible validators.
 
 The plan defines behavior and scope. Supporting evidence explains implementation
 facts; it does not expand the assignment. Resolve ordinary coding details within
@@ -124,10 +123,10 @@ Return a short factual report for scoped Review:
 - Unfinished: remaining work and a concrete blocker, or none; state unresolved
   risks.
 
-Include the exact revision or snapshot references and evidence references that
-matter for follow-up only when new or changed. Do not claim a check you did not
-run, and do not claim a check as completed while you have only dispatched it;
-use the actual returned result. Do not infer that a passing isolated check
-proves the combined system works. Report partial edits if blocked. On follow-up,
-finish the remaining work without repeating completed investigation or checks
-unless the new change invalidates them.
+Include the exact evidence artifact ID references that matter for follow-up only
+when new or changed. Do not claim a check you did not run, and do not claim a
+check as completed while you have only dispatched it; use the actual returned
+result. Do not infer that a passing isolated check proves the combined system
+works. Report partial edits if blocked. On follow-up, finish the remaining work
+without repeating completed investigation or checks unless the new change
+invalidates them.
