@@ -1,7 +1,7 @@
 ---
 description: Implements the exact approved plan within its assigned scope.
 mode: primary
-model: deepseek/deepseek-flash#default
+model: opencode/deepseek-flash#default
 permissions:
   - action: pdf_read
     resource: "*"

@@ -1,8 +1,8 @@
 ---
 description: Checks approved changes for correctness and regressions.
 mode: subagent
-model: deepseek/deepseek-flash#max
-steps: 60
+model: opencode/deepseek-flash#max
+steps: 45
 permissions:
   - action: pdf_read
     resource: "*"

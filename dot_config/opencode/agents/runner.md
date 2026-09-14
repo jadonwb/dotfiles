@@ -1,7 +1,7 @@
 ---
 description: Executes bounded commands and operations assigned by a caller.
 mode: subagent
-model: deepseek/deepseek-flash#low
+model: opencode/deepseek-flash#low
 permissions:
   - action: pdf_read
     resource: "*"

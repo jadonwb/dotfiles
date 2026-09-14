@@ -1,7 +1,7 @@
 ---
 description: Answers focused research questions with cited, reusable evidence.
 mode: subagent
-model: deepseek/deepseek-flash#low
+model: opencode/deepseek-flash#low
 steps: 30
 permissions:
   - action: pdf_read
