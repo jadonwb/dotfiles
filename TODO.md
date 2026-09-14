@@ -44,17 +44,6 @@ keymap to toggle subagent panel? or one to open one to close (prefer toggle)
 
 where to find v2 docs?
 
-## put sub-repos in dotfiles
-
-see if I can put my opencode config and neovim config as repositories inside my
-dotfiles, and the target is just the repository, and the run_on_change is just
-pulling the repo?
-
-this lets me track the individual configurations as repositories, but have all
-the files tracked by my dotfiles repo?
-
-also can simplify wezterm sessions to just go to dotfiles only to modify things.
-
 ## yazi as file manager
 
 yazi functionality and plugins to make it a full nautilus replacement for
