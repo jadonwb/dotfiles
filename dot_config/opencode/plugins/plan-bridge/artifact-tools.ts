@@ -20,6 +20,10 @@
 
 import { spawn } from "node:child_process"
 import { resolve as resolvePath } from "node:path"
+import { homedir } from "node:os"
+import { join } from "node:path"
+
+const HOME = homedir()
 
 import { StoreError } from "./store.mjs"
 
@@ -29,8 +33,8 @@ export const ERROR_PREFIX = "ARTIFACT_ERROR"
 // Markdown formatting at the tool boundary
 // ---------------------------------------------------------------------------
 
-const PRETTIER_BINARY = "/home/jadon/.local/share/nvim/mason/bin/prettier"
-const PRETTIER_CONFIG = "/home/jadon/.prettierrc.yaml"
+const PRETTIER_BINARY = join(HOME, ".local/share/nvim/mason/bin/prettier")
+const PRETTIER_CONFIG = join(HOME, ".prettierrc.yaml")
 const PRETTIER_STDIN_FILENAME = "artifact.md"
 
 /**
