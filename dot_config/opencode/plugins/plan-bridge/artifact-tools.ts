@@ -1,76 +1,25 @@
-// Shared artifact tools (shared-markdown): artifact_publish, artifact_get and
-// artifact_patch, plus the compact synthetic-delivery message builders used
-// by the personal.artifacts RPC route in ./index.ts.
+// Shared artifact tools (artifact_publish, artifact_get, artifact_patch) plus
+// the compact synthetic-delivery message builders used by the
+// personal.artifacts RPC route in ./index.ts.
 //
 // Authorization model:
-// - The acting author is always the calling session from the tool execution
-//   context, never a caller-supplied destination.
 // - The owner is the nearest Planner session in the server-assigned session
-//   ancestry (ctx.session.get walks parentID). For a Planner caller that is
-//   the caller itself; when no Planner ancestor is reachable (a standalone
-//   session, such as the unrestricted test agent), the author owns its own
-//   artifact. A patch must additionally match the stored owner, and the store
-//   enforces owner + location equality independently.
-// - Same-location operation only in this increment: every fetched session
-//   must resolve to the plugin instance's location; moved owners fail
-//   visibly.
+//   ancestry (ctx.session.get walks parentID). For a Planner caller that is the
+//   caller itself; when no Planner ancestor is reachable (a standalone session,
+//   such as the unrestricted test agent), the caller owns its own artifact.
+// - A patch must match the stored owner, and the store enforces owner +
+//   location equality independently.
 //
 // Runtime note: this module is plain erasable TypeScript with no package
 // imports, so `node --test` (type stripping) can exercise it directly.
 
-import { spawn } from "node:child_process"
 import { resolve as resolvePath } from "node:path"
-import { homedir } from "node:os"
-import { join } from "node:path"
-
-const HOME = homedir()
 
 import { StoreError } from "./store.mjs"
 
-export const ERROR_PREFIX = "ARTIFACT_ERROR"
+const ERROR_PREFIX = "ARTIFACT_ERROR"
 
-// ---------------------------------------------------------------------------
-// Markdown formatting at the tool boundary
-// ---------------------------------------------------------------------------
-
-const PRETTIER_BINARY = join(HOME, ".local/share/nvim/mason/bin/prettier")
-const PRETTIER_CONFIG = join(HOME, ".prettierrc.yaml")
-const PRETTIER_STDIN_FILENAME = "artifact.md"
-
-/**
- * Format a Markdown body with the pinned Prettier binary before it reaches the
- * store, so the immutable snapshot, current.md and the content revision all
- * cover the same formatted bytes. The store keeps its verbatim-body contract:
- * it receives (and hashes) exactly what this returns. The explicit --config is
- * required because Prettier's config discovery is path-based and would
- * otherwise miss the home config for bodies written under /tmp. A non-zero exit
- * is a visible failure — an unformatted body is never stored silently.
- */
-function formatArtifactBody(body: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(PRETTIER_BINARY, ["--stdin-filepath", PRETTIER_STDIN_FILENAME, "--config", PRETTIER_CONFIG], {
-      stdio: ["pipe", "pipe", "pipe"],
-    })
-    const stdoutChunks: Buffer[] = []
-    const stderrChunks: Buffer[] = []
-    child.stdout?.on("data", (chunk: Buffer) => stdoutChunks.push(chunk))
-    child.stderr?.on("data", (chunk: Buffer) => stderrChunks.push(chunk))
-    child.on("error", (error) => {
-      reject(new Error(`prettier could not be started (${PRETTIER_BINARY}): ${error.message}`))
-    })
-    child.on("close", (code) => {
-      if (code !== 0) {
-        const detail = Buffer.concat(stderrChunks).toString("utf8").trim()
-        reject(new Error(`prettier exited with code ${code}${detail.length > 0 ? `: ${detail}` : ""}`))
-        return
-      }
-      resolve(Buffer.concat(stdoutChunks).toString("utf8"))
-    })
-    child.stdin?.end(body, "utf8")
-  })
-}
-
-export const MAX_ANCESTRY_HOPS = 16
+const MAX_ANCESTRY_HOPS = 16
 
 const PLANNER_AGENT = "planner"
 
@@ -85,22 +34,18 @@ export type SessionLike = {
 
 export type SessionGetter = (input: { sessionID: string }) => Promise<unknown>
 
-export function errorLines(code: string, message: string): string[] {
+function errorLines(code: string, message: string): string[] {
   return [ERROR_PREFIX, `${code}: ${message}`]
 }
 
-export function normalizeAgent(agent: unknown): string | null {
+function normalizeAgent(agent: unknown): string | null {
   if (typeof agent !== "string") return null
   const trimmed = agent.trim().toLowerCase()
   return trimmed.length > 0 ? trimmed : null
 }
 
-/**
- * Normalize a raw session result. The documented plugin adapter resolves to a
- * raw Session.Info; HTTP-style transports may wrap it as {data}. Both are
- * accepted explicitly; anything else is a lookup failure.
- */
-export function unwrapSession(raw: unknown): SessionLike | null {
+/** Normalize a raw session result; HTTP-style transports may wrap it as {data}. */
+function unwrapSession(raw: unknown): SessionLike | null {
   if (raw === null || typeof raw !== "object") return null
   const candidate = raw as Record<string, unknown>
   const inner = candidate.data !== undefined ? candidate.data : candidate
@@ -110,23 +55,20 @@ export function unwrapSession(raw: unknown): SessionLike | null {
   return session as unknown as SessionLike
 }
 
-export type ResolvedSession = { sessionID: string; agent: string | null; parentID: string | null }
+type ResolvedSession = { sessionID: string; agent: string | null; parentID: string | null }
 
 function sameLocation(location: unknown, directory: string): boolean {
   if (location === null || typeof location !== "object") return false
   const raw = (location as Record<string, unknown>).directory
   if (typeof raw !== "string" || raw.length === 0) return false
-  // Logical path normalization only (no filesystem access), matching the
-  // store's resolved-path convention.
   return resolvePath(raw) === resolvePath(directory)
 }
 
 /**
- * Fetch and validate one session: the returned record must carry the
- * requested ID and sit in the plugin instance's location. A missing optional
- * agent field is reported as null — it is never guessed.
+ * Fetch and validate one session: the returned record must carry the requested
+ * ID and sit in the plugin instance's location.
  */
-export async function fetchValidatedSession(deps: { getSession: SessionGetter; directory: string }, sessionID: string): Promise<ResolvedSession> {
+async function fetchValidatedSession(deps: { getSession: SessionGetter; directory: string }, sessionID: string): Promise<ResolvedSession> {
   let raw: unknown
   try {
     raw = await deps.getSession({ sessionID })
@@ -147,23 +89,21 @@ export async function fetchValidatedSession(deps: { getSession: SessionGetter; d
   }
 }
 
-export type Provenance = { ownerSessionID: string; authorSessionID: string; ownerAgent: string | null }
+export type Provenance = { ownerSessionID: string }
 
 /**
  * Resolve the owner for a tool action by walking server-assigned ancestry: the
  * caller itself when it is a Planner, otherwise the nearest Planner ancestor.
- * When no Planner ancestor is reachable (no parent, a cycle, a lookup failure,
- * or the MAX_ANCESTRY_HOPS bound), the author owns its own artifact. The author
- * session is always validated against the plugin location.
+ * When no Planner ancestor is reachable the caller owns its own artifact.
  */
 export async function resolveProvenance(deps: { getSession: SessionGetter; directory: string }, toolContext: ToolContext): Promise<Provenance> {
-  const authorSessionID = toolContext.sessionID
-  const author = await fetchValidatedSession(deps, authorSessionID)
-  if (author.agent === PLANNER_AGENT) {
-    return { ownerSessionID: author.sessionID, authorSessionID, ownerAgent: author.agent }
+  const callerSessionID = toolContext.sessionID
+  const caller = await fetchValidatedSession(deps, callerSessionID)
+  if (caller.agent === PLANNER_AGENT) {
+    return { ownerSessionID: caller.sessionID }
   }
-  const visited = new Set<string>([authorSessionID])
-  let session = author
+  const visited = new Set<string>([callerSessionID])
+  let session = caller
   for (let hop = 0; hop < MAX_ANCESTRY_HOPS && session.parentID; hop += 1) {
     const parentID = session.parentID
     if (visited.has(parentID)) break
@@ -175,11 +115,11 @@ export async function resolveProvenance(deps: { getSession: SessionGetter; direc
       break
     }
     if (parent.agent === PLANNER_AGENT) {
-      return { ownerSessionID: parent.sessionID, authorSessionID, ownerAgent: parent.agent }
+      return { ownerSessionID: parent.sessionID }
     }
     session = parent
   }
-  return { ownerSessionID: authorSessionID, authorSessionID, ownerAgent: author.agent }
+  return { ownerSessionID: callerSessionID }
 }
 
 function formatError(error: unknown): string {
@@ -215,15 +155,11 @@ export function artifactFeedbackMessage(input: {
   kind: string
   title: string
   artifactID: string
-  revision: string
   question?: string | null
   selectedText?: string | null
   selectedRange?: { start: number; end: number } | null
 }): string {
-  const lines: string[] = [
-    `Feedback on ${input.kind} "${truncate(input.title, 120)}"`,
-    `Artifact: ${input.artifactID}@${input.revision}`,
-  ]
+  const lines: string[] = [`Feedback on ${input.kind} "${truncate(input.title, 120)}"`, `Artifact: ${input.artifactID}`]
   if (input.question && input.question.trim().length > 0) {
     lines.push("", `User question: ${input.question.trim()}`)
   }
@@ -237,24 +173,18 @@ export function artifactFeedbackMessage(input: {
   return lines.join("\n")
 }
 
-/**
- * Approval text is one line: delivery status plus the artifact identity. An
- * approved plan is what authorizes Builder for that exact revision.
- */
-export function artifactApprovalMessage(input: { artifactID: string; revision: string }): string {
-  return `approval delivered: ${input.artifactID}@${input.revision}`
+export function artifactApprovalMessage(input: { artifactID: string }): string {
+  return `approval delivered: ${input.artifactID}`
 }
 
 export function artifactDeliveryMetadata(input: {
   artifactID: string
-  revision: string
   requestID: string
   kind: string
   submission: "feedback" | "approval"
 }): Record<string, string> {
   return {
     artifactID: input.artifactID,
-    revision: input.revision,
     requestID: input.requestID,
     kind: input.kind,
     submission: input.submission,
@@ -270,28 +200,12 @@ export type ArtifactSummary = {
   id: string
   kind: string
   title: string
-  description: string | null
-  status: string
-  revision: string
-  path: string
-  ownerSessionID: string
-  authorSessionID: string | null
-  createdAt: string
-  updatedAt: string
-  format: string
-}
-
-export type PatchResult = {
-  artifactID: string
-  path: string
-  revision: string
-  title: string
   description: string
   status: string
-  kind: string
+  path: string
   ownerSessionID: string
-  authorSessionID: string
-  snapshot: string
+  createdAt: string
+  updatedAt: string
 }
 
 export type ArtifactToolDeps = {
@@ -299,23 +213,20 @@ export type ArtifactToolDeps = {
     publishArtifact(input: {
       kind: string
       ownerSessionID: string
-      authorSessionID: string
       location: string
       title: string
       description: string
       body: string
-    }): Promise<PatchResult & { description: string }>
-    getArtifact(input: { artifactID: string; location: string; revision?: string }): Promise<ArtifactSummary & { content: string; requestedRevision: string | null; snapshot: string }>
+    }): Promise<{ artifactID: string } & ArtifactSummary>
+    getArtifact(input: { artifactID: string; location: string }): Promise<ArtifactSummary & { location: string; content: string }>
     patchArtifact(input: {
       artifactID: string
       location: string
       ownerSessionID: string
-      authorSessionID: string
-      expectedRevision: string
       replacements?: { oldText: string; newText: string }[]
       title?: string
       description?: string
-    }): Promise<PatchResult>
+    }): Promise<{ artifactID: string } & ArtifactSummary>
   }
   directory: string
   getSession: SessionGetter
@@ -326,15 +237,14 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     name: "artifact_publish",
     description:
       "Publish a Markdown artifact to the shared artifact registry: kind plan (Planner), evidence (Search), or review (Review). " +
-      "The body is stored verbatim and must not include YAML frontmatter; the tool writes the nine keys. " +
-      "Returns the artifact ID, revision and snapshot reference; the user reviews it in the editor.",
+      "The body is stored verbatim and must not include YAML frontmatter. Returns the artifact ID and the path of the read-only generated view; the user reviews it in the editor.",
     input: {
       type: "object",
       properties: {
         kind: { type: "string", enum: ["plan", "evidence", "review"], description: "Artifact kind; each kind has an allowed role." },
         title: { type: "string", minLength: 1, description: "Short human-readable title." },
         description: { type: "string", minLength: 1, description: "One-sentence description of the artifact." },
-        body: { type: "string", minLength: 1, description: "The complete Markdown body, stored verbatim; must not include YAML frontmatter (the tool writes the nine keys)." },
+        body: { type: "string", minLength: 1, description: "The complete Markdown body, stored verbatim; must not include YAML frontmatter." },
       },
       required: ["kind", "title", "description", "body"],
       additionalProperties: false,
@@ -343,15 +253,13 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     async execute(input: { kind: string; title: string; description: string; body: string }, toolContext: ToolContext) {
       try {
         const provenance = await resolveProvenance(deps, toolContext)
-        const body = await formatArtifactBody(input.body)
         const published = await deps.store.publishArtifact({
           kind: input.kind,
           ownerSessionID: provenance.ownerSessionID,
-          authorSessionID: provenance.authorSessionID,
           location: deps.directory,
           title: input.title,
           description: input.description,
-          body,
+          body: input.body,
         })
         return {
           content: [
@@ -359,8 +267,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
             `Kind: ${published.kind}`,
             `Title: ${published.title}`,
             `Artifact: ${published.artifactID}`,
-            `Revision: ${published.revision}`,
-            `Snapshot: ${published.snapshot}`,
+            `Path: ${published.path}`,
           ].join("\n"),
         }
       } catch (error) {
@@ -372,28 +279,25 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
   editor.add({
     name: "artifact_get",
     description:
-      "Read a shared artifact from the registry: current state by default, or an exact earlier revision when given. " +
-      "Returns the immutable snapshot path for the current state or the requested revision; read that file with the read tool. " +
+      "Read a shared artifact from the registry by ID. Returns the path of the read-only generated view; read that file with the read tool. " +
       "This tool does not inline the Markdown.",
     input: {
       type: "object",
       properties: {
         artifactID: { type: "string", description: "Artifact ID returned by artifact_publish." },
-        revision: { type: "string", description: "Optional exact revision; omit for the current state." },
       },
       required: ["artifactID"],
       additionalProperties: false,
     },
     options: { permission: "artifact_get" },
-    async execute(input: { artifactID: string; revision?: string }, toolContext: ToolContext) {
+    async execute(input: { artifactID: string }, toolContext: ToolContext) {
       try {
         const view = await deps.store.getArtifact({
           artifactID: input.artifactID,
           location: deps.directory,
-          revision: input.revision,
         })
         return {
-          content: ["ARTIFACT", `Snapshot: ${view.snapshot}`].join("\n"),
+          content: ["ARTIFACT", `Path: ${view.path}`].join("\n"),
         }
       } catch (error) {
         return { content: formatError(error) }
@@ -405,12 +309,11 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     name: "artifact_patch",
     description:
       "Revise a shared artifact you are allowed to touch: exact old/new text replacements applied to the body only, plus optional structured title/description updates. " +
-      "Requires the expected revision; matches must be unambiguous; approved plans reject patches. Kind and stored owner must match the caller.",
+      "Matches must be unambiguous; approved plans reject patches. The stored owner must match the caller.",
     input: {
       type: "object",
       properties: {
         artifactID: { type: "string", description: "Artifact ID returned by artifact_publish." },
-        expectedRevision: { type: "string", description: "Revision the patch was prepared against." },
         replacements: {
           type: "array",
           items: {
@@ -424,14 +327,13 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
         title: { type: "string", description: "Optional structured title update." },
         description: { type: "string", description: "Optional structured description update." },
       },
-      required: ["artifactID", "expectedRevision"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     options: { permission: "artifact_patch" },
     async execute(
       input: {
         artifactID: string
-        expectedRevision: string
         replacements?: { oldText: string; newText: string }[]
         title?: string
         description?: string
@@ -444,8 +346,6 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
           artifactID: input.artifactID,
           location: deps.directory,
           ownerSessionID: provenance.ownerSessionID,
-          authorSessionID: provenance.authorSessionID,
-          expectedRevision: input.expectedRevision,
           replacements: input.replacements ?? [],
           title: input.title,
           description: input.description,
@@ -456,8 +356,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
             `Kind: ${patched.kind}`,
             `Title: ${patched.title}`,
             `Artifact: ${patched.artifactID}`,
-            `Revision: ${patched.revision}`,
-            `Snapshot: ${patched.snapshot}`,
+            `Path: ${patched.path}`,
           ].join("\n"),
         }
       } catch (error) {

@@ -1,30 +1,22 @@
 // Plan-bridge registry: a Node-compatible, filesystem-backed store for
 // Markdown artifacts exchanged between sessions and the Neovim client.
 //
-// One document format: shared-markdown (`art_` IDs), the frontmatter format
-// in ./format.mjs, with kinds plan|evidence|review, owner = Planner session,
-// per-revision author provenance, and lean history metadata that references
-// immutable snapshot files instead of embedding content. Served by
-// `artifact_publish/get/patch` and `personal.artifacts`.
+// Each artifact is one authoritative record (record.json) holding the verbatim
+// body, plus one generated read-only view (current.md) rendered by ./format.mjs.
+// Artifacts are matched, fetched, patched, and addressed by ID only; there is no
+// revision history.
 //
 // Design rules:
 // - All paths are derived internally from the store root plus generated IDs;
 //   callers never supply filesystem paths.
 // - Every lookup is scoped to the location recorded on the artifact; a
-//   mismatched location is reported as not found so existence never leaks
-//   across locations.
-// - record.json inside each artifact directory is the authoritative registry
-//   record. It is replaced atomically (temp file + rename) and is always the
-//   last file written by a mutation. Derived files (current.md, snapshots)
-//   are written first, so an interrupted write is reconciled from the record:
-//   shared-markdown regenerates current.md from the committed snapshot and
-//   lifecycle state. A missing snapshot is unrecoverable data loss and fails
-//   visibly; the store never fabricates content.
+//   mismatched location is reported as not found.
+// - record.json is authoritative and written last. The derived view is written
+//   first, so an interrupted write is repairable: the view is regenerated from
+//   the record.
 // - Mutations serialize on an exclusive per-artifact lock file. An existing
-//   lock is reported (lock_conflict), never silently bypassed. A lock left by
-//   a crashed process is stale-lock recoverable by hand (remove the file);
-//   the next mutation reconciles derived files from the record, so no record
-//   is discarded.
+//   lock is reported (lock_conflict), never silently bypassed. A stale lock is
+//   removed by hand; the record is intact.
 // - Pure Node (node:*) so `node --test` can exercise it without Bun.
 
 import { randomBytes } from "node:crypto"
@@ -32,22 +24,12 @@ import { chmod, mkdir, open, readFile, readdir, rename, unlink } from "node:fs/p
 import { homedir } from "node:os"
 import { basename, dirname, isAbsolute, join, resolve as resolvePath } from "node:path"
 
-import {
-  ARTIFACT_KINDS,
-  ARTIFACT_STATUSES,
-  canonicalRevision,
-  documentRevision,
-  parseDocument,
-  serializeDocument,
-} from "./format.mjs"
+import { renderView } from "./format.mjs"
 
 const DIR_MODE = 0o700
 const FILE_MODE = 0o600
-const SNAPSHOT_MODE = 0o400
 
-const SHARED_ID_PATTERN = /^art_[a-f0-9]{8}$/
 const ARTIFACT_ID_PATTERN = /^art_[a-f0-9]{8}$/
-const REVISION_PATTERN = /^[a-f0-9]{8}$/
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{7,127}$/
 
 const MAX_MARKDOWN_LENGTH = 2_000_000
@@ -59,8 +41,8 @@ const MAX_QUESTION_BYTES = 16 * 1024
 /** User-selected excerpt limit (UTF-8 bytes). */
 const MAX_SELECTION_BYTES = 64 * 1024
 
-/** Format marker of shared-markdown files: see ./format.mjs. */
-const ARTIFACT_FORMAT_SHARED = "shared-markdown"
+export const ARTIFACT_KINDS = Object.freeze(["plan", "evidence", "review"])
+export const ARTIFACT_STATUSES = Object.freeze(["draft", "published", "approved"])
 
 /** Error with a stable machine-readable code used by tools and RPC handlers. */
 export class StoreError extends Error {
@@ -119,12 +101,6 @@ function assertArtifactID(artifactID) {
   }
 }
 
-function assertRevision(revision) {
-  if (typeof revision !== "string" || !REVISION_PATTERN.test(revision)) {
-    throw new StoreError("validation", `revision must match ${REVISION_PATTERN}`)
-  }
-}
-
 function assertRequestID(requestID) {
   if (typeof requestID !== "string" || !REQUEST_ID_PATTERN.test(requestID)) {
     throw new StoreError("validation", `requestID must match ${REQUEST_ID_PATTERN}`)
@@ -145,35 +121,34 @@ function serializeRecord(record) {
   return JSON.stringify(record, null, 2) + "\n"
 }
 
-/**
- * The seven identity/descriptive header fields of a shared artifact, keyed
- * exactly as in ./format.mjs. These (plus the body) are the content revision
- * hash input; updated_at and status are excluded.
- */
-function sharedIdentity({ id, kind, title, description, ownerSessionID, authorSessionID, createdAt }) {
-  return {
-    id,
-    kind,
-    title,
-    description,
-    owner_session_id: ownerSessionID,
-    author_session_id: authorSessionID,
-    created_at: createdAt,
-  }
+/** The four displayed fields of the generated view. */
+function viewHeaderOf(record) {
+  return { id: record.id, kind: record.kind, status: record.status, title: record.title }
 }
 
-function sharedHeaderOf(record, authorSessionID, updatedAt, status) {
-  return {
-    id: record.id,
-    kind: record.kind,
-    title: record.title,
-    description: record.description,
-    owner_session_id: record.ownerSessionID,
-    author_session_id: authorSessionID,
-    created_at: record.createdAt,
-    updated_at: updatedAt,
-    status,
+function validateRecord(record, artifactID) {
+  if (record === null || typeof record !== "object" || Array.isArray(record)) return "record must be an object"
+  if (record.id !== artifactID) return "record id does not match directory"
+  if (typeof record.id !== "string" || !ARTIFACT_ID_PATTERN.test(record.id)) return "invalid artifact id"
+  if (typeof record.kind !== "string" || !ARTIFACT_KINDS.includes(record.kind)) return "invalid kind"
+  if (typeof record.ownerSessionID !== "string" || record.ownerSessionID.length === 0) return "missing ownerSessionID"
+  if (typeof record.location !== "string" || record.location.length === 0) return "missing location"
+  if (typeof record.title !== "string" || record.title.length === 0) return "missing title"
+  if (typeof record.description !== "string" || record.description.length === 0) return "missing description"
+  if (typeof record.status !== "string" || !ARTIFACT_STATUSES.includes(record.status)) return "invalid status"
+  if (typeof record.body !== "string" || record.body.length === 0) return "missing body"
+  if (typeof record.createdAt !== "string" || record.createdAt.length === 0) return "missing createdAt"
+  if (typeof record.updatedAt !== "string" || record.updatedAt.length === 0) return "missing updatedAt"
+  if (!Array.isArray(record.feedback)) return "feedback must be an array"
+  for (const entry of record.feedback) {
+    if (!entry || typeof entry !== "object") return "feedback entries must be objects"
+    if (typeof entry.requestID !== "string" || !REQUEST_ID_PATTERN.test(entry.requestID)) return "invalid feedback requestID"
+    if (!entry.delivery || typeof entry.delivery.state !== "string") return "feedback entry missing delivery state"
   }
+  if (record.approval !== null && (typeof record.approval !== "object" || !record.approval || typeof record.approval.requestID !== "string")) {
+    return "invalid approval"
+  }
+  return null
 }
 
 /**
@@ -197,10 +172,6 @@ export function createStore(options = {}) {
   }
   function currentPathOf(artifactID) {
     return join(artifactDirOf(artifactID), "current.md")
-  }
-  // Snapshot file names are the bare revision.
-  function snapshotPathOf(artifactID, revision) {
-    return join(artifactDirOf(artifactID), "revisions", revision + ".md")
   }
   function lockPathOf(artifactID) {
     return join(artifactDirOf(artifactID), "lock")
@@ -249,66 +220,6 @@ export function createStore(options = {}) {
     await syncDirectory(dir)
   }
 
-  /**
-   * Exclusive create (wx). For immutable snapshots that already exist with
-   * identical bytes this is a reuse, not a conflict; differing bytes are an
-   * integrity error.
-   */
-  async function writeFileExclusive(target, data, mode) {
-    try {
-      const handle = await open(target, "wx", mode)
-      try {
-        await handle.writeFile(data, "utf8")
-        await handle.sync()
-      } finally {
-        await handle.close()
-      }
-      await syncDirectory(dirname(target))
-      return true
-    } catch (error) {
-      if (error.code !== "EEXIST") throw error
-      const existing = await readFile(target, "utf8")
-      if (existing !== data) {
-        throw new StoreError("io", `Immutable file already exists with different content: ${target}`)
-      }
-      return false
-    }
-  }
-
-  function validateRecord(record, artifactID) {
-    if (record === null || typeof record !== "object" || Array.isArray(record)) return "record must be an object"
-    if (record.id !== artifactID) return "record id does not match directory"
-    if (typeof record.id !== "string" || !SHARED_ID_PATTERN.test(record.id)) return "invalid artifact id"
-    if (typeof record.kind !== "string" || !ARTIFACT_KINDS.includes(record.kind)) return "invalid kind"
-    if (typeof record.ownerSessionID !== "string" || record.ownerSessionID.length === 0) return "missing ownerSessionID"
-    if (typeof record.location !== "string" || record.location.length === 0) return "missing location"
-    if (typeof record.title !== "string" || record.title.length === 0) return "missing title"
-    if (typeof record.description !== "string" || record.description.length === 0) return "missing description"
-    if (typeof record.status !== "string" || !ARTIFACT_STATUSES.includes(record.status)) return "invalid status"
-    if (typeof record.revision !== "string" || !REVISION_PATTERN.test(record.revision)) return "invalid revision"
-    if (typeof record.createdAt !== "string" || record.createdAt.length === 0) return "missing createdAt"
-    if (typeof record.updatedAt !== "string" || record.updatedAt.length === 0) return "missing updatedAt"
-    if (!Array.isArray(record.history) || record.history.length === 0) return "history must be a non-empty array"
-    for (const entry of record.history) {
-      if (!entry || typeof entry !== "object") return "history entries must be objects"
-      if (typeof entry.revision !== "string" || !REVISION_PATTERN.test(entry.revision)) return "invalid history revision"
-      if (typeof entry.createdAt !== "string" || entry.createdAt.length === 0) return "history entry missing createdAt"
-      if (typeof entry.authorSessionID !== "string" || entry.authorSessionID.length === 0) return "history entry missing authorSessionID"
-      if ("content" in entry) return "history entries reference snapshots and must not embed content"
-    }
-    if (!Array.isArray(record.feedback)) return "feedback must be an array"
-    for (const entry of record.feedback) {
-      if (!entry || typeof entry !== "object") return "feedback entries must be objects"
-      if (typeof entry.requestID !== "string" || !REQUEST_ID_PATTERN.test(entry.requestID)) return "invalid feedback requestID"
-      if (typeof entry.revision !== "string" || !REVISION_PATTERN.test(entry.revision)) return "invalid feedback revision"
-      if (!entry.delivery || typeof entry.delivery.state !== "string") return "feedback entry missing delivery state"
-    }
-    if (record.approval !== null && (typeof record.approval !== "object" || !record.approval || typeof record.approval.requestID !== "string")) {
-      return "invalid approval"
-    }
-    return null
-  }
-
   async function readRecord(artifactID) {
     let raw
     try {
@@ -328,95 +239,30 @@ export function createStore(options = {}) {
     return record
   }
 
+  /** Rewrite the derived view from the record (repairs an interrupted write). */
+  async function writeCurrentView(artifactID, record) {
+    const rendered = await renderView(viewHeaderOf(record), record.body)
+    await writeFileAtomic(currentPathOf(artifactID), rendered, FILE_MODE)
+    return rendered
+  }
+
   /**
-   * Read and integrity-check one authoritative shared-markdown snapshot. A missing
-   * or corrupt snapshot is visible data loss, never fabricated content.
+   * Return the view derived from the authoritative record, reconciling a stale
+   * or missing current.md so reads can never serve bytes that disagree with the
+   * record (for example after an interrupted view-first/record-last update).
    */
-  async function readSharedSnapshot(artifactID, entry) {
-    const path = snapshotPathOf(artifactID, entry.revision)
-    let text
-    try {
-      text = await readFile(path, "utf8")
-    } catch (error) {
-      if (error.code === "ENOENT") {
-        throw new StoreError(
-          "io",
-          `Authoritative snapshot for revision ${entry.revision} is missing: ${path}; the record cannot be served without it`,
-          { revision: entry.revision, path },
-        )
-      }
-      throw error
-    }
-    let parsed
-    try {
-      parsed = parseDocument(text)
-    } catch (error) {
-      throw new StoreError("io", `Snapshot for revision ${entry.revision} is not a valid shared artifact document: ${error.message}`, {
-        revision: entry.revision,
-        path,
-      })
-    }
-    const actual = canonicalRevision(parsed.header, parsed.body)
-    if (actual !== entry.revision) {
-      throw new StoreError("io", `Snapshot for revision ${entry.revision} does not match its recorded digest (found ${actual}): ${path}`, {
-        revision: entry.revision,
-        path,
-        actual,
-      })
-    }
-    return { text, body: parsed.body }
-  }
-
-  /** Derive the current document of a shared-markdown record from committed state. */
-  async function derivedCurrentDocument(artifactID, record) {
-    const current = record.history[record.history.length - 1]
-    const snapshot = await readSharedSnapshot(artifactID, current)
-    const header = sharedHeaderOf(record, current.authorSessionID, record.updatedAt, record.status)
-    return serializeDocument(header, snapshot.body)
-  }
-
-  /** Rewrite current.md from the committed revision and lifecycle state. */
-  async function rewriteCurrentFromRecord(artifactID, record) {
-    const derived = await derivedCurrentDocument(artifactID, record)
+  async function readCurrentView(artifactID, record) {
+    const rendered = await renderView(viewHeaderOf(record), record.body)
     let existing = null
     try {
       existing = await readFile(currentPathOf(artifactID), "utf8")
     } catch (error) {
       if (error.code !== "ENOENT") throw error
     }
-    if (existing !== derived) {
-      await writeFileAtomic(currentPathOf(artifactID), derived, FILE_MODE)
+    if (existing !== rendered) {
+      await writeFileAtomic(currentPathOf(artifactID), rendered, FILE_MODE)
     }
-  }
-
-  async function listSnapshotNames(artifactID) {
-    try {
-      return await readdir(join(artifactDirOf(artifactID), "revisions"))
-    } catch (error) {
-      if (error.code === "ENOENT") return []
-      throw error
-    }
-  }
-
-  /**
-   * Derived-file repair. Must be called while holding the artifact lock (or
-   * before the record exists at publish time). The record is authoritative:
-   * current.md is rewritten whenever its bytes differ from the record's
-   * committed state, and missing snapshots are reported as unrecoverable data
-   * loss.
-   */
-  async function reconcileDerived(artifactID, record) {
-    const names = await listSnapshotNames(artifactID)
-    for (const entry of record.history) {
-      if (!names.includes(entry.revision + ".md")) {
-        throw new StoreError(
-          "io",
-          `Authoritative snapshot for revision ${entry.revision} is missing: ${snapshotPathOf(artifactID, entry.revision)}`,
-          { revision: entry.revision, path: snapshotPathOf(artifactID, entry.revision) },
-        )
-      }
-    }
-    await rewriteCurrentFromRecord(artifactID, record)
+    return rendered
   }
 
   /**
@@ -466,55 +312,39 @@ export function createStore(options = {}) {
     return record
   }
 
-  /** Generic summary: shared-markdown as stored. */
   function artifactSummaryOf(record) {
-    const current = record.history[record.history.length - 1]
     return {
       id: record.id,
       kind: record.kind,
       title: record.title,
       description: record.description,
       status: record.status,
-      revision: record.revision,
       path: currentPathOf(record.id),
       ownerSessionID: record.ownerSessionID,
-      authorSessionID: current.authorSessionID,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
-      format: ARTIFACT_FORMAT_SHARED,
     }
   }
 
-  /** Generic view; `content` is supplied by the caller. */
-  function artifactViewOf(record, content, requestedRevision, snapshot) {
+  function artifactViewOf(record, content) {
     return {
       ...artifactSummaryOf(record),
       location: record.location,
       content,
-      requestedRevision: requestedRevision ?? null,
-      snapshot,
-      revisions: record.history.map((entry) => ({
-        revision: entry.revision,
-        createdAt: entry.createdAt,
-        authorSessionID: entry.authorSessionID ?? null,
-        snapshot: snapshotPathOf(record.id, entry.revision),
-      })),
       feedback: record.feedback,
       approval: record.approval,
     }
   }
 
   /**
-   * Publish a shared-markdown artifact. The body is supplied separately and
-   * stored verbatim behind the frontmatter (no H1 is inserted); identity,
-   * kind, owner and timestamps are tool-managed.
+   * Publish an artifact. The body is stored verbatim; the generated view is a
+   * Prettier-formatted rendering of the minimal frontmatter plus that body.
    */
-  async function publishArtifact({ kind, ownerSessionID, authorSessionID, location, title, description, body }) {
+  async function publishArtifact({ kind, ownerSessionID, location, title, description, body }) {
     if (typeof kind !== "string" || !ARTIFACT_KINDS.includes(kind)) {
       throw new StoreError("validation", "kind must be one of plan, evidence, review", { kind })
     }
     assertNonEmptyString(ownerSessionID, "ownerSessionID", MAX_SESSION_LENGTH)
-    assertNonEmptyString(authorSessionID, "authorSessionID", MAX_SESSION_LENGTH)
     const normalizedLocation = normalizeLocation(location)
     assertNonEmptyString(title, "title", MAX_TITLE_LENGTH)
     assertNonEmptyString(description, "description", MAX_DESCRIPTION_LENGTH)
@@ -534,21 +364,6 @@ export function createStore(options = {}) {
     const createdAt = nowISO()
     // Plans start draft; evidence and reviews start published.
     const status = kind === "plan" ? "draft" : "published"
-    const revision = canonicalRevision(
-      sharedIdentity({ id: artifactID, kind, title: trimmedTitle, description: trimmedDescription, ownerSessionID, authorSessionID, createdAt }),
-      body,
-    )
-    const snapshotDocument = serializeDocument(
-      {
-        ...sharedIdentity({ id: artifactID, kind, title: trimmedTitle, description: trimmedDescription, ownerSessionID, authorSessionID, createdAt }),
-        updated_at: createdAt,
-        status,
-      },
-      body,
-    )
-    if (documentRevision(snapshotDocument) !== revision) {
-      throw new StoreError("io", "generated snapshot does not match its revision")
-    }
     const record = {
       id: artifactID,
       kind,
@@ -557,37 +372,23 @@ export function createStore(options = {}) {
       title: trimmedTitle,
       description: trimmedDescription,
       status,
-      revision,
       createdAt,
       updatedAt: createdAt,
-      history: [{ revision, createdAt, authorSessionID }],
+      body,
       feedback: [],
       approval: null,
     }
 
-    // Commit order: derived files first, the authoritative record last.
+    // Commit order: the derived view first, the authoritative record last.
     await mkdir(artifactDirOf(artifactID), { recursive: true, mode: DIR_MODE })
     await chmod(artifactDirOf(artifactID), DIR_MODE).catch(() => {})
-    await mkdir(dirname(snapshotPathOf(artifactID, revision)), { recursive: true, mode: DIR_MODE })
-    await writeFileExclusive(snapshotPathOf(artifactID, revision), snapshotDocument, SNAPSHOT_MODE)
-    await writeFileAtomic(currentPathOf(artifactID), snapshotDocument, FILE_MODE)
+    await writeCurrentView(artifactID, record)
     await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
 
-    return {
-      artifactID,
-      path: currentPathOf(artifactID),
-      revision,
-      title: record.title,
-      description: record.description,
-      status: record.status,
-      kind: record.kind,
-      ownerSessionID: record.ownerSessionID,
-      authorSessionID,
-      snapshot: snapshotPathOf(artifactID, revision),
-    }
+    return { artifactID, ...artifactSummaryOf(record) }
   }
 
-  /** Generic list: every visible artifact; record metadata only, no snapshot reads. */
+  /** Every visible artifact for the location; record metadata only. */
   async function listArtifacts({ location }) {
     const normalizedLocation = normalizeLocation(location)
     await ensureDirectories()
@@ -603,55 +404,26 @@ export function createStore(options = {}) {
     return summaries
   }
 
-  /** Record-only generic summary (no snapshot reads); used for authz decisions. */
-  async function describeArtifact({ artifactID, location }) {
+  /** The latest view of one artifact, addressed by ID only. */
+  async function getArtifact({ artifactID, location }) {
     assertArtifactID(artifactID)
     const normalizedLocation = normalizeLocation(location)
     await ensureDirectories()
     const record = await loadScoped(artifactID, normalizedLocation, { label: "artifact" })
-    return { ...artifactSummaryOf(record), location: record.location }
+    const content = await readCurrentView(artifactID, record)
+    return artifactViewOf(record, content)
   }
 
   /**
-   * Generic get: current state, or the exact earlier revision when one is
-   * requested. Earlier shared-markdown content comes from the immutable snapshot
-   * (creation-time status header); current shared-markdown content is derived from
-   * the committed revision and lifecycle state.
+   * Apply unambiguous body replacements and optional structured title/description
+   * updates. The base is the verbatim body stored in the record, so an agent can
+   * patch exactly the bytes it supplied without rereading the formatted view.
+   * The stored owner must match the caller; approved plans reject patches.
    */
-  async function getArtifact({ artifactID, location, revision }) {
-    assertArtifactID(artifactID)
-    const normalizedLocation = normalizeLocation(location)
-    if (revision !== undefined && revision !== null) assertRevision(revision)
-    await ensureDirectories()
-    const record = await loadScoped(artifactID, normalizedLocation, { label: "artifact" })
-    if (revision === undefined || revision === null) {
-      const content = await derivedCurrentDocument(artifactID, record)
-      return artifactViewOf(record, content, null, snapshotPathOf(artifactID, record.revision))
-    }
-    const entry = record.history.find((candidate) => candidate.revision === revision)
-    if (!entry) {
-      throw new StoreError("not_found", `Artifact ${artifactID} has no revision ${revision}`, { artifactID, revision })
-    }
-    const content = (await readSharedSnapshot(artifactID, entry)).text
-    return {
-      ...artifactViewOf(record, content, revision, snapshotPathOf(artifactID, revision)),
-      revision,
-    }
-  }
-
-  /**
-   * Shared-markdown patch: applies unambiguous replacements to the body only and
-   * optionally updates title/description through explicit structured fields
-   * (never frontmatter text edits). Identity, kind, owner and timestamps are
-   * tool-managed; the acting author is recorded on the new revision. The
-   * expected revision guards against stale patches.
-   */
-  async function patchArtifact({ artifactID, location, ownerSessionID, authorSessionID, expectedRevision, replacements = [], title, description }) {
+  async function patchArtifact({ artifactID, location, ownerSessionID, replacements = [], title, description }) {
     assertArtifactID(artifactID)
     const normalizedLocation = normalizeLocation(location)
     assertNonEmptyString(ownerSessionID, "ownerSessionID", MAX_SESSION_LENGTH)
-    assertNonEmptyString(authorSessionID, "authorSessionID", MAX_SESSION_LENGTH)
-    assertRevision(expectedRevision)
     if (!Array.isArray(replacements)) {
       throw new StoreError("validation", "replacements must be an array of {oldText, newText}")
     }
@@ -689,26 +461,10 @@ export function createStore(options = {}) {
         )
       }
       if (record.status === "approved") {
-        throw new StoreError("approved", "This artifact is approved; patches are rejected", {
-          artifactID,
-          revision: record.revision,
-        })
-      }
-      if (record.revision !== expectedRevision) {
-        throw new StoreError(
-          "stale_revision",
-          `Expected revision ${expectedRevision} does not match the current revision ${record.revision}`,
-          { expected: expectedRevision, current: record.revision },
-        )
+        throw new StoreError("approved", "This artifact is approved; patches are rejected", { artifactID })
       }
 
-      // Repair derived files first: an interrupted earlier write must not
-      // leak into the patched content. A missing authoritative snapshot
-      // fails here instead of fabricating a base.
-      await reconcileDerived(artifactID, record)
-
-      const currentEntry = record.history[record.history.length - 1]
-      let body = (await readSharedSnapshot(artifactID, currentEntry)).body
+      let body = record.body
       for (let index = 0; index < replacements.length; index += 1) {
         const { oldText, newText } = replacements[index]
         const occurrences = countOccurrences(body, oldText)
@@ -732,70 +488,38 @@ export function createStore(options = {}) {
       const newDescription = hasDescription ? description.trim() : record.description
       if (newTitle.length === 0) throw new StoreError("validation", "title must not be empty")
       if (newDescription.length === 0) throw new StoreError("validation", "description must not be empty")
-
-      const createdAt = nowISO()
-      const identity = sharedIdentity({
-        id: record.id,
-        kind: record.kind,
-        title: newTitle,
-        description: newDescription,
-        ownerSessionID: record.ownerSessionID,
-        authorSessionID,
-        createdAt: record.createdAt,
-      })
-      const newRevision = canonicalRevision(identity, body)
-      if (record.history.some((entry) => entry.revision === newRevision)) {
-        throw new StoreError("patch_conflict", "The patch produces content identical to an existing revision; no change was recorded", {
-          revision: newRevision,
-        })
+      // The record requires a non-empty body; reject before writing either file
+      // so a whole-body deletion cannot leave an unreadable record behind.
+      if (body.length === 0) {
+        throw new StoreError("validation", "a patch must not empty the artifact body", { artifactID })
       }
 
-      const snapshotDocument = serializeDocument({ ...identity, updated_at: createdAt, status: record.status }, body)
-      if (documentRevision(snapshotDocument) !== newRevision) {
-        throw new StoreError("io", "generated snapshot does not match its revision")
-      }
-
-      // Commit order: snapshot, derived current file, authoritative record last.
-      await writeFileExclusive(snapshotPathOf(artifactID, newRevision), snapshotDocument, SNAPSHOT_MODE)
-      record.revision = newRevision
-      record.history.push({ revision: newRevision, createdAt, authorSessionID })
+      record.body = body
       if (hasTitle) record.title = newTitle
       if (hasDescription) record.description = newDescription
-      record.updatedAt = createdAt
-      await writeFileAtomic(currentPathOf(artifactID), snapshotDocument, FILE_MODE)
+      record.updatedAt = nowISO()
+
+      // Commit order: the derived view first, the authoritative record last.
+      await writeCurrentView(artifactID, record)
       await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
 
-      return {
-        artifactID,
-        path: currentPathOf(artifactID),
-        revision: newRevision,
-        title: record.title,
-        description: record.description,
-        status: record.status,
-        kind: record.kind,
-        ownerSessionID: record.ownerSessionID,
-        authorSessionID,
-        snapshot: snapshotPathOf(artifactID, newRevision),
-      }
+      return { artifactID, ...artifactSummaryOf(record) }
     })
   }
 
   /**
-   * Feedback core. Byte limits are enforced before anything is recorded,
-   * request IDs deduplicate, and stale displayed revisions are rejected.
+   * Feedback core. Byte limits are enforced before anything is recorded and
+   * request IDs deduplicate.
    */
-  async function addFeedbackCore({ artifactID, location, revision, requestID, question, selectedText, selectedRange }) {
+  async function addArtifactFeedback({ artifactID, location, requestID, question, selectedText, selectedRange }) {
     assertArtifactID(artifactID)
     const normalizedLocation = normalizeLocation(location)
-    assertRevision(revision)
     assertRequestID(requestID)
     const hasQuestion = typeof question === "string" && question.trim().length > 0
     const hasSelection = typeof selectedText === "string" && selectedText.length > 0
     if (!hasQuestion && !hasSelection) {
       throw new StoreError("validation", "feedback requires a question or a selected excerpt")
     }
-    // Enforced before recording or delivery: oversized input leaves no
-    // submission behind.
     if (hasQuestion && Buffer.byteLength(question, "utf8") > MAX_QUESTION_BYTES) {
       throw new StoreError("validation", `question must be at most ${MAX_QUESTION_BYTES} UTF-8 bytes`, {
         limit: MAX_QUESTION_BYTES,
@@ -823,28 +547,13 @@ export function createStore(options = {}) {
     await ensureDirectories()
     return withLock(artifactID, async () => {
       const record = await loadScoped(artifactID, normalizedLocation)
-      const summarize = () => artifactSummaryOf(record)
       const existing = record.feedback.find((entry) => entry.requestID === requestID)
       if (existing) {
-        return {
-          requestID,
-          deduplicated: true,
-          delivery: existing.delivery,
-          feedback: existing,
-          summary: summarize(),
-        }
-      }
-      if (revision !== record.revision) {
-        throw new StoreError(
-          "stale_revision",
-          `Displayed revision ${revision} does not match the current revision ${record.revision}; refresh the plan and retry`,
-          { displayed: revision, current: record.revision },
-        )
+        return { requestID, deduplicated: true, delivery: existing.delivery, feedback: existing, artifact: artifactSummaryOf(record) }
       }
       const createdAt = nowISO()
       const entry = {
         requestID,
-        revision,
         question: hasQuestion ? question : null,
         selectedText: hasSelection ? selectedText : null,
         selectedRange: hasSelection && selectedRange ? selectedRange : null,
@@ -854,21 +563,17 @@ export function createStore(options = {}) {
       record.feedback.push(entry)
       record.updatedAt = createdAt
       await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
-      return { requestID, deduplicated: false, delivery: entry.delivery, feedback: entry, summary: summarize() }
+      return { requestID, deduplicated: false, delivery: entry.delivery, feedback: entry, artifact: artifactSummaryOf(record) }
     })
   }
 
   /**
-   * Approval core. Only plan artifacts can be approved. Approval validates the
-   * displayed content revision under lock, records that exact revision, and
-   * regenerates the current frontmatter with status "approved" without changing
-   * the content revision. Manual frontmatter edits never authorize or reopen
-   * anything: authorization is this recorded decision.
+   * Approval core. Only plan artifacts can be approved. An existing approval is
+   * the recorded decision and is never replaced; a repeated approval returns it.
    */
-  async function approveCore({ artifactID, location, revision, requestID }) {
+  async function approveArtifact({ artifactID, location, requestID }) {
     assertArtifactID(artifactID)
     const normalizedLocation = normalizeLocation(location)
-    assertRevision(revision)
     assertRequestID(requestID)
 
     await ensureDirectories()
@@ -880,57 +585,32 @@ export function createStore(options = {}) {
           kind: record.kind,
         })
       }
-      const summarize = () => artifactSummaryOf(record)
       if (record.approval) {
-        if (record.approval.revision === revision) {
-          // The decision for this exact revision is already recorded; a second
-          // approval never replaces it and never re-records under a new ID.
-          return {
-            requestID: record.approval.requestID,
-            deduplicated: true,
-            delivery: record.approval.delivery,
-            approval: record.approval,
-            summary: summarize(),
-          }
+        return {
+          requestID: record.approval.requestID,
+          deduplicated: true,
+          delivery: record.approval.delivery,
+          approval: record.approval,
+          artifact: artifactSummaryOf(record),
         }
-        throw new StoreError(
-          "stale_revision",
-          `This plan is already approved at revision ${record.approval.revision}; the displayed revision ${revision} is not the approved one`,
-          { displayed: revision, current: record.revision },
-        )
-      }
-      if (revision !== record.revision) {
-        throw new StoreError(
-          "stale_revision",
-          `Displayed revision ${revision} does not match the current revision ${record.revision}; refresh the plan and retry`,
-          { displayed: revision, current: record.revision },
-        )
       }
       const createdAt = nowISO()
-      const approval = {
-        requestID,
-        revision,
-        delivery: freshDelivery(),
-        createdAt,
-      }
+      const approval = { requestID, delivery: freshDelivery(), createdAt }
       record.approval = approval
       record.status = "approved"
       record.updatedAt = createdAt
-      // Regenerate the displayed frontmatter from lifecycle state. The content
-      // revision is unchanged: updated_at and status are excluded from the
-      // canonical hash.
-      await rewriteCurrentFromRecord(artifactID, record)
+      await writeCurrentView(artifactID, record)
       await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
-      return { requestID, deduplicated: false, delivery: approval.delivery, approval, summary: summarize() }
+      return { requestID, deduplicated: false, delivery: approval.delivery, approval, artifact: artifactSummaryOf(record) }
     })
   }
 
   /**
-   * Delivery-bookkeeping core. The recorded decision (feedback entry or
-   * approval) is never altered by delivery bookkeeping: a failed notification
-   * keeps the decision and can be retried explicitly with the same requestID.
+   * Delivery bookkeeping. The recorded decision is never altered by delivery
+   * bookkeeping: a failed notification keeps the decision and can be retried
+   * explicitly with the same requestID.
    */
-  async function markDeliveryCore({ artifactID, location, requestID, state, error }) {
+  async function markArtifactDelivery({ artifactID, location, requestID, state, error }) {
     assertArtifactID(artifactID)
     const normalizedLocation = normalizeLocation(location)
     assertRequestID(requestID)
@@ -941,7 +621,6 @@ export function createStore(options = {}) {
     await ensureDirectories()
     return withLock(artifactID, async () => {
       const record = await loadScoped(artifactID, normalizedLocation)
-      const summarize = () => artifactSummaryOf(record)
       let kind = null
       let entry = record.feedback.find((candidate) => candidate.requestID === requestID)
       if (entry) {
@@ -966,33 +645,15 @@ export function createStore(options = {}) {
       }
       record.updatedAt = now
       await writeFileAtomic(recordPathOf(artifactID), serializeRecord(record), FILE_MODE)
-      return { requestID, kind, delivery: entry.delivery, summary: summarize() }
+      return { requestID, kind, delivery: entry.delivery, artifact: artifactSummaryOf(record) }
     })
-  }
-
-  // Generic shared-artifact surface (shared-markdown records).
-  async function addArtifactFeedback(args) {
-    const result = await addFeedbackCore(args)
-    return { requestID: result.requestID, deduplicated: result.deduplicated, delivery: result.delivery, feedback: result.feedback, artifact: result.summary }
-  }
-
-  async function approveArtifact(args) {
-    const result = await approveCore(args)
-    return { requestID: result.requestID, deduplicated: result.deduplicated, delivery: result.delivery, approval: result.approval, artifact: result.summary }
-  }
-
-  async function markArtifactDelivery(args) {
-    const result = await markDeliveryCore(args)
-    return { requestID: result.requestID, kind: result.kind, delivery: result.delivery, artifact: result.summary }
   }
 
   return {
     root,
-    // Shared artifact surface (shared-markdown).
     publishArtifact,
     listArtifacts,
     getArtifact,
-    describeArtifact,
     patchArtifact,
     addArtifactFeedback,
     approveArtifact,

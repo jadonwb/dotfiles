@@ -1,13 +1,11 @@
-// Typed RPC contract for shared artifacts (shared-markdown).
+// Typed RPC contract for shared artifacts.
 // Contract module only: no registration and no I/O here. The HTTP surface is
 // POST /api/rpc/personal.artifacts/<method> with {input} -> {output}; the
 // `location` deepObject query selects the registered instance.
 //
 // Runtime note (v2.0.3): a plain structural object with `events: {}` is
 // required (the documented `@opencode/plugin/rpc` import does not resolve for
-// local dir plugins on this build). Outputs use `artifacts`/`artifact` and
-// include kind, description, provenance, snapshot references and delivery
-// summaries.
+// local dir plugins on this build). Every method is addressed by artifact ID.
 
 const artifactSummary = {
   type: "object",
@@ -17,23 +15,10 @@ const artifactSummary = {
     title: { type: "string" },
     description: { type: ["string", "null"] },
     status: { type: "string", description: "draft, published, or approved" },
-    revision: { type: "string", description: "8-hex content revision (canonical identity header + body)" },
-    path: { type: "string", description: "stable current Markdown file inside the registry" },
+    path: { type: "string", description: "the read-only generated view inside the registry" },
     ownerSessionID: { type: "string", description: "owning Planner session" },
-    authorSessionID: { type: ["string", "null"], description: "author of the current revision" },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
-    format: { type: "string", description: "shared-markdown" },
-  },
-}
-
-const revisionEntry = {
-  type: "object",
-  properties: {
-    revision: { type: "string" },
-    createdAt: { type: "string" },
-    authorSessionID: { type: ["string", "null"] },
-    snapshot: { type: "string", description: "immutable snapshot file for this revision" },
   },
 }
 
@@ -43,16 +28,12 @@ const artifactView = {
     ...artifactSummary.properties,
     location: { type: "string" },
     content: { type: "string" },
-    requestedRevision: { type: ["string", "null"], description: "the exact earlier revision when requested; null for current state" },
-    snapshot: { type: "string" },
-    revisions: { type: "array", items: revisionEntry },
     feedback: {
       type: "array",
       items: {
         type: "object",
         properties: {
           requestID: { type: "string" },
-          revision: { type: "string" },
           question: { type: ["string", "null"] },
           selectedText: { type: ["string", "null"] },
           selectedRange: { type: ["object", "null"] },
@@ -92,17 +73,14 @@ const Artifacts = {
     get: {
       input: {
         type: "object",
-        properties: {
-          artifactID: { type: "string" },
-          revision: { type: "string", description: "optional exact earlier revision; omit for current state" },
-        },
+        properties: { artifactID: { type: "string" } },
         required: ["artifactID"],
         additionalProperties: false,
       },
       output: { type: "object", properties: { artifact: artifactView } },
       errors: {
         validation: { type: "object", properties: { reason: { type: "string" } } },
-        not_found: { type: "object", properties: { artifactID: { type: "string" }, revision: { type: "string" } } },
+        not_found: { type: "object", properties: { artifactID: { type: "string" } } },
         lock_conflict: { type: "object", properties: { lock: { type: "string" } } },
         io: { type: "object", properties: { detail: { type: "string" } } },
       },
@@ -112,11 +90,10 @@ const Artifacts = {
         type: "object",
         properties: {
           artifactID: { type: "string" },
-          revision: { type: "string", description: "the displayed content revision the feedback applies to" },
           requestID: { type: "string", description: "client-generated ID; repeated submissions with the same ID deduplicate" },
           question: {
             type: "string",
-            description: "the user's question about the displayed revision (at most 16384 UTF-8 bytes)",
+            description: "the user's question about the artifact (at most 16384 UTF-8 bytes)",
           },
           selectedText: {
             type: "string",
@@ -128,7 +105,7 @@ const Artifacts = {
             required: ["start", "end"],
           },
         },
-        required: ["artifactID", "revision"],
+        required: ["artifactID"],
         additionalProperties: false,
       },
       output: {
@@ -144,7 +121,6 @@ const Artifacts = {
       errors: {
         validation: { type: "object", properties: { reason: { type: "string" } } },
         not_found: { type: "object", properties: { artifactID: { type: "string" } } },
-        stale_revision: { type: "object", properties: { displayed: { type: "string" }, current: { type: "string" } } },
         lock_conflict: { type: "object", properties: { lock: { type: "string" } } },
         io: { type: "object", properties: { detail: { type: "string" } } },
       },
@@ -154,10 +130,9 @@ const Artifacts = {
         type: "object",
         properties: {
           artifactID: { type: "string" },
-          revision: { type: "string", description: "the displayed content revision to approve" },
           requestID: { type: "string", description: "client-generated ID; repeated submissions with the same ID deduplicate" },
         },
-        required: ["artifactID", "revision"],
+        required: ["artifactID"],
         additionalProperties: false,
       },
       output: {
@@ -173,7 +148,6 @@ const Artifacts = {
       errors: {
         validation: { type: "object", properties: { reason: { type: "string" } } },
         not_found: { type: "object", properties: { artifactID: { type: "string" } } },
-        stale_revision: { type: "object", properties: { displayed: { type: "string" }, current: { type: "string" } } },
         lock_conflict: { type: "object", properties: { lock: { type: "string" } } },
         io: { type: "object", properties: { detail: { type: "string" } } },
       },

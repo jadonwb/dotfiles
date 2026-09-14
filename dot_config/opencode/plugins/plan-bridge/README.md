@@ -2,98 +2,71 @@
 
 A filesystem-backed registry for passing Markdown artifacts between OpenCode
 sessions and Neovim, and the authoritative plan-approval gate. A plan artifact
-whose `artifact_get` shows `status=approved`, `kind=plan`, and the exact
-approved revision is what authorizes Builder.
+whose `artifact_get` shows `status=approved`, `kind=plan` is what authorizes
+Builder.
 
 ## Artifacts
 
-Every artifact is Markdown plus a small record:
+Every artifact is Markdown plus a small record, addressed by ID only:
 
 - `id` — the `art_…` identifier.
 - `kind` — `plan`, `evidence`, or `review`.
-- `title` / `description` — short human-facing labels, generated into the
-  document frontmatter.
-- `status` — plans start `draft`; evidence and reviews start `published`; a
-  plan becomes `approved` when its displayed revision is approved.
-- `revision` — the content revision (see below).
-- `ownerSessionID` — the session that owns feedback/approval routing: the
-  nearest Planner ancestor, or the author session when none exists.
-- `authorSessionID` — the session that wrote the current revision.
+- `title` / `description` — short human-facing labels.
+- `status` — plans start `draft`; evidence and reviews start `published`; a plan
+  becomes `approved` when it is approved.
+- `ownerSessionID` — the session that owns patch authorization and
+  feedback/approval routing: the nearest Planner ancestor, or the caller when
+  none exists.
 
-One document format is supported:
-
-- **shared-markdown** (`art_…`): the frontmatter format below, canonical
-  revision, per-revision author provenance, immutable snapshots.
+There is one authoritative record per artifact and one generated read-only view.
+No revisions, history, or snapshots are kept.
 
 ## Paths
 
-- Source (chezmoi-managed): `~/.local/share/chezmoi/dot_config/opencode/plugins/plan-bridge/`
+- Source (chezmoi-managed):
+  `~/.local/share/chezmoi/dot_config/opencode/plugins/plan-bridge/`
 - Live (applied target): `~/.config/opencode/plugins/plan-bridge/`
 - Registry state: `$XDG_STATE_HOME/opencode/plan-bridge/` (fallback
   `~/.local/state/opencode/plan-bridge/`), one directory per artifact under
-  `artifacts/<id>/` containing the authoritative `record.json`, the stable
-  `current.md`, and immutable snapshots under `revisions/`.
+  `artifacts/<id>/` containing the authoritative `record.json` and the generated
+  `current.md` view.
 
 Files: `store.mjs` (Node-compatible registry logic, testable without Bun),
-`format.mjs` + `format-fixtures.json` (shared Markdown format specification,
-canonical revision algorithm, pinned cross-implementation fixtures),
-`artifact-rpc.ts` (RPC contract), `index.ts` (tool + RPC registration and
-delivery), `artifact-tools.ts` (tool logic, provenance resolution, compact
-message builders), tests `store.test.mjs`, `format.test.mjs`,
-`artifact-tools.test.mjs`
-(`node --test dot_config/opencode/plugins/plan-bridge/…` from the chezmoi
-working directory).
+`format.mjs` (one-way rendering of the generated view), `artifact-rpc.ts` (RPC
+contract), `index.ts` (tool + RPC registration and delivery),
+`artifact-tools.ts` (tool logic, owner resolution, compact message builders),
+tests `store.test.mjs` and `artifact-tools.test.mjs`.
 
-## shared-markdown
+## Storage and the generated view
 
-A shared artifact document is UTF-8/LF text:
-
-- an opening `---` fence line, exactly nine header lines in fixed key order
-  (`id`, `kind`, `title`, `description`, `owner_session_id`,
-  `author_session_id`, `created_at`, `updated_at`, `status`), each
-  `<key>: ` + `JSON.stringify(value)` (single-line JSON string scalars),
-- a closing `---` fence line terminated by LF,
-- the body Markdown afterwards, stored verbatim (no H1 inserted, final
-  newline distinction preserved).
-
-Parsing is strict: duplicate, missing, unknown, or out-of-order fields,
-malformed or non-canonical scalars, and any other header syntax are rejected
-(`format-fixtures.json` pins every rule byte-exactly, including rejection
-tags, for the Lua implementation).
-
-**Content revision**: the first 8 lowercase hex characters of the SHA-256
-digest over the canonical input = the
-seven identity header lines (`id`, `kind`, `title`, `description`,
-`owner_session_id`, `author_session_id`, `created_at`, JSON string values, LF
-delimiters) + a closing `---` line + the exact body bytes. `updated_at` and
-`status` are validated but never hashed, so approval can flip the displayed
-status without changing the content revision. The revision is never an input
-to its own hash; the artifact ID is random.
+- `record.json` is authoritative and written last. It holds the verbatim body
+  the author supplied or patched; patches always match against those bytes.
+- `current.md` is a one-way rendering for display: a minimal frontmatter block
+  (`id`, `kind`, `status`, `title`) followed by the verbatim body, formatted by
+  Prettier over the complete document. The generated view is never parsed back
+  into storage; editors read it read-only, and `artifact_get` returns its path.
+- After an interrupted write the next mutation regenerates the view from the
+  record. Locally created artifacts are not migrated or accepted through
+  compatibility logic.
 
 ## Model-facing tools
 
-Shared artifacts (permission actions; globally denied, allowed per agent):
+- `artifact_publish` — publish `kind`/`title`/`description`/`body`; plans start
+  `draft`, evidence and reviews start `published`. The body is stored verbatim.
+  Returns the artifact ID and the generated-view path.
+- `artifact_get` — read one artifact by ID. Returns the generated-view path for
+  the `read` tool; it does not inline the Markdown.
+- `artifact_patch` — unambiguous body replacements, plus optional structured
+  `title`/`description` updates (never frontmatter text edits). Approved plans
+  reject patches.
 
-- `artifact_publish` — publish `kind`/`title`/`description`/`body`; plans
-  start `draft`, evidence and reviews start `published`. Returns the artifact
-  ID, owner, author, current path, content revision and immutable snapshot
-  reference.
-- `artifact_get` — current state by default, or an exact revision
-  (`revisions/<hex>.md`) whose content carries its creation-time status header.
-  Reports `Status`.
-- `artifact_patch` — expected revision + unambiguous body replacements only,
-  plus optional structured `title`/`description` updates (never frontmatter
-  text edits). Identity, kind, owner and timestamps are tool-managed; each
-  revision records the acting author. Approved plans reject patches.
-
-Authorization (`artifact-tools.ts`): the acting author is the calling session
-from the tool context. The owner is the nearest Planner in the server-assigned
-session ancestry (`ctx.session.get` walking `parentID`) — a Planner caller owns
-its own publication; worker sessions walk to their Planner; when no Planner
-ancestor is reachable (a standalone session such as the unrestricted test agent)
-the author owns its own artifact. Every fetched session is validated (requested
-ID, same location); an optional agent field is never guessed. Same-location
-operation only; moved owners fail visibly.
+Owner resolution (`artifact-tools.ts`): the owner is the nearest Planner in the
+server-assigned session ancestry (`ctx.session.get` walking `parentID`) — a
+Planner caller owns its own publication; worker sessions walk to their Planner;
+when no Planner ancestor is reachable (a standalone session such as the
+unrestricted test agent) the caller owns its own artifact. Every fetched session
+is validated (requested ID, same location). Same-location operation only; moved
+owners fail visibly.
 
 ## Agent roles
 
@@ -101,91 +74,49 @@ Planner alone assigns Search, Builder and Review, owns decisions, and
 coordinates the artifact writers. Workers are launched with the `subagent` tool
 (agent ID, short `description`, complete `prompt`); independent work uses
 `background: true`, and the returned `sessionID` continues that same child
-conversation. Runner is the shared command helper: Planner
-and each worker may call it for a short bounded operation without rounding back
-through Planner. Search, Runner, Builder, and Review run as catalog-visible
-`mode: subagent` workers. Only Runner is callable by the workers themselves; no
-worker may launch Search, Builder, or Review.
+conversation. Runner is the shared command helper: Planner and each worker may
+call it for a short bounded operation without rounding back through Planner.
+Search, Runner, Builder, and Review run as catalog-visible `mode: subagent`
+workers. Only Runner is callable by the workers themselves; no worker may launch
+Search, Builder, or Review.
 
 - **Planner** (primary) authors `plan` artifacts, acts on the user's approval,
-  and launches Builder only from an approved plan at the exact
-  revision. It does not edit project files. It assigns Search, Builder and
-  Review, and may call Runner directly for a user-facing command question.
+  and launches Builder only from an approved plan. It does not edit project
+  files.
 - **Search** researches source files and documentation read-only and authors
-  `evidence` artifacts. It calls Runner for command observations — foreground
-  for a blocking short observation, background for independent command work —
-  rather than performing general system or Git exploration itself.
-- **Runner** executes only the bounded commands or operations and allowed side
-  effects a caller assigns, then returns directly to that caller with a short
-  result, not an artifact. It runs on its configured cheap model with no
-  variant. It holds read/glob/grep and host shell authority but no edit,
-  artifact, question, web-research, or subagent permission. Shell runs with host
-  authority; the assignment scope is the target paths and side effects it names,
-  so installs, system/Omarchy commands, resets, and destructive actions require
-  explicit assignment authorization and are never inferred from an investigation
-  request. Scratch work uses unique task directories under `/tmp/opencode/runner`.
+  `evidence` artifacts.
+- **Runner** executes only the bounded commands or operations a caller assigns
+  and returns a short result, not an artifact.
 - **Builder** applies the exact approved plan and runs only the checks the plan
-  assigns. It holds `artifact_get` only — it reads assigned artifacts but cannot
-  author them. It keeps direct shell for its assigned checks and may offload a
-  check or short command observation to Runner within the assignment; delegation
-  never authorizes new project mutations, installations, or broader
-  investigation.
+  assigns. It holds `artifact_get` only.
 - **Review** independently inspects the captured Builder change scope read-only,
-  authors `review` artifacts, and may call Runner for scoped tests or
-  Git/runtime observations with an explicit working directory and side effects.
-  It has no project edit or direct shell permission and does not repair or
-  install anything beyond the review assignment.
+  authors `review` artifacts, and may call Runner for scoped observations.
 
 Canonical artifact tool arguments: `artifact_publish` takes
-`kind`/`title`/`description`/`body`; `artifact_get` takes `artifactID` with an
-optional `revision`; `artifact_patch` takes `artifactID`/`expectedRevision`
-with optional `replacements`, `title`, and `description`. Owner and author are
-derived from the calling session and its Planner ancestry, never supplied by the
-caller.
+`kind`/`title`/`description`/`body`; `artifact_get` takes `artifactID`;
+`artifact_patch` takes `artifactID` with optional `replacements`, `title`, and
+`description`. The owner is derived from the calling session and its Planner
+ancestry, never supplied by the caller.
 
 ## RPC contract
 
-`personal.artifacts` (outputs use `artifacts`/`artifact`):
-`list` — summaries with kind, description, provenance and format marker;
-`get` — current state or an exact revision/snapshot reference;
-`feedback` — question/selection against the displayed content revision;
-`approve` — plans only (evidence/review kinds are rejected); validates the
-displayed revision under lock, records that exact revision, and regenerates the
-current frontmatter with `status: approved` without changing the content
-revision;
-`retry_delivery` — redeliver a recorded submission by request ID.
+`personal.artifacts` (outputs use `artifacts`/`artifact`): `list` — summaries
+with kind, description, owner and status; `get` — the latest generated view for
+one artifact ID; `feedback` — question/selection against one artifact ID;
+`approve` — plans only (evidence/review kinds are rejected), sets
+`status: approved`, and freezes patches; `retry_delivery` — redeliver a recorded
+submission by request ID.
 
-Errors are declared responses (`validation`, `not_found`, `stale_revision`,
-`forbidden`, `approved`, `patch_conflict`, `lock_conflict`, `io`), not
-arbitrary thrown errors. Every lookup is scoped to the artifact's recorded
-location.
-
-## Storage, snapshots and recovery
-
-- record.json is authoritative and written last. Snapshots are immutable
-  (`0400`) and hold the complete document as of revision creation; history in
-  the record is lean metadata (revision, createdAt, authorSessionID) with
-  snapshot references — bodies are never duplicated per revision.
-- List summaries and describe-style reads touch record.json only; content
-  always requires a snapshot read. A missing authoritative snapshot fails
-  visibly (`io`) instead of fabricating content.
-- After an interrupted write, the next mutation reconciles derived files:
-  current.md is regenerated from the committed snapshot and lifecycle state
-  (status/updated_at from the record, author from the current revision). A
-  snapshot header keeps its creation-time status; the registry/current view
-  carries current approval status.
-- Manual frontmatter edits never authorize or reopen anything; the recorded
-  approval decision is the only authorization, and patching an approved plan
-  is rejected.
+Errors are declared responses (`validation`, `not_found`, `forbidden`,
+`approved`, `patch_conflict`, `lock_conflict`, `io`), not arbitrary thrown
+errors. Every lookup is scoped to the artifact's recorded location.
 
 ## Feedback / approval semantics
 
 - Submissions deduplicate by a client-generated `requestID`; a repeated
   submission returns the recorded one instead of creating a duplicate.
-- Feedback and approval carry the revision the user was actually viewing;
-  stale requests are rejected instead of being applied silently.
-- An approval freezes the exact revision it was recorded against. An approved
-  plan then authorizes Builder.
+- An approval is the recorded decision that authorizes Builder; an approved plan
+  then rejects further patches.
 - Byte limits: question ≤ 16384 UTF-8 bytes, selected excerpt ≤ 65536 UTF-8
   bytes; oversized input is rejected with a `validation` error and leaves no
   submission behind.
@@ -193,54 +124,54 @@ location.
 ## Delivery (synthetic, honest, retryable)
 
 A submission is persisted first, then a message is durably admitted to the
-owning session via `ctx.session.synthetic` with explicit
-`delivery: "queue"` and `resume: true` (admission and scheduling, not model
-completion). The compact builders emit:
+owning session via `ctx.session.synthetic` with explicit `delivery: "queue"` and
+`resume: true` (admission and scheduling, not model completion). The compact
+builders emit:
 
 - `description` — short title-bearing UI label rendered after the synthetic
-  event marker (e.g. `Artifact feedback: <title>`).
-- `text` — model-visible: feedback carries the artifact `ID@revision`, the user
-  question, and exactly one optional context representation (quoted selected
-  excerpt, otherwise the selected line range, otherwise general feedback).
-  Approval text is one line: an approval names the approved
-  `artifactID@revision`; the Planner then launches ONE background Builder for
-  that exact revision.
-- `metadata` — model-invisible bookkeeping: `artifactID`, `revision`,
-  `requestID`, `kind`, `submission`, `source`.
+  event marker (e.g. `Feedback: <title>`).
+- `text` — model-visible: feedback names the artifact ID, the user question, and
+  exactly one optional context representation (quoted selected excerpt,
+  otherwise the selected line range, otherwise general feedback). Approval text
+  is one line naming the approved artifact ID.
+- `metadata` — model-invisible bookkeeping: `artifactID`, `requestID`, `kind`,
+  `submission`, `source`.
 
-Delivery state is recorded per submission (`pending` → `delivered` |
-`failed`) with the original request IDs, so failed deliveries can be retried
-after editor restarts with the same request ID. Delivery is
-**at-least-once, not exactly-once**; a crash between persistence and
-admission can leave `pending`, and an explicit retry may re-send. Failure is
-reported (`delivery.state: "failed"`), never guessed around; admission
-failures are reported as unknown-admission to the client.
+Delivery state is recorded per submission (`pending` → `delivered` | `failed`),
+so failed deliveries can be retried after editor restarts with the same request
+ID. Delivery is **at-least-once, not exactly-once**.
 
 ## Stale locks
 
-Mutations hold an exclusive per-artifact lock file
-(`artifacts/<id>/lock`). An existing lock is reported as a `lock_conflict`
-error — it is never bypassed. If a mutation crashed while holding the lock,
-the lock file is stale: remove `artifacts/<id>/lock` by hand and retry. The
-registry record is never discarded; the next mutation reconciles the derived
-files from the authoritative record, so an interrupted write self-heals
-without data loss (subject to the visible-failure rule for lost snapshots
-above).
+Mutations hold an exclusive per-artifact lock file (`artifacts/<id>/lock`). An
+existing lock is reported as a `lock_conflict` error — it is never bypassed. If
+a mutation crashed while holding the lock, the lock file is stale: remove
+`artifacts/<id>/lock` by hand and retry. The record is never discarded.
+
+## Tests
+
+Standalone tests run on the repository's mise-managed Node 22 (the plugin itself
+runs under OpenCode's embedded Bun, but the tests do not need Bun and no Bun
+installation or scripts are added):
+
+```
+mise exec -- node --experimental-strip-types --test \
+  dot_config/opencode/plugins/plan-bridge/store.test.mjs \
+  dot_config/opencode/plugins/plan-bridge/artifact-tools.test.mjs
+```
 
 ## Neovim side
 
 `~/.config/nvim/lua/editor/features/opencode-artifacts.lua`
-(`NVOpenCodeArtifacts`, with the shared-markdown implementation in
-`lua/editor/features/opencode-artifacts/format.lua`) targets the generic RPC
-(`personal.artifacts`) and reads shared-markdown artifacts (canonical
-revisions). The picker
-exposes `:OpenCodePlans` (draft plans by default), `:OpenCodeEvidence`,
+(`NVOpenCodeArtifacts`) targets the generic RPC (`personal.artifacts`) and opens
+each artifact's generated `current.md` read-only. The picker exposes
+`:OpenCodePlans` (draft plans by default), `:OpenCodeEvidence`,
 `:OpenCodeReviews`, `:OpenCodeArtifacts` on `<leader>ap/ae/ar/aa`, with `<M-a>`
 to include approved artifacts and `<M-r>` to retry a recorded-but-undelivered
-feedback/approval submission from the persisted server record. Artifact
-buffers carry only `OpenCodeArtifactFeedback`, `OpenCodeArtifactRetryDelivery`
-and — on draft plans — `OpenCodeArtifactApprove` (plus `<leader>af` and, on
-draft plans, `<leader>ay`). Start a fresh Neovim instance after updating.
+feedback/approval submission. Artifact buffers carry only
+`OpenCodeArtifactFeedback`, `OpenCodeArtifactRetryDelivery` and — on draft plans
+— `OpenCodeArtifactApprove` (plus `<leader>af` and, on draft plans,
+`<leader>ay`). Start a fresh Neovim instance after updating.
 
 Requests go through `opencode api` with argv lists and JSON-encoded bodies;
 user-selected Markdown is never interpolated into shell commands.

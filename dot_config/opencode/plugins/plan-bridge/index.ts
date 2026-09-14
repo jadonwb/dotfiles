@@ -5,8 +5,6 @@
 // artifacts, ask questions, and record approvals.
 //
 // A plan artifact with status "approved" is the sole implementation gate.
-// Approving a draft plan records the exact displayed revision; only an
-// approved plan authorizes Builder.
 //
 // Registry logic lives in ./store.mjs; tool/authorization logic in
 // ./artifact-tools.ts; the contract lives in ./artifact-rpc.ts.
@@ -16,8 +14,8 @@
 //
 // Delivery uses ctx.session.synthetic with explicit delivery "queue" and
 // resume true: durably admitted to the owning session, compact UI label in
-// the description, model-visible text carrying the artifact ID@revision, and
-// bookkeeping (request IDs, provenance) in metadata only.
+// the description, model-visible text naming the artifact ID, and bookkeeping
+// (request IDs, provenance) in metadata only.
 import { randomUUID } from "node:crypto"
 
 import { createStore, StoreError } from "./store.mjs"
@@ -36,9 +34,7 @@ export default {
     const directory = ctx.location.directory
     const store = createStore()
     // In-process guard so concurrent duplicate submissions of the same
-    // request ID share one delivery attempt. Delivery is at-least-once:
-    // a crash between persistence and admission can require an explicit
-    // retry, which may re-send the message.
+    // request ID share one delivery attempt. Delivery is at-least-once.
     const inFlight = new Map<string, Promise<{ state: string; error: string | null }>>()
 
     function mintRequestID(requestID: unknown): string {
@@ -60,7 +56,6 @@ export default {
       artifactID: string
       kind: string
       title: string
-      revision: string
       requestID: string
       ownerSessionID: string
       question?: string | null
@@ -69,20 +64,13 @@ export default {
     }): Promise<{ state: string; error: string | null }> {
       const existing = inFlight.get(input.requestID)
       if (existing) return existing
-      // Compact shared builders: the model sees the artifact ID@revision, the
-      // user question and exactly one context representation; request IDs and
-      // provenance stay in the persisted record and message metadata.
       const text =
         input.submission === "approval"
-          ? artifactApprovalMessage({
-              artifactID: input.artifactID,
-              revision: input.revision,
-            })
+          ? artifactApprovalMessage({ artifactID: input.artifactID })
           : artifactFeedbackMessage({
               kind: input.kind,
               title: input.title,
               artifactID: input.artifactID,
-              revision: input.revision,
               question: input.question,
               selectedText: input.selectedText,
               selectedRange: input.selectedRange,
@@ -90,7 +78,6 @@ export default {
       const description = artifactDeliveryDescription({ action: input.submission, title: input.title })
       const metadata = artifactDeliveryMetadata({
         artifactID: input.artifactID,
-        revision: input.revision,
         requestID: input.requestID,
         kind: input.kind,
         submission: input.submission,
@@ -99,8 +86,7 @@ export default {
       const attempt = (async () => {
         try {
           // Durably admitted to the owning session as a queued synthetic
-          // message that resumes the session; resolves after admission and
-          // scheduling, not after the model completes its turn.
+          // message that resumes the session; resolves after admission.
           await ctx.session.synthetic({
             sessionID: input.ownerSessionID,
             text,
@@ -135,8 +121,6 @@ export default {
     }
 
     await ctx.tool.transform((editor) => {
-      // Artifact tools: role/kind authorization and owner resolution live
-      // in ./artifact-tools.ts.
       addArtifactTools(editor, {
         store,
         directory,
@@ -159,7 +143,6 @@ export default {
             artifact: await store.getArtifact({
               artifactID: input.artifactID,
               location: directory,
-              revision: input.revision,
             }),
           }
         } catch (error) {
@@ -174,7 +157,6 @@ export default {
           submission = await store.addArtifactFeedback({
             artifactID: input.artifactID,
             location: directory,
-            revision: input.revision,
             requestID,
             question: input.question,
             selectedText: input.selectedText,
@@ -197,7 +179,6 @@ export default {
           artifactID: submission.artifact.id,
           kind: submission.artifact.kind,
           title: submission.artifact.title,
-          revision: submission.feedback.revision,
           requestID,
           ownerSessionID: submission.artifact.ownerSessionID,
           question: submission.feedback.question,
@@ -214,7 +195,6 @@ export default {
           submission = await store.approveArtifact({
             artifactID: input.artifactID,
             location: directory,
-            revision: input.revision,
             requestID,
           })
         } catch (error) {
@@ -234,7 +214,6 @@ export default {
           artifactID: submission.artifact.id,
           kind: submission.artifact.kind,
           title: submission.artifact.title,
-          revision: submission.approval.revision,
           requestID: submission.requestID,
           ownerSessionID: submission.artifact.ownerSessionID,
         })
@@ -271,7 +250,6 @@ export default {
           artifactID: record.id,
           kind: record.kind,
           title: record.title,
-          revision: entry.revision,
           requestID: input.requestID,
           ownerSessionID: record.ownerSessionID,
           question: entry.question,
