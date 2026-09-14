@@ -1,6 +1,6 @@
 ---
 description: Implements the exact approved plan within its assigned scope.
-mode: subagent
+mode: primary
 model: deepseek/deepseek-flash#default
 permissions:
   - action: pdf_read
