@@ -77,13 +77,8 @@ Additionally:
 
 # language and behavior tweaks
 
-- search needs to return enough so planner can make the plan without reading the
-  evidence
-- discourage planner from reading evidence files
-
-## misc workflow
-
-- prettier format markdown artifacts after creation.
+- search use runner in background more often? or reuse runner?
+-
 
 ## Builder report?
 
