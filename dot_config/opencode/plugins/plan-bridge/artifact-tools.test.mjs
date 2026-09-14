@@ -187,27 +187,19 @@ test("feedback message: full ID@revision, user question, exactly one context rep
   assert.equal(general.split("\n").length, 4)
 })
 
-test("implementation approval names the revision and the single Builder launch; historical approval is a freeze", () => {
+test("approval message is one brief status line naming the identity and authority", () => {
   const implementation = artifactApprovalMessage({ authority: "implementation", artifactID: "art_x", revision: "bbbbbbbb" })
-  const implementationLines = implementation.split("\n")
-  assert.ok(implementationLines.length <= 2, `at most two lines, got ${implementationLines.length}`)
-  assert.match(implementation, /Approved plan art_x@bbbbbbbb/)
-  assert.match(implementation, /authority: implementation/)
-  assert.match(implementation, /ONE background Builder for that exact revision/)
+  assert.equal(implementation, "approval delivered: art_x@bbbbbbbb (implementation)")
 
   const historical = artifactApprovalMessage({ authority: "historical", artifactID: "art_y", revision: "cccccccc" })
-  const historicalLines = historical.split("\n")
-  assert.ok(historicalLines.length <= 2, `at most two lines, got ${historicalLines.length}`)
-  assert.match(historical, /Approved plan art_y@cccccccc/)
-  assert.match(historical, /authority: historical/)
-  assert.match(historical, /does not authorize Builder/)
+  assert.equal(historical, "approval delivered: art_y@cccccccc (historical)")
 })
 
 test("delivery description is a short title-bearing label; metadata carries request IDs and authority", () => {
-  assert.equal(artifactDeliveryDescription({ action: "feedback", title: "My plan" }), "Artifact feedback: My plan")
-  assert.equal(artifactDeliveryDescription({ action: "approval", title: "My plan" }), "Artifact approval: My plan")
+  assert.equal(artifactDeliveryDescription({ action: "feedback", title: "My plan" }), "Feedback: My plan")
+  assert.equal(artifactDeliveryDescription({ action: "approval", title: "My plan" }), "Approval: My plan")
   const long = artifactDeliveryDescription({ action: "feedback", title: "x".repeat(300) })
-  assert.ok(long.length <= "Artifact feedback: ".length + 80, "label is capped")
+  assert.ok(long.length <= "Feedback: ".length + 80, "label is capped")
   const metadata = artifactDeliveryMetadata({ artifactID: "art_x", revision: "c0c0c0c0", requestID: "req_1", kind: "plan", authority: "implementation", submission: "feedback" })
   assert.deepEqual(metadata, {
     artifactID: "art_x",
@@ -228,7 +220,7 @@ function toolContext(sessionID, agent) {
   return { sessionID, agent, messageID: "msg_test", id: "tool_test" }
 }
 
-test("artifact publish/patch/get flow: provenance resolved, results identify owner/author/revision/snapshot/authority", async (t) => {
+test("artifact publish/patch/get flow: provenance resolved, results carry kind/title/id/revision/snapshot", async (t) => {
   const { store, root } = await makeStore(t)
   const sessions = {
     [SEARCH_SESSION]: sessionInfo({ id: SEARCH_SESSION, agent: "search", parentID: PLANNER_SESSION }),
@@ -248,17 +240,17 @@ test("artifact publish/patch/get flow: provenance resolved, results identify own
     toolContext(PLANNER_SESSION, "planner"),
   )
   assert.match(plannerPublish.content, /^ARTIFACT_PUBLISHED/)
-  assert.match(plannerPublish.content, new RegExp(`Owner: ${PLANNER_SESSION}`))
-  assert.match(plannerPublish.content, new RegExp(`Author: ${PLANNER_SESSION}`))
+  assert.match(plannerPublish.content, /Kind: plan/)
+  assert.match(plannerPublish.content, /Title: Shared plan/)
   assert.match(plannerPublish.content, /Revision: [a-f0-9]{8}/)
-  assert.match(plannerPublish.content, /Authority: implementation/)
   assert.match(plannerPublish.content, /Snapshot: /)
+  assert.doesNotMatch(plannerPublish.content, /Owner:|Author:|Current markdown:|Status:|Authority:/, "no provenance/authority essay")
   const plannerID = /Artifact: (art_\S+)/.exec(plannerPublish.content)[1]
   const plannerRevision = /Revision: (\S+)/.exec(plannerPublish.content)[1]
   for (const line of plannerPublish.content.split("\n")) {
-    const path = /^(Current markdown|Snapshot): (.+)$/.exec(line)
+    const path = /^Snapshot: (.+)$/.exec(line)
     if (path) {
-      assert.ok(path[2].startsWith(root), `result paths come from the store, never from caller input: ${path[2]}`)
+      assert.ok(path[1].startsWith(root), `result path comes from the store, never from caller input: ${path[1]}`)
     }
   }
 
@@ -268,9 +260,8 @@ test("artifact publish/patch/get flow: provenance resolved, results identify own
     toolContext(SEARCH_SESSION, "search"),
   )
   assert.match(evidencePublish.content, /^ARTIFACT_PUBLISHED/)
-  assert.match(evidencePublish.content, new RegExp(`Owner: ${PLANNER_SESSION}`))
-  assert.match(evidencePublish.content, new RegExp(`Author: ${SEARCH_SESSION}`))
-  assert.match(evidencePublish.content, /Authority: historical/)
+  assert.match(evidencePublish.content, /Kind: evidence/)
+  assert.match(evidencePublish.content, /Title: Search note/)
   const evidenceID = /Artifact: (art_\S+)/.exec(evidencePublish.content)[1]
   const evidenceRevision = /Revision: (\S+)/.exec(evidencePublish.content)[1]
 
@@ -279,7 +270,7 @@ test("artifact publish/patch/get flow: provenance resolved, results identify own
     toolContext(REVIEW_SESSION, "review"),
   )
   assert.match(reviewPublish.content, /^ARTIFACT_PUBLISHED/)
-  assert.match(reviewPublish.content, new RegExp(`Author: ${REVIEW_SESSION}`))
+  assert.match(reviewPublish.content, /Title: Review-authored evidence/)
 
   // Patch the evidence as a same-owner caller, with the expected revision.
   const patched = await patch.execute(
@@ -291,17 +282,17 @@ test("artifact publish/patch/get flow: provenance resolved, results identify own
     toolContext(SEARCH_SESSION, "search"),
   )
   assert.match(patched.content, /^ARTIFACT_PATCHED/)
+  assert.match(patched.content, /Kind: evidence/)
+  assert.match(patched.content, /Title: Search note/)
   const patchedRevision = /Revision: (\S+)/.exec(patched.content)[1]
   assert.notEqual(patchedRevision, evidenceRevision)
-  assert.match(patched.content, new RegExp(`Author: ${SEARCH_SESSION}`))
-  assert.match(patched.content, /Authority: historical/)
 
   const runnerPublish = await publish.execute(
     { kind: "evidence", title: "Runner note", description: "Evidence artifact.", body: "# Note\n" },
     toolContext(RUNNER_SESSION, "runner"),
   )
   assert.match(runnerPublish.content, /^ARTIFACT_PUBLISHED/)
-  assert.match(runnerPublish.content, new RegExp(`Author: ${RUNNER_SESSION}`))
+  assert.match(runnerPublish.content, /Title: Runner note/)
 
   // Every patch must match the stored owner: a caller under a different Planner
   // is rejected by the store.
@@ -419,7 +410,7 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   assert.equal(call.sessionID, PLANNER_SESSION)
   assert.equal(call.delivery, "queue")
   assert.equal(call.resume, true)
-  assert.equal(call.description, "Artifact feedback: Shared plan")
+  assert.equal(call.description, "Feedback: Shared plan")
   assert.match(call.text, new RegExp(`Artifact: ${artifact.id}@${artifact.revision}`))
   assert.match(call.text, /User question: Is this complete\?/)
   assert.match(call.text, /> - Item\./)
@@ -446,7 +437,7 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   )
   assert.equal(syntheticCalls.length, 1)
 
-  // Approval through the RPC: queued synthetic naming the single Builder launch.
+  // Approval through the RPC: queued synthetic carrying status and identity.
   const approved = await rpc.approve(
     { artifactID: artifact.id, revision: artifact.revision, requestID: "req_approve-mocked-1" },
     { error: () => { throw new Error("no") } },
@@ -459,10 +450,8 @@ test("RPC surface exposes authority and delivers compact queued synthetic messag
   const approvalCall = syntheticCalls[1]
   assert.equal(approvalCall.delivery, "queue")
   assert.equal(approvalCall.resume, true)
-  assert.equal(approvalCall.description, "Artifact approval: Shared plan")
-  assert.ok(approvalCall.text.split("\n").length <= 2)
-  assert.match(approvalCall.text, new RegExp(`plan ${artifact.id}@${artifact.revision}`))
-  assert.match(approvalCall.text, /ONE background Builder for that exact revision/)
+  assert.equal(approvalCall.description, "Approval: Shared plan")
+  assert.equal(approvalCall.text, `approval delivered: ${artifact.id}@${artifact.revision} (implementation)`)
   assert.equal(approvalCall.metadata.requestID, "req_approve-mocked-1")
   assert.equal(approvalCall.metadata.authority, "implementation")
 

@@ -197,7 +197,7 @@ function truncate(value: string, maxLength: number): string {
 }
 
 export function artifactDeliveryDescription(input: { action: "feedback" | "approval"; title: string }): string {
-  return `${input.action === "approval" ? "Artifact approval" : "Artifact feedback"}: ${truncate(input.title, 80)}`
+  return `${input.action === "approval" ? "Approval" : "Feedback"}: ${truncate(input.title, 80)}`
 }
 
 function quoteBlock(text: string): string {
@@ -234,21 +234,15 @@ export function artifactFeedbackMessage(input: {
 }
 
 /**
- * Approval text is at most two lines. An implementation plan is authoritative:
- * the Planner launches ONE background Builder for the exact approved revision.
- * A non-implementation record is a freeze only and never authorizes Builder.
+ * Approval text is one line: delivery status plus the artifact identity. An
+ * implementation plan authorizes Builder for that exact revision; a historical
+ * record is a freeze only.
  */
 export function artifactApprovalMessage(input: { authority: string; artifactID: string; revision: string }): string {
-  if (input.authority === "implementation") {
-    return [
-      `Approved plan ${input.artifactID}@${input.revision} (authority: implementation).`,
-      "Planner: launch ONE background Builder for that exact revision.",
-    ].join("\n")
-  }
-  return [
-    `Approved plan ${input.artifactID}@${input.revision} (authority: historical) — freeze only.`,
-    "This approval does not authorize Builder.",
-  ].join("\n")
+  const identity = `${input.artifactID}@${input.revision}`
+  return input.authority === "implementation"
+    ? `approval delivered: ${identity} (implementation)`
+    : `approval delivered: ${identity} (historical)`
 }
 
 export function artifactDeliveryMetadata(input: {
@@ -366,17 +360,11 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
         return {
           content: [
             "ARTIFACT_PUBLISHED",
-            `Artifact: ${published.artifactID}`,
             `Kind: ${published.kind}`,
             `Title: ${published.title}`,
-            `Owner: ${published.ownerSessionID}`,
-            `Author: ${published.authorSessionID}`,
-            `Current markdown: ${published.path}`,
+            `Artifact: ${published.artifactID}`,
             `Revision: ${published.revision}`,
             `Snapshot: ${published.snapshot}`,
-            `Status: ${published.status}`,
-            `Authority: ${published.authority}`,
-            "Give the user these identifiers. Update with artifact_patch using this exact revision.",
           ].join("\n"),
         }
       } catch (error) {
@@ -469,17 +457,11 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
         return {
           content: [
             "ARTIFACT_PATCHED",
-            `Artifact: ${patched.artifactID}`,
             `Kind: ${patched.kind}`,
             `Title: ${patched.title}`,
-            `Owner: ${patched.ownerSessionID}`,
-            `Author: ${patched.authorSessionID}`,
-            `Current markdown: ${patched.path}`,
+            `Artifact: ${patched.artifactID}`,
             `Revision: ${patched.revision}`,
             `Snapshot: ${patched.snapshot}`,
-            `Status: ${patched.status}`,
-            `Authority: ${patched.authority}`,
-            "Use the new revision for further patches; the user sees it on refresh.",
           ].join("\n"),
         }
       } catch (error) {
