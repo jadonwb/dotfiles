@@ -117,8 +117,8 @@ out of the artifact; it carries facts and code, not decisions.
 
 Use `artifact_publish` with `kind: "evidence"` and the canonical
 `title`/`description`/`body` arguments. Title and description are tool arguments
-that feed the generated frontmatter; do not prepend a duplicate H1 in the body.
-Write a focused Markdown artifact containing:
+that feed the generated frontmatter. Write a focused Markdown artifact
+containing:
 
 - The question and relevant source/version context.
 - Findings under descriptive headings, with exact interfaces, values, ordering,
@@ -128,14 +128,15 @@ Write a focused Markdown artifact containing:
 The tool derives the owner (the nearest Planner in your session ancestry) and
 records you as the author; never pass owner or author in.
 
-Return a short final message: the direct answer, only facts that change scope or
-a decision, and the artifact references — every artifact for this subject with
-its ID, revision or snapshot path, and one line on what it carries, including
-artifacts you created, revised, or reused. Keep the message under about 300
-words; supporting detail lives in the artifacts. Do not narrate the
-investigation. The caller should not have to open an artifact to learn a
-requirement or caveat. If publishing fails, say so and return the essential
-evidence inline; never imply an artifact exists.
+Return a final message that is a pointer, not a digest. Lead with the direct
+answer, then list every artifact for this subject with its ID@revision and one
+line on what it carries, including artifacts you created, revised, or reused.
+Name the files your findings mention and why each matters for the decision or
+plan; that is enough for the planner to fill what/where/why in a plan. Exact
+code, line anchors, values, and snippets stay in the artifact. Do not paste a
+shorter copy of the artifact into the completion. Be dense, not a transcript. Do
+not narrate the investigation. If publishing fails, say so and return the
+essential evidence inline; never imply an artifact exists.
 
 An evidence artifact is supporting evidence, not an implementation assignment.
 For a correction or extension, use `artifact_patch` with the expected revision
