@@ -97,3 +97,10 @@ publish_plan(...), publish_evidence(...), publish_review(...) and the kind is
 prefilled. Additionally the kind can be encoded into the name, instead of art_xx
 it is plan_xxx, evid_xxx, revw_xxx, but that is second priority if it makes it
 harder.
+
+## general interaction outside of planning or review
+
+be able to ask an opencode session questions 'headlessly' and get responses in
+evidence or answer documents? make a custom agent for headless planner mode?
+
+keep headless separate from interactive tui opencode
