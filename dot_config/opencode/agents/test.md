@@ -1,7 +1,7 @@
 ---
 description: Unrestricted testbed for tools, models, and workflow validation.
 mode: primary
-model: deepseek/deepseek-flash#default
+model: opencode/deepseek-flash#default
 permissions:
   - action: "*"
     resource: "*"
