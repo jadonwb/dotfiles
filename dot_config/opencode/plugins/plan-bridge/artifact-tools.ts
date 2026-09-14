@@ -18,11 +18,53 @@
 // Runtime note: this module is plain erasable TypeScript with no package
 // imports, so `node --test` (type stripping) can exercise it directly.
 
+import { spawn } from "node:child_process"
 import { resolve as resolvePath } from "node:path"
 
 import { StoreError } from "./store.mjs"
 
 export const ERROR_PREFIX = "ARTIFACT_ERROR"
+
+// ---------------------------------------------------------------------------
+// Markdown formatting at the tool boundary
+// ---------------------------------------------------------------------------
+
+const PRETTIER_BINARY = "/home/jadon/.local/share/nvim/mason/bin/prettier"
+const PRETTIER_CONFIG = "/home/jadon/.prettierrc.yaml"
+const PRETTIER_STDIN_FILENAME = "artifact.md"
+
+/**
+ * Format a Markdown body with the pinned Prettier binary before it reaches the
+ * store, so the immutable snapshot, current.md and the content revision all
+ * cover the same formatted bytes. The store keeps its verbatim-body contract:
+ * it receives (and hashes) exactly what this returns. The explicit --config is
+ * required because Prettier's config discovery is path-based and would
+ * otherwise miss the home config for bodies written under /tmp. A non-zero exit
+ * is a visible failure — an unformatted body is never stored silently.
+ */
+function formatArtifactBody(body: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(PRETTIER_BINARY, ["--stdin-filepath", PRETTIER_STDIN_FILENAME, "--config", PRETTIER_CONFIG], {
+      stdio: ["pipe", "pipe", "pipe"],
+    })
+    const stdoutChunks: Buffer[] = []
+    const stderrChunks: Buffer[] = []
+    child.stdout?.on("data", (chunk: Buffer) => stdoutChunks.push(chunk))
+    child.stderr?.on("data", (chunk: Buffer) => stderrChunks.push(chunk))
+    child.on("error", (error) => {
+      reject(new Error(`prettier could not be started (${PRETTIER_BINARY}): ${error.message}`))
+    })
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const detail = Buffer.concat(stderrChunks).toString("utf8").trim()
+        reject(new Error(`prettier exited with code ${code}${detail.length > 0 ? `: ${detail}` : ""}`))
+        return
+      }
+      resolve(Buffer.concat(stdoutChunks).toString("utf8"))
+    })
+    child.stdin?.end(body, "utf8")
+  })
+}
 
 export const MAX_ANCESTRY_HOPS = 16
 
@@ -294,7 +336,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     name: "artifact_publish",
     description:
       "Publish a Markdown artifact to the shared artifact registry: kind plan (Planner), evidence (Search), or review (Review). " +
-      "The body is stored verbatim behind a frontmatter header; do not add your own H1 or frontmatter. " +
+      "The body is stored verbatim and must not include YAML frontmatter; the tool writes the nine keys. " +
       "Returns the artifact ID, revision and snapshot reference; the user reviews it in the editor.",
     input: {
       type: "object",
@@ -302,7 +344,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
         kind: { type: "string", enum: ["plan", "evidence", "review"], description: "Artifact kind; each kind has an allowed role." },
         title: { type: "string", minLength: 1, description: "Short human-readable title." },
         description: { type: "string", minLength: 1, description: "One-sentence description of the artifact." },
-        body: { type: "string", minLength: 1, description: "The complete Markdown body, stored verbatim (no frontmatter, no auto H1)." },
+        body: { type: "string", minLength: 1, description: "The complete Markdown body, stored verbatim; must not include YAML frontmatter (the tool writes the nine keys)." },
       },
       required: ["kind", "title", "description", "body"],
       additionalProperties: false,
@@ -311,6 +353,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     async execute(input: { kind: string; title: string; description: string; body: string }, toolContext: ToolContext) {
       try {
         const provenance = await resolveProvenance(deps, toolContext)
+        const body = await formatArtifactBody(input.body)
         const published = await deps.store.publishArtifact({
           kind: input.kind,
           ownerSessionID: provenance.ownerSessionID,
@@ -318,7 +361,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
           location: deps.directory,
           title: input.title,
           description: input.description,
-          body: input.body,
+          body,
         })
         return {
           content: [
