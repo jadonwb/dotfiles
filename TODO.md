@@ -53,6 +53,8 @@ pulling the repo?
 this lets me track the individual configurations as repositories, but have all
 the files tracked by my dotfiles repo?
 
+also can simplify wezterm sessions to just go to dotfiles only to modify things.
+
 ## yazi as file manager
 
 yazi functionality and plugins to make it a full nautilus replacement for
@@ -110,6 +112,6 @@ keep headless separate from interactive tui opencode (session wise)
 maybe drop revision information if we never reference previous plan documents or
 use the snapshots
 
-## neovim session
+## neovim + opencode session
 
 keymap to create new session (and name it?)
