@@ -89,14 +89,11 @@ all agents just report: `Done report saved at: {$path}`
 
 ## tools and artifacts
 
+MAYBE
+
 Keep base artifact layer, but personalize the tools a bit more per agent, that
 way they don't call artifact-publish(kind=plan, ..) they just do
 publish_plan(...), publish_evidence(...), publish_review(...) and the kind is
 prefilled. Additionally the kind can be encoded into the name, instead of art_xx
 it is plan_xxx, evid_xxx, revw_xxx, but that is second priority if it makes it
 harder.
-
-## Reduce notification and title verbosity
-
-- neovim notifications too long
-- messages are too long? verify
