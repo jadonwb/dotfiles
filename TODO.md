@@ -109,3 +109,7 @@ keep headless separate from interactive tui opencode (session wise)
 
 maybe drop revision information if we never reference previous plan documents or
 use the snapshots
+
+## neovim session
+
+keymap to create new session (and name it?)
