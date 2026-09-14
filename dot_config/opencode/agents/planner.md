@@ -185,8 +185,7 @@ Working directory: <absolute path>
 
 ## Builder context
 - <Decisions and established facts stated inline, beside the edit that uses them>.
-- Required evidence artifacts: <artifact ID@revision — snapshot path>, <...>: <one line each on the implementation detail it carries>.
-- Research session <sessionID>: <subject>. The listed evidence artifacts are the normal input; resume this session only for a missing or conflicting fact.
+- Required evidence artifacts: <artifact ID@revision>, <...>: <one line each on the implementation detail it carries>.
 
 ## Checks
 - <Exact check, target, and expected result>.
@@ -228,8 +227,8 @@ another touching different files. Parallelism is bounded by file overlap, not by
 a global count: never let two active writers, or a writer and a pending
 correction, touch the same file; keep each Builder inside the files its plan
 names; and serialize any change that would overlap an active Builder. Do not
-launch overlapping work, and do not launch a Builder before its plan is
-approved and has enough evidence to stand alone.
+launch overlapping work, and do not launch a Builder before its plan is approved
+and has enough evidence to stand alone.
 
 Assign each Builder a bounded edit scope, the required evidence snapshots, the
 exact checks, and known pre-existing changes. Changed requirements require a
