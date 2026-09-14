@@ -103,4 +103,9 @@ harder.
 be able to ask an opencode session questions 'headlessly' and get responses in
 evidence or answer documents? make a custom agent for headless planner mode?
 
-keep headless separate from interactive tui opencode
+keep headless separate from interactive tui opencode (session wise)
+
+## drop revision information
+
+maybe drop revision information if we never reference previous plan documents or
+use the snapshots
