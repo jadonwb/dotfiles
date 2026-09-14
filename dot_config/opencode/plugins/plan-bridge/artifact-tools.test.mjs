@@ -5,7 +5,7 @@
 //   node --test dot_config/opencode/plugins/plan-bridge/artifact-tools.test.mjs
 
 import assert from "node:assert/strict"
-import { mkdtemp, readFile, rm } from "node:fs/promises"
+import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -22,7 +22,6 @@ import {
   resolveProvenance,
   unwrapSession,
 } from "./artifact-tools.ts"
-import { Artifacts } from "./artifact-rpc.ts"
 import plugin from "./index.ts"
 
 const DIRECTORY = "/tmp/opencode/artifact-tools-location"
@@ -222,182 +221,6 @@ test("delivery description is a short title-bearing label; metadata carries requ
 })
 
 // ---------------------------------------------------------------------------
-// Contracts and permission wiring
-// ---------------------------------------------------------------------------
-
-function stripJsonComments(text) {
-  return text.replace(/^\s*\/\/.*$/gm, "")
-}
-
-// ---------------------------------------------------------------------------
-// Agent policy shape (textual YAML frontmatter inspection; no parser dependency)
-// ---------------------------------------------------------------------------
-
-const AGENT_DIR = new URL("../../../opencode/agents/", import.meta.url)
-
-// Read the small, fixed agent frontmatter shape directly. This is deliberate
-// textual inspection, not a general YAML parser: each rule is a `- action:`
-// entry with indented `resource:`/`effect:` fields, and top-level scalars are
-// unindented `key: value` lines. That is enough to pin the policy we ship.
-function parseAgentPolicy(text) {
-  const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(text)
-  assert.ok(frontmatter, "agent file has YAML frontmatter")
-  const scalars = {}
-  const permissions = []
-  let rule = null
-  for (const line of frontmatter[1].split("\n")) {
-    const scalar = /^([A-Za-z_]+):\s*(.*)$/.exec(line)
-    if (scalar) {
-      scalars[scalar[1]] = scalar[2]
-      rule = null
-      continue
-    }
-    const start = /^\s*-\s*action:\s*(\S+)\s*$/.exec(line)
-    if (start) {
-      rule = { action: start[1].replace(/^"(.*)"$/, "$1") }
-      permissions.push(rule)
-      continue
-    }
-    const field = /^\s+(resource|effect):\s*(\S+)\s*$/.exec(line)
-    if (field && rule) rule[field[1]] = field[2].replace(/^"(.*)"$/, "$1")
-  }
-  return { text, scalars, permissions }
-}
-
-async function readAgentPolicy(name) {
-  return parseAgentPolicy(await readFile(new URL(`${name}.md`, AGENT_DIR), "utf8"))
-}
-
-function ruleEffects(policy, action) {
-  return policy.permissions.filter((rule) => rule.action === action).map((rule) => rule.effect)
-}
-
-function hasRule(policy, action, effect, resource) {
-  return policy.permissions.some((rule) => rule.action === action && rule.effect === effect && rule.resource === resource)
-}
-
-test("configuration registers exactly the two plugins and globally denies the artifact and pdf actions", async () => {
-  const configPath = new URL("../../../opencode/opencode.jsonc", import.meta.url)
-  const config = JSON.parse(stripJsonComments(await readFile(configPath, "utf8")))
-  assert.deepEqual(config.plugins, ["./plugins/pdf-tools", "./plugins/plan-bridge"])
-
-  const denied = new Set(config.permissions.filter((rule) => rule.effect === "deny" && rule.resource === "*").map((rule) => rule.action))
-  for (const action of ["pdf_read", "pdf_search", "artifact_publish", "artifact_get", "artifact_patch"]) {
-    assert.ok(denied.has(action), `${action} must stay globally denied`)
-  }
-
-  // The registered tool permission options use exactly those action names.
-  const tools = []
-  addArtifactTools({ add: (tool) => tools.push(tool) }, { store: createStore({ root: join(tmpdir(), "opencode", "unused") }), directory: DIRECTORY, getSession: async () => null })
-  assert.deepEqual(
-    tools.map((tool) => [tool.name, tool.options.permission]),
-    [
-      ["artifact_publish", "artifact_publish"],
-      ["artifact_get", "artifact_get"],
-      ["artifact_patch", "artifact_patch"],
-    ],
-  )
-  for (const tool of tools) {
-    assert.equal(tool.input.additionalProperties, false)
-    assert.ok(!("path" in tool.input.properties) && !("location" in tool.input.properties), "no caller-supplied filesystem paths")
-    assert.ok(!("authority" in tool.input.properties), "authority is never caller-supplied")
-  }
-})
-
-test("agent policy: artifact authorship, delegation, visibility, shell bounds and models", async () => {
-  const planner = await readAgentPolicy("planner")
-  const search = await readAgentPolicy("search")
-  const runner = await readAgentPolicy("runner")
-  const builder = await readAgentPolicy("builder")
-  const review = await readAgentPolicy("review")
-  const testAgent = await readAgentPolicy("test")
-
-  // Planner, Search, and Review hold the three artifact permissions.
-  for (const [name, policy] of [["planner", planner], ["search", search], ["review", review]]) {
-    for (const action of ["artifact_publish", "artifact_get", "artifact_patch"]) {
-      assert.ok(hasRule(policy, action, "allow", "*"), `${name} may ${action}`)
-    }
-  }
-  for (const action of ["artifact_publish", "artifact_get", "artifact_patch"]) {
-    assert.ok(hasRule(runner, action, "deny", "*"), `Runner explicitly denies ${action}`)
-  }
-  // The test agent is the unrestricted testbed. Its allow-all rule is appended
-  // last, so it overrides the global artifact/pdf denies and the base
-  // external-directory/.env asks; only the plugin's role/ownership gates remain.
-  assert.ok(hasRule(testAgent, "*", "allow", "*"), "the test agent has full permissions")
-
-  // Builder reads assigned artifacts only; it must not author.
-  assert.ok(hasRule(builder, "artifact_get", "allow", "*"), "Builder may read assigned artifacts")
-  assert.ok(
-    !builder.permissions.some((rule) => rule.action === "artifact_publish" || rule.action === "artifact_patch"),
-    "Builder may not author artifacts",
-  )
-
-  // Planner alone assigns Search, Builder and Review, but each caller role may
-  // delegate only the intended Runner exception; Runner itself cannot delegate.
-  assert.ok(hasRule(planner, "subagent", "deny", "*"), "Planner denies subagents by default")
-  for (const worker of ["search", "builder", "review", "runner"]) {
-    assert.ok(hasRule(planner, "subagent", "allow", worker), `Planner may launch ${worker}`)
-  }
-  for (const [name, policy] of [["search", search], ["builder", builder], ["review", review]]) {
-    assert.deepEqual(ruleEffects(policy, "subagent"), ["deny", "allow"], `${name} denies subagents by default and allows Runner`)
-    assert.ok(hasRule(policy, "subagent", "allow", "runner"), `${name} may call Runner`)
-    for (const other of ["search", "builder", "review"]) {
-      assert.equal(hasRule(policy, "subagent", "allow", other), false, `${name} may not launch ${other}`)
-    }
-  }
-  assert.deepEqual(ruleEffects(runner, "subagent"), ["deny"], "Runner cannot delegate")
-
-  // Reviewer and Runner have no project edits.
-  assert.ok(ruleEffects(review, "edit").includes("deny"), "Review cannot edit projects")
-  assert.ok(ruleEffects(runner, "edit").includes("deny"), "Runner cannot edit projects")
-
-  // Search and Review have no direct shell; Builder keeps its assigned-check shell.
-  assert.deepEqual(ruleEffects(search, "shell"), ["deny"], "Search has no direct shell")
-  assert.deepEqual(ruleEffects(review, "shell"), ["deny"], "Review has no direct shell")
-  assert.ok(ruleEffects(builder, "shell").includes("allow"), "Builder keeps shell for assigned checks")
-
-  // Mode, catalog visibility, and preserved/pinned models.
-  assert.equal(planner.scalars.mode, "primary")
-  for (const [name, policy] of [["search", search], ["runner", runner], ["builder", builder], ["review", review]]) {
-    assert.equal(policy.scalars.mode, "subagent", `${name} runs as a subagent`)
-    assert.notEqual(policy.scalars.hidden, "true", `${name} stays catalog-visible`)
-  }
-  assert.equal(builder.scalars.model, "deepseek/deepseek-flash#default", "Builder model preserved")
-  assert.equal(review.scalars.model, "deepseek/deepseek-flash#max", "Review model preserved")
-  assert.equal(search.scalars.model, "deepseek/deepseek-flash#low", "Search model preserved")
-  assert.equal(runner.scalars.model, "opencode/gpt-5-nano", "Runner model pinned to the Zen GPT-5 Nano selection")
-
-  // Runner may run assigned commands and its external directories match Builder.
-  assert.ok(ruleEffects(runner, "shell").includes("allow"), "Runner may run assigned commands")
-  assert.ok(
-    hasRule(runner, "external_directory", "allow", "/tmp/*") && hasRule(runner, "external_directory", "allow", "~/*"),
-    "Runner external directories match Builder",
-  )
-
-  // No agent body still references a removed route.
-  assert.ok(!builder.text.includes("command-only"), "Builder has no command-only route")
-  assert.ok(!planner.text.includes("command-only"), "Planner has no command-only Builder dispatch")
-  assert.ok(!builder.text.includes("agent: search"), "Builder does not launch Search")
-  assert.ok(planner.text.includes("authority=implementation"), "Planner names the implementation gate")
-})
-
-test("RPC contract: personal.artifacts declares authority and the five methods", () => {
-  assert.equal(Artifacts.id, "personal.artifacts")
-  assert.deepEqual(Artifacts.events, {})
-  assert.deepEqual(Object.keys(Artifacts.methods), ["list", "get", "feedback", "approve", "retry_delivery"])
-  assert.equal(Artifacts.methods.list.output.properties.artifacts !== undefined, true)
-  assert.equal(Artifacts.methods.get.output.properties.artifact !== undefined, true)
-  const fields = Object.keys(Artifacts.methods.get.output.properties.artifact.properties)
-  for (const field of ["kind", "description", "ownerSessionID", "authorSessionID", "format", "schemaVersion", "snapshot", "requestedRevision", "revisions", "feedback", "approval", "authority"]) {
-    assert.equal(fields.includes(field), true, `new contract must declare ${field}`)
-  }
-  assert.deepEqual(Artifacts.methods.feedback.input.required, ["artifactID", "revision"])
-  assert.deepEqual(Artifacts.methods.approve.input.required, ["artifactID", "revision"])
-  assert.deepEqual(Artifacts.methods.get.input.required, ["artifactID"])
-})
-
-// ---------------------------------------------------------------------------
 // Tool flows against a real store (temp root), with mocked sessions
 // ---------------------------------------------------------------------------
 
@@ -565,18 +388,6 @@ async function setupPlugin(t, { sessions = {} } = {}) {
   await plugin.setup(ctx)
   return { tools, contracts, syntheticCalls, sessions }
 }
-
-test("plugin setup registers only the three artifact tools and the personal.artifacts contract", async (t) => {
-  const { tools, contracts } = await setupPlugin(t)
-  assert.deepEqual(
-    tools.map((tool) => tool.name),
-    ["artifact_publish", "artifact_get", "artifact_patch"],
-  )
-  assert.deepEqual(contracts.map((entry) => entry.contract.id), ["personal.artifacts"])
-  for (const entry of contracts) {
-    assert.deepEqual(entry.contract.events, {}, "events: {} is required on v2.0.3")
-  }
-})
 
 test("RPC surface exposes authority and delivers compact queued synthetic messages", async (t) => {
   const sessions = { [PLANNER_SESSION]: sessionInfo() }

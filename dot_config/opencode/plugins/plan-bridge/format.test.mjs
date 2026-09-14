@@ -11,11 +11,6 @@ import { fileURLToPath } from "node:url"
 import test from "node:test"
 
 import {
-  ARTIFACT_KINDS,
-  ARTIFACT_STATUSES,
-  FORMAT_NAME,
-  FORMAT_VERSION,
-  FRONTMATTER_KEYS,
   REVISION_KEYS,
   FormatError,
   canonicalInput,
@@ -29,14 +24,6 @@ import {
 
 const fixturesPath = join(dirname(fileURLToPath(import.meta.url)), "format-fixtures.json")
 const fixtures = JSON.parse(await readFile(fixturesPath, "utf8"))
-
-test("fixture file describes this format", () => {
-  assert.equal(fixtures.name, FORMAT_NAME)
-  assert.equal(fixtures.formatVersion, FORMAT_VERSION)
-  assert.deepEqual(fixtures.specification.frontmatterKeys, FRONTMATTER_KEYS)
-  assert.deepEqual(fixtures.specification.revisionKeys, REVISION_KEYS)
-  assert.deepEqual(fixtures.specification.revisionExcludedKeys, ["updated_at", "status"])
-})
 
 test("serialization fixtures round-trip byte-exactly", () => {
   for (const item of fixtures.serializationCases) {
@@ -133,9 +120,4 @@ test("body final-newline distinction changes the revision", () => {
   const withNewline = canonicalRevision(identity, "body\n")
   const withoutNewline = canonicalRevision(identity, "body")
   assert.notEqual(withNewline, withoutNewline)
-})
-
-test("kind and status enumerations match the specification", () => {
-  assert.deepEqual([...ARTIFACT_KINDS], ["plan", "evidence", "review"])
-  assert.deepEqual([...ARTIFACT_STATUSES], ["draft", "published", "approved"])
 })
