@@ -1,6 +1,5 @@
 {
-  "name": "shared-markdown-v1",
-  "formatVersion": 1,
+  "name": "shared-markdown",
   "specification": {
     "encoding": "UTF-8, LF line endings only.",
     "document": "A document is: an opening fence line '---', exactly nine header lines, a closing fence line '---' terminated by LF, then the body bytes (possibly empty; the body's final-newline distinction is preserved and no H1 is inserted).",
@@ -30,14 +29,13 @@
       "updated_at",
       "status"
     ],
-    "canonicalRevisionInput": "The content revision is 'sha256:' + the lowercase hex SHA-256 of the canonical UTF-8 input: the seven revision header lines in fixed order, each '<key>: ' + JSON.stringify(value) and LF-terminated, followed by a closing '---' line, followed by the exact body bytes. updated_at and status are validated but never hashed, so approval can rewrite the displayed status without changing the content revision. The revision is never an input to its own hash.",
-    "rawMarkdown": "Raw-markdown documents carry no frontmatter; revision = sha256 of the exact raw bytes."
+    "canonicalRevisionInput": "The content revision is the first 8 lowercase hex characters of the SHA-256 digest of the canonical UTF-8 input: the seven revision header lines in fixed order, each '<key>: ' + JSON.stringify(value) and LF-terminated, followed by a closing '---' line, followed by the exact body bytes. updated_at and status are validated but never hashed, so approval can rewrite the displayed status without changing the content revision. The revision is never an input to its own hash."
   },
   "serializationCases": [
     {
       "name": "basic plan, body with final newline",
       "header": {
-        "id": "art_FixtBasicPlan00000000",
+        "id": "art_00000001",
         "kind": "plan",
         "title": "Migrate the backup script",
         "description": "Move nightly backups to the new volume.",
@@ -48,12 +46,12 @@
         "status": "draft"
       },
       "body": "# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n"
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n"
     },
     {
       "name": "unicode scalars, body without final newline",
       "header": {
-        "id": "art_FixtUnicodeNote000000",
+        "id": "art_00000002",
         "kind": "evidence",
         "title": "Êvidence — émory 📝 日本語",
         "description": "Signale « ça » et $dollar.",
@@ -64,12 +62,12 @@
         "status": "published"
       },
       "body": "## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
-      "document": "---\nid: \"art_FixtUnicodeNote000000\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\nupdated_at: \"2026-09-13T10:01:00.000Z\"\nstatus: \"published\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here."
+      "document": "---\nid: \"art_00000002\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\nupdated_at: \"2026-09-13T10:01:00.000Z\"\nstatus: \"published\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here."
     },
     {
       "name": "quotes, backslashes, tab and line separator in scalars",
       "header": {
-        "id": "art_FixtQuotesReview00000",
+        "id": "art_00000003",
         "kind": "review",
         "title": "He said \"quote \\ backslash\" and \\n literally",
         "description": "Tab\there and emoji ✓ plus CRLF-safe   ok",
@@ -80,12 +78,12 @@
         "status": "published"
       },
       "body": "> A quoted review.\n\n---\n\nNot a fence: `---` inside text.\n",
-      "document": "---\nid: \"art_FixtQuotesReview00000\"\nkind: \"review\"\ntitle: \"He said \\\"quote \\\\ backslash\\\" and \\\\n literally\"\ndescription: \"Tab\\there and emoji ✓ plus CRLF-safe   ok\"\nowner_session_id: \"ses_ownerPlannerSession00000\"\nauthor_session_id: \"ses_reviewWorkerSession000000\"\ncreated_at: \"2026-09-13T10:02:00.000Z\"\nupdated_at: \"2026-09-13T10:02:00.000Z\"\nstatus: \"published\"\n---\n> A quoted review.\n\n---\n\nNot a fence: `---` inside text.\n"
+      "document": "---\nid: \"art_00000003\"\nkind: \"review\"\ntitle: \"He said \\\"quote \\\\ backslash\\\" and \\\\n literally\"\ndescription: \"Tab\\there and emoji ✓ plus CRLF-safe   ok\"\nowner_session_id: \"ses_ownerPlannerSession00000\"\nauthor_session_id: \"ses_reviewWorkerSession000000\"\ncreated_at: \"2026-09-13T10:02:00.000Z\"\nupdated_at: \"2026-09-13T10:02:00.000Z\"\nstatus: \"published\"\n---\n> A quoted review.\n\n---\n\nNot a fence: `---` inside text.\n"
     },
     {
       "name": "body containing fence-like lines",
       "header": {
-        "id": "art_FixtFenceyBodyPlan000",
+        "id": "art_00000004",
         "kind": "plan",
         "title": "Body contains fence-like lines",
         "description": "Move nightly backups to the new volume.",
@@ -96,12 +94,12 @@
         "status": "draft"
       },
       "body": "---\nnot_a_header: \"inside the body\"\n\n---\n\nTail after an inner fence.\n",
-      "document": "---\nid: \"art_FixtFenceyBodyPlan000\"\nkind: \"plan\"\ntitle: \"Body contains fence-like lines\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n---\nnot_a_header: \"inside the body\"\n\n---\n\nTail after an inner fence.\n"
+      "document": "---\nid: \"art_00000004\"\nkind: \"plan\"\ntitle: \"Body contains fence-like lines\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n---\nnot_a_header: \"inside the body\"\n\n---\n\nTail after an inner fence.\n"
     },
     {
       "name": "empty body",
       "header": {
-        "id": "art_FixtBasicPlan00000000",
+        "id": "art_00000001",
         "kind": "plan",
         "title": "Migrate the backup script",
         "description": "Move nightly backups to the new volume.",
@@ -112,12 +110,12 @@
         "status": "draft"
       },
       "body": "",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n"
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n"
     },
     {
       "name": "control characters and literal separators in scalars",
       "header": {
-        "id": "art_FixtControlChars00000",
+        "id": "art_00000005",
         "kind": "plan",
         "title": "bellaback\ttab new\nline form\ffeed ret\rurn unit\u0001 unit-sep",
         "description": "del nel ls  ps end",
@@ -128,14 +126,14 @@
         "status": "draft"
       },
       "body": "- The scalars carry C0 escapes; the body is plain.\n",
-      "document": "---\nid: \"art_FixtControlChars00000\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\n- The scalars carry C0 escapes; the body is plain.\n"
+      "document": "---\nid: \"art_00000005\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\n- The scalars carry C0 escapes; the body is plain.\n"
     }
   ],
   "revisionCases": [
     {
       "name": "basic plan",
       "identity": {
-        "id": "art_FixtBasicPlan00000000",
+        "id": "art_00000001",
         "kind": "plan",
         "title": "Migrate the backup script",
         "description": "Move nightly backups to the new volume.",
@@ -146,15 +144,15 @@
         "status": "draft"
       },
       "body": "# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "canonicalInput": "id: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "revision": "sha256:ff1b906cb6141be24ef4bf679f263382853c1fcc71b103d53c8edf5280e2abd5",
+      "canonicalInput": "id: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "revision": "9156f604",
       "sameRevisionAs": null,
       "differsFrom": null
     },
     {
       "name": "approved status differs only outside the revision",
       "identity": {
-        "id": "art_FixtBasicPlan00000000",
+        "id": "art_00000001",
         "kind": "plan",
         "title": "Migrate the backup script",
         "description": "Move nightly backups to the new volume.",
@@ -165,15 +163,15 @@
         "status": "draft"
       },
       "body": "# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "canonicalInput": "id: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "revision": "sha256:ff1b906cb6141be24ef4bf679f263382853c1fcc71b103d53c8edf5280e2abd5",
+      "canonicalInput": "id: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "revision": "9156f604",
       "sameRevisionAs": "basic plan",
       "differsFrom": null
     },
     {
       "name": "unicode scalars, body without final newline",
       "identity": {
-        "id": "art_FixtUnicodeNote000000",
+        "id": "art_00000002",
         "kind": "evidence",
         "title": "Êvidence — émory 📝 日本語",
         "description": "Signale « ça » et $dollar.",
@@ -184,15 +182,15 @@
         "status": "published"
       },
       "body": "## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
-      "canonicalInput": "id: \"art_FixtUnicodeNote000000\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
-      "revision": "sha256:928675a2179d625335b4c00572cbe97a8b0ca7b38977defd04cdd57c531117b6",
+      "canonicalInput": "id: \"art_00000002\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
+      "revision": "5567fc97",
       "sameRevisionAs": null,
       "differsFrom": null
     },
     {
       "name": "body final newline is significant",
       "identity": {
-        "id": "art_FixtUnicodeNote000000",
+        "id": "art_00000002",
         "kind": "evidence",
         "title": "Êvidence — émory 📝 日本語",
         "description": "Signale « ça » et $dollar.",
@@ -203,15 +201,15 @@
         "status": "published"
       },
       "body": "## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.\n",
-      "canonicalInput": "id: \"art_FixtUnicodeNote000000\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.\n",
-      "revision": "sha256:c220344ddc3602f4bea743abaa849310afe2db3b26e3c1ead289ea3e61de2c99",
+      "canonicalInput": "id: \"art_00000002\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.\n",
+      "revision": "21bc3117",
       "sameRevisionAs": null,
       "differsFrom": "unicode scalars, body without final newline"
     },
     {
       "name": "control characters hash their canonical escapes",
       "identity": {
-        "id": "art_FixtControlChars00000",
+        "id": "art_00000005",
         "kind": "plan",
         "title": "bellaback\ttab new\nline form\ffeed ret\rurn unit\u0001 unit-sep",
         "description": "del nel ls  ps end",
@@ -222,15 +220,15 @@
         "status": "draft"
       },
       "body": "- Body.\n",
-      "canonicalInput": "id: \"art_FixtControlChars00000\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\n---\n- Body.\n",
-      "revision": "sha256:397bb38bafd8b641632f4d8f3483bd46e0465fd66f9af453b5f305513744f930",
+      "canonicalInput": "id: \"art_00000005\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\n---\n- Body.\n",
+      "revision": "94c8a85a",
       "sameRevisionAs": null,
       "differsFrom": null
     },
     {
       "name": "CRLF inside the body hashes the carriage returns",
       "identity": {
-        "id": "art_FixtControlChars00000",
+        "id": "art_00000005",
         "kind": "plan",
         "title": "bellaback\ttab new\nline form\ffeed ret\rurn unit\u0001 unit-sep",
         "description": "del nel ls  ps end",
@@ -241,8 +239,8 @@
         "status": "draft"
       },
       "body": "line one\r\nline two\r\n",
-      "canonicalInput": "id: \"art_FixtControlChars00000\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\n---\nline one\r\nline two\r\n",
-      "revision": "sha256:6f0a09ccfb202a6449fc347bf34a082a4559c3f95308d3a5290bc3a0ac748b6c",
+      "canonicalInput": "id: \"art_00000005\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\n---\nline one\r\nline two\r\n",
+      "revision": "660d6b56",
       "sameRevisionAs": null,
       "differsFrom": "control characters hash their canonical escapes"
     }
@@ -250,176 +248,176 @@
   "documentRevisionCases": [
     {
       "name": "basic plan document",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "revision": "sha256:ff1b906cb6141be24ef4bf679f263382853c1fcc71b103d53c8edf5280e2abd5",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "revision": "9156f604",
       "sameRevisionAs": null
     },
     {
       "name": "unicode document",
-      "document": "---\nid: \"art_FixtUnicodeNote000000\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\nupdated_at: \"2026-09-13T10:01:00.000Z\"\nstatus: \"published\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
-      "revision": "sha256:928675a2179d625335b4c00572cbe97a8b0ca7b38977defd04cdd57c531117b6",
+      "document": "---\nid: \"art_00000002\"\nkind: \"evidence\"\ntitle: \"Êvidence — émory 📝 日本語\"\ndescription: \"Signale « ça » et $dollar.\"\nowner_session_id: \"ses_öwnerPlannerSession00\"\nauthor_session_id: \"ses_authörWorkerSession00000\"\ncreated_at: \"2026-09-13T10:01:00.000Z\"\nupdated_at: \"2026-09-13T10:01:00.000Z\"\nstatus: \"published\"\n---\n## Observations\n- Tab\tseparated and emoji 🚀 stay in the body.\n- No trailing newline here.",
+      "revision": "5567fc97",
       "sameRevisionAs": null
     },
     {
       "name": "approved re-serialization keeps the content revision",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T12:30:00.000Z\"\nstatus: \"approved\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
-      "revision": "sha256:ff1b906cb6141be24ef4bf679f263382853c1fcc71b103d53c8edf5280e2abd5",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T12:30:00.000Z\"\nstatus: \"approved\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "revision": "9156f604",
       "sameRevisionAs": "basic plan document"
     },
     {
       "name": "CRLF inside the body document",
-      "document": "---\nid: \"art_FixtControlChars00000\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nline one\r\nline two\r\n",
-      "revision": "sha256:6f0a09ccfb202a6449fc347bf34a082a4559c3f95308d3a5290bc3a0ac748b6c",
+      "document": "---\nid: \"art_00000005\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nline one\r\nline two\r\n",
+      "revision": "660d6b56",
       "sameRevisionAs": null
     },
     {
       "name": "LF body differs from the CRLF body",
-      "document": "---\nid: \"art_FixtControlChars00000\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nline one\nline two\n",
-      "revision": "sha256:0a692de503b1e8a67c99f2c3c0457fc6cca8029ac3259b99acfb4f8c381acf6f",
+      "document": "---\nid: \"art_00000005\"\nkind: \"plan\"\ntitle: \"bellaback\\ttab new\\nline form\\ffeed ret\\rurn unit\\u0001 unit-sep\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nline one\nline two\n",
+      "revision": "d69808e8",
       "sameRevisionAs": null
     },
     {
       "name": "literal DEL and line separators in scalars",
-      "document": "---\nid: \"art_FixtLiteralDelLs00000\"\nkind: \"plan\"\ntitle: \"del nel ls  ps\"\ndescription: \"literal DEL, NEL, LS and PS stay raw\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\n- Body.\n",
-      "revision": "sha256:95ef36398b09cfff3c6e262a4fff3cde3b1ead02e766331855e056d2aca1624c",
+      "document": "---\nid: \"art_00000006\"\nkind: \"plan\"\ntitle: \"del nel ls  ps\"\ndescription: \"literal DEL, NEL, LS and PS stay raw\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\n- Body.\n",
+      "revision": "e5622153",
       "sameRevisionAs": null
     },
     {
       "name": "escaped lone surrogate document",
-      "document": "---\nid: \"art_FixtLoneSurrogateDoc0\"\nkind: \"plan\"\ntitle: \"lone\\ud800surrogate end\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nBody mentions the escaped lone surrogate spelling only.\n",
-      "revision": "sha256:2b0d7257931d60daa2a9c188049dc4c382801246bc9ef4accc519068148bbea9",
+      "document": "---\nid: \"art_00000007\"\nkind: \"plan\"\ntitle: \"lone\\ud800surrogate end\"\ndescription: \"del nel ls  ps end\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:03:00.000Z\"\nupdated_at: \"2026-09-13T10:03:00.000Z\"\nstatus: \"draft\"\n---\nBody mentions the escaped lone surrogate spelling only.\n",
+      "revision": "e803ca94",
       "sameRevisionAs": null
     }
   ],
   "invalidDocuments": [
     {
       "name": "duplicate field",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "duplicate_or_order"
     },
     {
       "name": "missing field",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "missing_field"
     },
     {
       "name": "unknown field",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nlabels: \"x\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nlabels: \"x\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "unknown_field"
     },
     {
       "name": "out-of-order fields",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\ntitle: \"Migrate the backup script\"\nkind: \"plan\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\ntitle: \"Migrate the backup script\"\nkind: \"plan\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "duplicate_or_order"
     },
     {
       "name": "unquoted scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: draft\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: draft\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "malformed_scalar"
     },
     {
       "name": "single-quoted scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: 'draft'\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: 'draft'\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "malformed_scalar"
     },
     {
       "name": "numeric scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: 3\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: 3\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "scalar_type"
     },
     {
       "name": "boolean scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: true\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: true\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "scalar_type"
     },
     {
       "name": "null scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: null\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: null\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "scalar_type"
     },
     {
       "name": "array scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: [\"draft\"]\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: [\"draft\"]\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "scalar_type"
     },
     {
       "name": "trailing garbage after scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\" # ok\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\" # ok\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "malformed_scalar"
     },
     {
       "name": "non-canonical escape",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"\\u0041igrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"\\u0041igrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "empty value",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "empty_value"
     },
     {
       "name": "unknown kind",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"memo\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"memo\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "unknown_kind"
     },
     {
       "name": "unknown status",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"archived\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"archived\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "unknown_status"
     },
     {
       "name": "missing opening fence",
-      "document": "id: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "id: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "fence"
     },
     {
       "name": "missing closing fence",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "fence"
     },
     {
       "name": "closing fence without line terminator",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---",
       "problem": "fence"
     },
     {
       "name": "opening fence with trailing spaces",
-      "document": "---   \nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---   \nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "fence"
     },
     {
       "name": "blank line inside frontmatter",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\n\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\n\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "unsupported_syntax"
     },
     {
       "name": "tab spelled as a unicode escape",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate\\u0009the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate\\u0009the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "newline spelled as a lowercase hex escape",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate\\u000athe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate\\u000athe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "newline spelled as an uppercase hex escape",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate\\u000Athe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate\\u000Athe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "DEL spelled as a unicode escape",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate\\u007fthe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate\\u007fthe backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "surrogate pair escape instead of the raw emoji",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate\\ud83d\\ude00 now\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate\\ud83d\\ude00 now\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "noncanonical_scalar"
     },
     {
       "name": "raw C0 control character in scalar",
-      "document": "---\nid: \"art_FixtBasicPlan00000000\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\u0001\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
+      "document": "---\nid: \"art_00000001\"\nkind: \"plan\"\ntitle: \"Migrate the backup script\"\ndescription: \"Move nightly backups to the new volume.\"\nowner_session_id: \"ses_owner0000000000000000\"\nauthor_session_id: \"ses_author000000000000000\"\ncreated_at: \"2026-09-13T10:00:00.000Z\"\nupdated_at: \"2026-09-13T10:00:00.000Z\"\nstatus: \"draft\u0001\"\n---\n# Migrate the backup script\n\n## Changes\n- First item.\n- Second item.\n",
       "problem": "malformed_scalar"
     }
   ]

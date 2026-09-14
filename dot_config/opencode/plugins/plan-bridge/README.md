@@ -10,8 +10,7 @@ Builder.
 
 Every artifact is Markdown plus a small record:
 
-- `id` — the `art_…` identifier, or a `pln_…` identifier for a raw-markdown
-  document.
+- `id` — the `art_…` identifier.
 - `kind` — `plan`, `evidence`, or `review`.
 - `title` / `description` — short human-facing labels, generated into the
   document frontmatter.
@@ -25,14 +24,10 @@ Every artifact is Markdown plus a small record:
   nearest Planner ancestor, or the author session when none exists.
 - `authorSessionID` — the session that wrote the current revision.
 
-Two document formats are supported:
+One document format is supported:
 
-- **shared-markdown-v1** (`art_…`): the frontmatter format below, canonical
+- **shared-markdown** (`art_…`): the frontmatter format below, canonical
   revision, per-revision author provenance, immutable snapshots.
-- **raw-markdown** (`pln_…`): Markdown with no frontmatter, revision = SHA-256
-  of the exact raw bytes. Read-only: generic reads report it as `kind: "plan"`,
-  `description: null`, `format: "raw-markdown"`, and its bytes are never
-  rewritten.
 
 ## Paths
 
@@ -53,7 +48,7 @@ message builders), tests `store.test.mjs`, `format.test.mjs`,
 (`node --test dot_config/opencode/plugins/plan-bridge/…` from the chezmoi
 working directory).
 
-## shared-markdown-v1
+## shared-markdown
 
 A shared artifact document is UTF-8/LF text:
 
@@ -70,7 +65,8 @@ malformed or non-canonical scalars, and any other header syntax are rejected
 (`format-fixtures.json` pins every rule byte-exactly, including rejection
 tags, for the Lua implementation).
 
-**Content revision**: `sha256:` + SHA-256 over the canonical input = the
+**Content revision**: the first 8 lowercase hex characters of the SHA-256
+digest over the canonical input = the
 seven identity header lines (`id`, `kind`, `title`, `description`,
 `owner_session_id`, `author_session_id`, `created_at`, JSON string values, LF
 delimiters) + a closing `---` line + the exact body bytes. `updated_at` and
@@ -157,8 +153,8 @@ caller.
 
 `personal.artifacts` (outputs use `artifacts`/`artifact` and include
 `authority`):
-`list` — summaries with kind, description, provenance, authority, format
-marker and schema version;
+`list` — summaries with kind, description, provenance, authority and format
+marker;
 `get` — current state or an exact revision/snapshot reference;
 `feedback` — question/selection against the displayed content revision;
 `approve` — plans only (evidence/review kinds are rejected); validates the
@@ -243,10 +239,10 @@ above).
 ## Neovim side
 
 `~/.config/nvim/lua/editor/features/opencode-artifacts.lua`
-(`NVOpenCodeArtifacts`, with the shared-markdown-v1 implementation in
+(`NVOpenCodeArtifacts`, with the shared-markdown implementation in
 `lua/editor/features/opencode-artifacts/format.lua`) targets the generic RPC
-(`personal.artifacts`) and reads both raw-markdown documents (raw-byte
-revisions) and shared-markdown-v1 artifacts (canonical revisions). The picker
+(`personal.artifacts`) and reads shared-markdown artifacts (canonical
+revisions). The picker
 exposes `:OpenCodePlans` (draft plans by default), `:OpenCodeEvidence`,
 `:OpenCodeReviews`, `:OpenCodeArtifacts` on `<leader>ap/ae/ar/aa`, with `<M-a>`
 to include approved artifacts and `<M-r>` to retry a recorded-but-undelivered

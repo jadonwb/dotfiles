@@ -1,4 +1,4 @@
-// Shared artifact tools (shared-markdown-v1): artifact_publish, artifact_get and
+// Shared artifact tools (shared-markdown): artifact_publish, artifact_get and
 // artifact_patch, plus the compact synthetic-delivery message builders used
 // by the personal.artifacts RPC route in ./index.ts.
 //
@@ -245,7 +245,6 @@ export type ArtifactSummary = {
   createdAt: string
   updatedAt: string
   format: string
-  schemaVersion: number
   authority: string
 }
 
@@ -347,7 +346,8 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
     name: "artifact_get",
     description:
       "Read a shared artifact from the registry: current state by default, or an exact earlier revision when given. " +
-      "Returns metadata, provenance, the immutable snapshot reference and the stored Markdown.",
+      "Returns the immutable snapshot path for the current state or the requested revision; read that file with the read tool. " +
+      "This tool does not inline the Markdown.",
     input: {
       type: "object",
       properties: {
@@ -366,22 +366,7 @@ export function addArtifactTools(editor: { add: (tool: unknown) => void }, deps:
           revision: input.revision,
         })
         return {
-          content: [
-            "ARTIFACT",
-            `Artifact: ${view.id}`,
-            `Kind: ${view.kind}`,
-            `Title: ${view.title}`,
-            `Status: ${view.status}`,
-            `Authority: ${view.authority}`,
-            `Owner: ${view.ownerSessionID}`,
-            `Author: ${view.authorSessionID ?? "unrecorded (raw-markdown raw-markdown record)"}`,
-            `Revision: ${view.revision}`,
-            `Snapshot: ${view.snapshot}`,
-            view.requestedRevision ? `Requested revision: ${view.requestedRevision}` : "Requested revision: (current)",
-            "",
-            "--- artifact markdown ---",
-            view.content,
-          ].join("\n"),
+          content: ["ARTIFACT", `Snapshot: ${view.snapshot}`].join("\n"),
         }
       } catch (error) {
         return { content: formatError(error) }

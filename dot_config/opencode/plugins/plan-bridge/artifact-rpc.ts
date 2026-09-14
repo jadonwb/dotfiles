@@ -1,5 +1,4 @@
-// Typed RPC contract for shared artifacts (shared-markdown-v1) with generic reads over
-// raw-markdown records.
+// Typed RPC contract for shared artifacts (shared-markdown).
 // Contract module only: no registration and no I/O here. The HTTP surface is
 // POST /api/rpc/personal.artifacts/<method> with {input} -> {output}; the
 // `location` deepObject query selects the registered instance.
@@ -14,18 +13,17 @@ const artifactSummary = {
   type: "object",
   properties: {
     id: { type: "string" },
-    kind: { type: "string", description: "plan, evidence, or review; raw-markdown raw-markdown records read as plan" },
+    kind: { type: "string", description: "plan, evidence, or review" },
     title: { type: "string" },
-    description: { type: ["string", "null"], description: "null for raw-markdown raw-markdown records" },
+    description: { type: ["string", "null"] },
     status: { type: "string", description: "draft, published, or approved" },
-    revision: { type: "string", description: "sha256:<hex> content revision (canonical identity header + body for shared artifacts; raw bytes for raw-markdown records)" },
+    revision: { type: "string", description: "8-hex content revision (canonical identity header + body)" },
     path: { type: "string", description: "stable current Markdown file inside the registry" },
     ownerSessionID: { type: "string", description: "owning Planner session" },
-    authorSessionID: { type: ["string", "null"], description: "author of the current revision; null for raw-markdown raw-markdown records" },
+    authorSessionID: { type: ["string", "null"], description: "author of the current revision" },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
-    format: { type: "string", description: "shared-markdown-v1 for shared artifacts, raw-markdown for raw-markdown records" },
-    schemaVersion: { type: "number" },
+    format: { type: "string", description: "shared-markdown" },
     authority: {
       type: "string",
       description: "implementation for plans that authorize Builder once approved; historical for records that do not authorize Builder",
