@@ -96,11 +96,6 @@ evidence or answer documents? make a custom agent for headless planner mode?
 
 keep headless separate from interactive tui opencode (session wise)
 
-## drop revision information
-
-maybe drop revision information if we never reference previous plan documents or
-use the snapshots
-
 ## neovim + opencode session
 
 keymap to create new session (and name it?)
