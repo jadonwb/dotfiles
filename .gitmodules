@@ -1,0 +1,12 @@
+[submodule ".repos/opencode"]
+	path = .repos/opencode
+	url = git@github.com:jadonwb/opencode.git
+[submodule ".repos/wezterm"]
+	path = .repos/wezterm
+	url = git@github.com:jadonwb/wezterm.git
+[submodule ".repos/yazi"]
+	path = .repos/yazi
+	url = git@github.com:jadonwb/yazi.git
+[submodule ".repos/nvim"]
+	path = .repos/nvim
+	url = git@github.com:jadonwb/nvim.git
