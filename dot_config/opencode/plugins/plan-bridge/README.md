@@ -21,7 +21,8 @@ Every artifact is Markdown plus a small record:
   reviews record `historical`. Only an approved `implementation` plan
   authorizes Builder.
 - `revision` — the content revision (see below).
-- `ownerSessionID` — the Planner session that owns routing.
+- `ownerSessionID` — the session that owns feedback/approval routing: the
+  nearest Planner ancestor, or the author session when none exists.
 - `authorSessionID` — the session that wrote the current revision.
 
 Two document formats are supported:
@@ -46,8 +47,9 @@ Files: `store.mjs` (Node-compatible registry logic, testable without Bun),
 `format.mjs` + `format-fixtures.json` (shared Markdown format specification,
 canonical revision algorithm, pinned cross-implementation fixtures),
 `artifact-rpc.ts` (RPC contract), `index.ts` (tool + RPC registration and
-delivery), `artifact-tools.ts` (tool logic, authorization, compact message
-builders), tests `store.test.mjs`, `format.test.mjs`, `artifact-tools.test.mjs`
+delivery), `artifact-tools.ts` (tool logic, provenance resolution, compact
+message builders), tests `store.test.mjs`, `format.test.mjs`,
+`artifact-tools.test.mjs`
 (`node --test dot_config/opencode/plugins/plan-bridge/…` from the chezmoi
 working directory).
 
@@ -78,7 +80,7 @@ to its own hash; the artifact ID is random.
 
 ## Model-facing tools
 
-Shared artifacts (permission actions; globally denied with per-role allows):
+Shared artifacts (permission actions; globally denied, allowed per agent):
 
 - `artifact_publish` — publish `kind`/`title`/`description`/`body`; plans
   start `draft` with `authority: "implementation"`, evidence and reviews
@@ -115,7 +117,7 @@ through Planner. Search, Runner, Builder, and Review run as catalog-visible
 `mode: subagent` workers. Only Runner is callable by the workers themselves; no
 worker may launch Search, Builder, or Review.
 
-- **Planner** (primary) authors `plan` artifacts, owns the approval decision,
+- **Planner** (primary) authors `plan` artifacts, acts on the user's approval,
   and launches Builder only from an approved `implementation` plan at the exact
   revision. It does not edit project files. It assigns Search, Builder and
   Review, and may call Runner directly for a user-facing command question.
@@ -125,8 +127,8 @@ worker may launch Search, Builder, or Review.
   rather than performing general system or Git exploration itself.
 - **Runner** executes only the bounded commands or operations and allowed side
   effects a caller assigns, then returns directly to that caller with a short
-  result, not an artifact. It is pinned to the Zen model `opencode/gpt-5-nano`
-  with no variant. It holds read/glob/grep and host shell authority but no edit,
+  result, not an artifact. It runs on its configured cheap model with no
+  variant. It holds read/glob/grep and host shell authority but no edit,
   artifact, question, web-research, or subagent permission. Shell runs with host
   authority; the assignment scope is the target paths and side effects it names,
   so installs, system/Omarchy commands, resets, and destructive actions require

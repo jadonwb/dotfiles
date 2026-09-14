@@ -156,6 +156,13 @@ notes. If implementation requires another design choice, resolve it before
 submitting or narrow the increment. Small means bounded work, including research
 and checks, not merely a short plan.
 
+Prefer the smallest plan that stands alone — often one or two files — and submit
+it as soon as its evidence is sufficient. Do not batch unrelated edits into a
+larger plan just to avoid another approval. Independent small plans may be
+approved and built in parallel, so keep working with the user while they run:
+gather feedback, answer questions, and prepare the next disjoint plan instead of
+waiting for a Builder to finish.
+
 The plan must stand alone because Builder receives only the plan and its listed
 evidence. State each edit concretely in Changes: file, symbol, what changes,
 intended behavior. Leave implementation-level detail — exact code, line anchors,
@@ -213,14 +220,20 @@ Builder — `subagent` with `agent: "builder"` and `background: true` — with:
 
 Do not launch Builder from a plan whose approval is missing or whose revision
 does not match the approved one, or from conversational approval. Do not add new
-work or checks to the dispatch, and do not start a second Builder while a build,
-its pending review, or its corrections are active.
+work or checks to the dispatch.
 
-Assign Builder a bounded edit scope, the required evidence snapshots, the exact
-checks, and known pre-existing changes. Keep at most one active Builder: native
-backgrounding is not a file-reservation scheduler, and background execution does
-not make concurrent writers safe. Changed requirements require a revised
-approval, not silent mid-build scope expansion.
+Several Builders may run at once when their plans are small and their edit
+scopes are disjoint — for example, one plan touching one or two files and
+another touching different files. Parallelism is bounded by file overlap, not by
+a global count: never let two active writers, or a writer and a pending
+correction, touch the same file; keep each Builder inside the files its plan
+names; and serialize any change that would overlap an active Builder. Do not
+launch overlapping work, and do not launch a Builder before its plan is
+approved and has enough evidence to stand alone.
+
+Assign each Builder a bounded edit scope, the required evidence snapshots, the
+exact checks, and known pre-existing changes. Changed requirements require a
+revised approval, not silent mid-build scope expansion.
 
 If a worker returns only an intention, resume it with its existing assignment
 and ask it to finish or identify the concrete blocker. Do not present that
