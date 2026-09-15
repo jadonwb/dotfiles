@@ -135,3 +135,46 @@ I could have headless agents respond in the pager or messages, and I can open
 the pager and read it, but it doesn't have to be a file?
 
 ---
+
+# Opencode determinism (via tools)
+
+- Every single thing a model does that I would want it to do again, I just
+  implement as a pre-made tool.
+  - working on a dotfile submodule, and it works? then a tool that auto-commits
+    and pushes, but let's model provide a title or message.
+  - working inside chezmoi? then a tool to force apply chezmoi?
+  - further template the plan file, and other artifacts and make tools to format
+    them? might enable easier patching, model doesn't have to write entire file,
+    boilerplate is injected automatically, further enhances the view vs saved
+    content idea
+  - minimizes both the output tokens needed by a model, and the chance that it
+    does things strangely
+  - make tools themselves short and descriptive, and then the system prompts for
+    tools looks like a scratch (scratch as in the gui+puzzle based toy
+    programming game) workflow of using tools:
+
+    e.g.
+
+    ```
+    # Builder
+
+    ...
+
+    ## Workflow
+
+    - plan_load(args...)
+    - evidence_load(args...)
+    - (read, grep, glob, etc.)
+    - (tools to run checks, or runner)
+    - if issue:
+        - issue_report(args...)
+        - continue
+    -
+
+    ```
+
+- Split up workflows, introduce skills and references so models have more
+  on-the-fly context that doesn't need to be ingrained in the system prompt
+
+- Make search agents shorter, make evidence files clearer and easier to read,
+  try to limit token spend on any agent, make search cheaper?
