@@ -22,8 +22,18 @@ c/update_source.sh
 {{- end}}
 
 # global
-.repos
 .gitignore
+# keep submodule git metadata out of deployed configs
+.config/nvim/.git
+.config/nvim/.gitignore
+.config/opencode/.git
+.config/opencode/.gitignore
+.config/wezterm/.git
+.config/wezterm/.gitignore
+.config/yazi/.git
+.config/yazi/.gitignore
+# Omarchy owns the generated Neovim theme link
+.config/nvim/lua/plugins/theme.lua
 .opencode
 .luarc.json
 TODO.md

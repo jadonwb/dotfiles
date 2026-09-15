@@ -4,14 +4,15 @@ This is my dotfiles repository.
 
 ## Layout
 
-| Repo (submodule)  | Live config path     |
-| ----------------- | -------------------- |
-| `.repos/nvim`     | `~/.config/nvim`     |
-| `.repos/opencode` | `~/.config/opencode` |
-| `.repos/wezterm`  | `~/.config/wezterm`  |
-| `.repos/yazi`     | `~/.config/yazi`     |
+| Repo (submodule)               | Live config path     |
+| ------------------------------ | -------------------- |
+| `dot_config/external_nvim`     | `~/.config/nvim`     |
+| `dot_config/external_opencode` | `~/.config/opencode` |
+| `dot_config/external_wezterm`  | `~/.config/wezterm`  |
+| `dot_config/external_yazi`     | `~/.config/yazi`     |
 
-Each `~/.config/<app>` is a symlink to the matching `.repos/<app>` directory.
+Chezmoi deploys each `~/.config/<app>` as a regular config directory containing
+the contents of the matching `dot_config/external_<app>` submodule checkout.
 
 ## Procedure
 
