@@ -68,26 +68,7 @@ Additionally:
 
 # language and behavior tweaks
 
-- search use runner in background more often? or reuse runner?
--
-
-## Builder report?
-
-maybe make the builder report also an artifact that can be passed to review?
-keep it out of planner context?
-
-all agents just report: `Done report saved at: {$path}`
-
-## tools and artifacts
-
-MAYBE
-
-Keep base artifact layer, but personalize the tools a bit more per agent, that
-way they don't call artifact-publish(kind=plan, ..) they just do
-publish_plan(...), publish_evidence(...), publish_review(...) and the kind is
-prefilled. Additionally the kind can be encoded into the name, instead of art_xx
-it is plan_xxx, evid_xxx, revw_xxx, but that is second priority if it makes it
-harder.
+- planner use runner more? or just remove?
 
 ## general interaction outside of planning or review
 
@@ -99,3 +80,23 @@ keep headless separate from interactive tui opencode (session wise)
 ## neovim + opencode session
 
 keymap to create new session (and name it?)
+
+## headless / mini session plugin in neovim companion panel
+
+snacks terminal, is the session I ask questions to, possibly different agent
+than planner?
+
+# HUGE IDEA
+
+custom markdown plugin or something or lsp that detects when I hover an evidence
+file inside a plan, or `gx` it like a link or something, it takes me to the
+evidence, I can ask questions in the evidence and flesh it out, and it sends
+that directly to the search, I can mark evidence as read, which returns me to
+the plan
+
+this doesn't stop me from manually reading evidence
+
+setup a grep in evidence picker, shows evidence, greps inside them, the preview
+is also the view that runs when you open the file?
+
+---
