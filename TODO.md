@@ -36,14 +36,6 @@ bring back minipairs or autopair, use tab-out plugin, treesitter indent,
 
 gitsigns keymaps for hunk preview
 
-## opencode keymaps
-
-Alt-r to restart
-
-keymap to toggle subagent panel? or one to open one to close (prefer toggle)
-
-where to find v2 docs?
-
 ## yazi as file manager
 
 yazi functionality and plugins to make it a full nautilus replacement for
@@ -120,7 +112,7 @@ multiple ways to get answers or feedback:
 
 headless agents can edit files directly for quick edits?
 
-# HUGE IDEA
+## IDEA
 
 custom markdown plugin or something or lsp that detects when I hover an evidence
 file inside a plan, or `gx` it like a link or something, it takes me to the
