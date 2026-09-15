@@ -134,4 +134,12 @@ setup a grep in evidence picker, shows evidence, greps inside them, the preview
 is also the view that runs when you open the file? would need more opencode
 integration?
 
+## another good idea
+
+this is related to core ui2 and having more of the notifications and mesages
+appear in the messages/pager buffers
+
+I could have headless agents respond in the pager or messages, and I can open
+the pager and read it, but it doesn't have to be a file?
+
 ---
