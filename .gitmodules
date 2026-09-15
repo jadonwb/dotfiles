@@ -1,12 +1,12 @@
-[submodule ".repos/opencode"]
-	path = .repos/opencode
+[submodule "dot_config/external_opencode"]
+	path = dot_config/external_opencode
 	url = git@github.com:jadonwb/opencode.git
-[submodule ".repos/wezterm"]
-	path = .repos/wezterm
+[submodule "dot_config/external_wezterm"]
+	path = dot_config/external_wezterm
 	url = git@github.com:jadonwb/wezterm.git
-[submodule ".repos/yazi"]
-	path = .repos/yazi
+[submodule "dot_config/external_yazi"]
+	path = dot_config/external_yazi
 	url = git@github.com:jadonwb/yazi.git
-[submodule ".repos/nvim"]
-	path = .repos/nvim
+[submodule "dot_config/external_nvim"]
+	path = dot_config/external_nvim
 	url = git@github.com:jadonwb/nvim.git
