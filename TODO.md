@@ -86,6 +86,40 @@ keymap to create new session (and name it?)
 snacks terminal, is the session I ask questions to, possibly different agent
 than planner?
 
+doesn't seem to have a session switcher?
+
+private server for headless neovim stuff?
+
+send filepath + line number, it reads, it answers or launches background
+searchers if needed, notifies me when done, in the background.
+
+separate session from my interactive session?
+
+make this the avenue that can direct use search subagents? or still have
+headless version of planner that knows not to output, and only communicate via
+files and neovim notifications, pure orchestration of the workflow?
+
+make my own 'prompt' buffer, it will be a scratch-pad like float, inside of
+which I can put notes, attach file references, etc. and then have option to send
+to a session, functions as scratch-pad at first, isn't always enforced to
+connect to session until I use the send keymap (lazy session selection)
+
+multiple options:
+
+- send filepath, selection, or question directly to headless agent
+- directly to interactive agent in tui session (basically send to any session)
+- send to scratch buffer, maybe scratch buffer has a template and any send to
+  the buffer inserts it at the correct location? how to enforce with my custom
+  edits?
+
+multiple ways to get answers or feedback:
+
+- notification that a new evidence is ready to read?
+- agent responds in interactive tui, or in opencode mini session, or if headless
+  responds in a file?
+
+headless agents can edit files directly for quick edits?
+
 # HUGE IDEA
 
 custom markdown plugin or something or lsp that detects when I hover an evidence
@@ -94,9 +128,10 @@ evidence, I can ask questions in the evidence and flesh it out, and it sends
 that directly to the search, I can mark evidence as read, which returns me to
 the plan
 
-this doesn't stop me from manually reading evidence
+this doesn't stop me from manually reading evidence, and marking as read.
 
 setup a grep in evidence picker, shows evidence, greps inside them, the preview
-is also the view that runs when you open the file?
+is also the view that runs when you open the file? would need more opencode
+integration?
 
 ---
