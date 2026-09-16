@@ -1,0 +1,5 @@
+[settings.npm]
+package_manager = "npm"
+
+[tools]
+"npm:@opencode/cli" = { version = "latest", allow_low_downloads = true, allow_builds = true }
