@@ -153,11 +153,9 @@ asks.
 - some type of notification or indication in neovim when new artifact is ready?
 - less notifications, less verbose titles, cleaner UI
 
-- session disconnent
+- session disconnect, other session management ideas
 
 - cleanup and removal of old sessions and old artifacts?
-
-- Shorten tool descriptions
 
 - review outcome vs summary, and planner reading wrong one?
 
