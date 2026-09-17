@@ -156,6 +156,10 @@ asks.
 - session disconnect, other session management ideas
   - neovim connects to session on a running oc server, not scoped to cwd?
 
+- checks section in the plan from planner -> builder too many checks that aren't
+  useful most of the time (makes builder waste time running or searching things
+  unrelated)
+
 - append follow-up questions into top level evidence section?
 
 - cleanup and removal of old sessions and old artifacts?
