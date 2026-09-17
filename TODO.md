@@ -265,6 +265,17 @@ statusline, find next/prev stays in statusline
 
 make hunk go into statusline
 
+## Left side
+
+Left side will be reserved for:
+
+a special new yazi plugin using snacks terminal, (or finally help yazi.nvim with
+the snacks lazygit features)
+
+I want to have it left side, turn off the preview pane (pure navigation),
+opening file opens it in neovim, without having to exit yazi, make it toggleable
+(hide or show), it can support tabs, etc.
+
 ---
 
 # Interactive both sides editable, opencode artifacts
