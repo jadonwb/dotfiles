@@ -136,45 +136,186 @@ the pager and read it, but it doesn't have to be a file?
 
 ---
 
-# Opencode determinism (via tools)
+## Plan or artifact read marker
 
-- Every single thing a model does that I would want it to do again, I just
-  implement as a pre-made tool.
-  - working on a dotfile submodule, and it works? then a tool that auto-commits
-    and pushes, but let's model provide a title or message.
-  - working inside chezmoi? then a tool to force apply chezmoi?
-  - further template the plan file, and other artifacts and make tools to format
-    them? might enable easier patching, model doesn't have to write entire file,
-    boilerplate is injected automatically, further enhances the view vs saved
-    content idea
-  - minimizes both the output tokens needed by a model, and the chance that it
-    does things strangely
-  - make tools themselves short and descriptive, and then the system prompts for
-    tools looks like a scratch (scratch as in the gui+puzzle based toy
-    programming game) workflow of using tools:
+change logic to approve plan on close keymap, or mark other artifacts as read.
+before it actually closes it will bring up selection menu to mark read/approved
+or do nothing? selection menu seems fine, even with explicit keymap it still
+asks.
 
-    e.g.
+# Issues and tweaks:
 
-    ```
-    # Builder
+- snacks picker not searchable, fix
+- grep inside evidence, or plan, etc. using rendered view files
+- make picker filterable by type, either via keymap or a tag like plan! or :plan
+  or something
+- make two pickers: all artifacts, pending artifacts? or keep the A-a toggle?
+- some type of notification or indication in neovim when new artifact is ready?
+- less notifications, less verbose titles, cleaner UI
 
-    ...
+- session disconnent
 
-    ## Workflow
+- cleanup and removal of old sessions and old artifacts?
 
-    - plan_load(args...)
-    - evidence_load(args...)
-    - (read, grep, glob, etc.)
-    - (tools to run checks, or runner)
-    - if issue:
-        - issue_report(args...)
-        - continue
-    -
+- Shorten tool descriptions
 
-    ```
+- review outcome vs summary, and planner reading wrong one?
 
-- Split up workflows, introduce skills and references so models have more
-  on-the-fly context that doesn't need to be ingrained in the system prompt
+- when planner starts builder, it then offers next task idea, or something to
+  guide the session
 
-- Make search agents shorter, make evidence files clearer and easier to read,
-  try to limit token spend on any agent, make search cheaper?
+builder report too similar to review's review in name; maybe builder brief?
+
+---
+
+# Very cool plugin for annotations
+
+Display a virtual mark or sign where the annotation is located, save them
+according to git branch, have them searchable in picker
+
+they are recorded against location in the file, possibly save and match against
+the line's content, in case other content moves?
+
+allow all annotations, one annotation, all annotation in same buffer to be
+copied/yanked, or sent places.
+
+then when at the location a user command or keymap will bring up a nice preview
+like lsp hover
+
+# Potential Idea for artifact review
+
+pop the artifacts up into a float such that they can either be hidden, or when
+closed that marks them as read.
+
+leaving the float window hides it,
+
+The float window could even be a special listing of only open artifact buffers,
+meaning when one is closed, another could open, or it could switch to a list of
+them, or a special UI like lazy or mason that has them organized on a dashboard
+
+# Potential settings menu or command prompt type feature
+
+Potentially implement a float command prompt on ctrl+space, similar to
+opencodes, that has configured settings options and sections of things you might
+want to do, smart matching, on the side shows the keymap, potential which-key
+replacement?
+
+types of keymaps that would live in this instead:
+
+1. `<leader>u*` - all of the ui toggle type keymaps would be better in a menu
+   (submenu for toggles)
+
+2. some git actions, git worktree selection, lazygit specific views
+
+3. diffview, only the during diffview keymaps stay active
+
+4. focus mode
+
+5. tab creation or rename or things like that, buffer rename
+
+6. move cwd
+
+7. new file/buffer, with path input prompt?
+
+8. better keymap helper than which-key. One that shows file local keymaps, and
+   other keymaps, potentially searchable
+
+9. special copy/paste clipboard items such as:
+
+- image embedding
+- filename, relative path, absolute path, filestem, working directory
+- annotations?
+
+basically keep keymaps for my most used things, and interactive editing type
+things?
+
+# Very cool layout manager idea
+
+Convert the right side empty buffer into a special space for:
+
+pending notifications, instead of snacks, implement my own vim.notify that takes
+all notifications, and styles them on the right top to bottom, and they can be
+dismissed, or have a timeout if transient, or have an action (e.g. new artifact
+from opencode).
+
+style:
+
+e for expand, d for dismiss
+
+```
+Source
+Message
+---
+d dismiss          e expand
+```
+
+make them wrap, or truncate? well definitely truncate since we will have expand
+feature
+
+The notifications can be focused and expanded up into center to review more
+closely or copy the content
+
+the list of notifications will be scrollable?
+
+there will be a small status bar at bottom with info or keymap hints, yeah and
+make the actual status go into lualine, like a pending notification number.
+
+make whole thing hideable of course.
+
+items that will still go into pager or messages will, and lsp stays in
+statusline, find next/prev stays in statusline
+
+make hunk go into statusline
+
+---
+
+# Interactive both sides editable, opencode artifacts
+
+Potentially make some type of custom treesitter or markdown parser or lsp that
+matches against the artifact filetype and templates, and when I update a section
+inside a matching section of the template, on save it writes back my changes to
+the record.
+
+If there is text outside of a section or a new section that was not in the
+record, it does its best to either:
+
+- remove it
+- snap it into nearest section
+- make a new section in the record
+
+Since the view should regenerate from the record, it will be a type of
+autoformat?
+
+neovim prettier is disabled for this type of file?
+
+If there is a conflict due to an agent edit of the record, it will inform me
+with a notification, make a copy of my changes to a tmp file, and upon resolving
+any changes, I can close the tmp one
+
+If it is in a section like evidence that isn't meant to be editable, on save it
+doesn't write back to record and just undoes it
+
+if the buffer can become context aware of the sections, then the tool on the
+opnecode side could become much more refined, where we reintroduce the ID for
+every single item in the file, so that when I provide feedback over a section,
+or a range of sections depending on selection, those exact section IDs and the
+relevant context get sent to the agent for feedback, clarification, etc. and it
+can use the patch tool to target the exact sections
+
+allow for selecting multiple sections before sending feedback
+
+Benefits:
+
+1. I can make edits to the plan myself before approval.
+2. I can make edits and then ask for the agent to expand that across the plan,
+   or verify a fact
+3. The agent can successfully patch every section I mention and it works
+   directly with the schema via the exact item ID and a tool
+
+This does not have to be exclusive to planner, this would also allow am eventual
+direct clarification or rewrite from a search agent.
+
+Imagine I am in the buffer, hovered over a piece of evidence or a code snippet,
+and I give feedback / ask the agent to explain the evidence in a different way,
+or rewrite the code in another style, and it takes the section, has the
+knowledge already, and outputs the result via the ID and the tool
