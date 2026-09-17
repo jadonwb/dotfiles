@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Bootstrap-only clone of local source repositories used by dev tooling
+#
+# Runs once per machine on the first successful `chezmoi apply`. A checkout is
+# cloned only when its destination is absent; any existing repository is left
+# completely untouched (no pull, reset, replace, or modification). All later
+# updates and local work are managed through ordinary git operations.
+
+# Parent directory that holds the local checkouts.
+workspace="$HOME/c"
+
+# Source repositories to bootstrap: "clone-url|relative-destination".
+# Destination is resolved beneath $workspace. Add more entries to extend.
+repositories=(
+  "git@github.com:jadonwb/arrowlake.nvim.git|arrowlake.nvim"
+)
+
+for entry in "${repositories[@]}"; do
+  url="${entry%%|*}"
+  rel="${entry##*|}"
+  target="$workspace/$rel"
+
+  if [[ -d "$target/.git" ]]; then
+    # echo "source: $rel already present at $target; leaving untouched"
+    continue
+  fi
+
+  if [[ -e "$target" ]]; then
+    # echo "source: $target exists but is not a git checkout; skipping clone of $url" >&2
+    continue
+  fi
+
+  mkdir -p "$workspace"
+  echo "source: cloning $rel -> $target"
+  git clone "$url" "$target"
+done
