@@ -328,3 +328,6 @@ Imagine I am in the buffer, hovered over a piece of evidence or a code snippet,
 and I give feedback / ask the agent to explain the evidence in a different way,
 or rewrite the code in another style, and it takes the section, has the
 knowledge already, and outputs the result via the ID and the tool
+
+This is also extensible to anything tree-sitter related, context aware snippet
+help and stuff, idk
