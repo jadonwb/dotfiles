@@ -28,7 +28,7 @@ for entry in "${repositories[@]}"; do
   fi
 
   if [[ -e "$target" ]]; then
-    # echo "source: $target exists but is not a git checkout; skipping clone of $url" >&2
+    echo "source: $target exists but is not a git checkout; skipping clone of $url" >&2
     continue
   fi
 
