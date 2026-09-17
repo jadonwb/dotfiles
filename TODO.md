@@ -154,6 +154,7 @@ asks.
 - less notifications, less verbose titles, cleaner UI
 
 - session disconnect, other session management ideas
+  - neovim connects to session on a running oc server, not scoped to cwd?
 
 - cleanup and removal of old sessions and old artifacts?
 
