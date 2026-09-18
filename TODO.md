@@ -5,18 +5,7 @@
 Mermaid sequence diagrams in markdown, cleanup markdown rendering to reduce as
 many virtual lines as possible.
 
-Encourage agents to use sequence diagrams in reports and evidence.
-
-## Neovim notifications
-
-since we use notifications more now, cleanup styling of things like :NVEnv, and
-other helpers send things to messages/pager instead of vim.notify, keep
-vim.notify only for things that happen 'in background' ensure consistency of
-debug/logging/notifications and do fuller ui2 audit again. make lsp progress be
-a simple ascii block load bar instead of its current shape/style? make lsp
-progress update without me moving my cursor, e.g. timer isn't seeming to run
-
-can move command line and search line into the lualine via tiny-command line?
+Encourage agents to use sequence diagrams in reports and evidence?
 
 ## neovim cleanup config and custom code
 
@@ -56,22 +45,12 @@ Additionally:
 
 - yazi.nvim (eventual pr to help with snacks.terminal migration?)
 
----
-
-# language and behavior tweaks
-
-- planner use runner more? or just remove?
-
 ## general interaction outside of planning or review
 
 be able to ask an opencode session questions 'headlessly' and get responses in
 evidence or answer documents? make a custom agent for headless planner mode?
 
 keep headless separate from interactive tui opencode (session wise)
-
-## neovim + opencode session
-
-keymap to create new session (and name it?)
 
 ## headless / mini session plugin in neovim companion panel
 
