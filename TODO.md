@@ -329,4 +329,24 @@ knowledge already, and outputs the result via the ID and the tool
 This is also extensible to anything tree-sitter related, context aware snippet
 help and stuff, idk
 
-# Gitsigns history of hunk over time? per hunk blame/log popup?
+---
+
+## Gitsigns history of hunk over time? per hunk blame/log popup?
+
+idk
+
+## Neovim / Dotfiles
+
+- split opencode-artifacts
+  - separate picker
+  - separate rpc backend
+  - separate keymaps and interactive behavior stuff
+  - shared opencode backend for later headless or mini support
+- investigate leaving LazyVim (for now copy lsp/text-objects/extras I use?)
+  - very custom config, how much left is LazyVim providing?
+  - the <leader>u ui toggles
+  - extras like chezmoi and stuff
+- update neovim to 0.13 for new features
+  - images, immediate file watcher, etc.
+
+---
