@@ -13,7 +13,10 @@ XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
 IMV_DIR="$HOME/c/imv"
 NEOVIM_DIR="$HOME/c/neovim"
 ELEPHANT_PROVIDERS_DIR="$HOME/.config/elephant/providers"
-QUICKSHELL_NIX_PROFILE="${QUICKSHELL_NIX_PROFILE:-}"
+ELEPHANT_BIN_DIR="$HOME/.local/bin"
+ELEPHANT_SERVICE_DROPIN_DIR="$HOME/.config/systemd/user/elephant.service.d"
+QUICKSHELL_QT_VERSION="${QUICKSHELL_QT_VERSION:-6.8.3}"
+QUICKSHELL_QT_DIR="${QUICKSHELL_QT_DIR:-$HOME/Qt/$QUICKSHELL_QT_VERSION/gcc_64}"
 XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
 TERMFILECHOOSER_CONFIG_DIR="$HOME/.config/xdg-desktop-portal-termfilechooser"
 TERMFILECHOOSER_CONFIG_FILE="$TERMFILECHOOSER_CONFIG_DIR/config"
@@ -26,51 +29,24 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-find_nix() {
-  local candidate
-
-  for candidate in \
-    "${NIX_BIN:-}" \
-    "$(command -v nix 2>/dev/null || true)" \
-    "$HOME/.nix-profile/bin/nix" \
-    "/nix/var/nix/profiles/default/bin/nix"; do
-    if [[ -n "$candidate" && -x "$candidate" ]]; then
-      printf '%s\n' "$candidate"
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-run_nix() {
-  local nix_bin
-
-  nix_bin="$(find_nix)" || return 1
-  "$nix_bin" --extra-experimental-features 'nix-command flakes' "$@"
-}
-
-quickshell_profile_args() {
-  if [[ -n "$QUICKSHELL_NIX_PROFILE" ]]; then
-    printf '%s\n%s\n' --profile "$QUICKSHELL_NIX_PROFILE"
-  fi
-}
-
-quickshell_profile_bin_dir() {
-  if [[ -n "$QUICKSHELL_NIX_PROFILE" ]]; then
-    printf '%s/bin\n' "$QUICKSHELL_NIX_PROFILE"
-    return
-  fi
-
-  printf '%s/bin\n' "$HOME/.nix-profile"
-}
-
 update_repo() {
   local repo_dir="$1"
 
   printf '\n==> Updating %s\n' "$repo_dir"
   cd "$repo_dir"
-  git pull
+
+  # Detached HEAD (e.g. neovim pinned to a release tag) has no branch to merge
+  # into, so `git pull` fails. Fetch refs/tags instead and let the build step
+  # decide what to check out.
+  if git symbolic-ref -q HEAD >/dev/null; then
+    git pull
+  else
+    printf '   Detached HEAD at %s; fetching instead of pulling.\n' \
+      "$(git describe --tags --always)"
+    # --force: some remotes (e.g. neovim nightly/stable) move existing tags, and
+    # a plain --tags fetch aborts rather than update them.
+    git fetch --prune --tags --force
+  fi
 }
 
 build_yazi() {
@@ -104,9 +80,12 @@ build_elephant() {
     providers=(clipboard desktopapplications files menus symbols)
   fi
 
+  mkdir -p "$ELEPHANT_BIN_DIR"
   (
     cd cmd/elephant
-    go install elephant.go
+    # Build to a stable, version-independent path instead of mise's
+    # version-specific GOBIN (which breaks systemd ExecStart on every Go bump).
+    go build -o "$ELEPHANT_BIN_DIR/elephant" elephant.go
   )
 
   for provider in "${providers[@]}"; do
@@ -119,6 +98,40 @@ build_elephant() {
   done
 }
 
+ensure_elephant_service() {
+  printf '\n==> Ensuring elephant systemd user service\n'
+
+  # systemd resolves a bare ExecStart=elephant with its own compiled-in search
+  # path, which does not include ~/.local/bin on Ubuntu. Give it one via a
+  # drop-in so the unit itself keeps the canonical Omarchy content.
+  mkdir -p "$ELEPHANT_SERVICE_DROPIN_DIR"
+  cat >"$ELEPHANT_SERVICE_DROPIN_DIR/path.conf" <<'EOF'
+[Service]
+ExecSearchPath=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EOF
+
+  local unit="$HOME/.config/systemd/user/elephant.service"
+  local stamp
+
+  # `elephant service enable` only writes the unit if it is absent; repair any
+  # stale hand-written unit (e.g. one with a version-pinned absolute ExecStart).
+  if [[ ! -f "$unit" ]] || ! grep -q '^ExecStart=elephant$' "$unit"; then
+    if [[ -f "$unit" ]]; then
+      stamp="$(date +%s)"
+      cp -a "$unit" "$unit.bak-$stamp"
+      printf '   Replaced non-canonical unit (backup: elephant.service.bak-%s)\n' "$stamp"
+      rm -f "$unit"
+    fi
+    "$ELEPHANT_BIN_DIR/elephant" service enable
+  fi
+
+  if command_exists systemctl; then
+    systemctl --user daemon-reload || true
+    systemctl --user enable elephant.service >/dev/null 2>&1 || true
+    systemctl --user restart elephant.service || true
+  fi
+}
+
 build_mako() {
   printf '\n==> Building mako\n'
   cd "$MAKO_DIR"
@@ -126,40 +139,26 @@ build_mako() {
   ninja -C build install
 }
 
-build_quickshell_nix() {
-  local -a profile_args=()
+build_quickshell() {
+  printf '\n==> Building quickshell (Qt %s)\n' "$QUICKSHELL_QT_VERSION"
 
-  if ! find_nix >/dev/null; then
-    printf '\n==> Unable to build quickshell\n' >&2
-    printf 'Nix is required for quickshell on this system. Install Nix, then rerun this script.\n' >&2
+  if [[ ! -d "$QUICKSHELL_QT_DIR" ]]; then
+    printf 'Qt %s not found at %s\n' "$QUICKSHELL_QT_VERSION" "$QUICKSHELL_QT_DIR" >&2
+    printf 'Install it with:\n' >&2
+    printf '  aqt install-qt linux desktop %s linux_gcc_64 --outputdir "$HOME/Qt" -m qtshadertools qt5compat qtimageformats\n' \
+      "$QUICKSHELL_QT_VERSION" >&2
     return 1
   fi
 
-  if [[ -n "$QUICKSHELL_NIX_PROFILE" ]]; then
-    mkdir -p "$(dirname "$QUICKSHELL_NIX_PROFILE")"
-    mapfile -t profile_args < <(quickshell_profile_args)
-  fi
-
-  printf '\n==> Installing quickshell to Nix profile\n'
   cd "$QUICKSHELL_DIR"
 
-  if run_nix profile list "${profile_args[@]}" | grep -q 'Name:[[:space:]]*quickshell'; then
-    run_nix profile upgrade "${profile_args[@]}" quickshell
-  else
-    run_nix profile add "${profile_args[@]}" .#quickshell
-  fi
-
-  if [[ -n "$QUICKSHELL_NIX_PROFILE" ]]; then
-    printf '   quickshell profile: %s\n' "$QUICKSHELL_NIX_PROFILE"
-  else
-    printf '   quickshell profile: default user profile (~/.nix-profile)\n'
-  fi
-
-  printf '   PATH entry: %s\n' "$(quickshell_profile_bin_dir)"
-}
-
-build_quickshell() {
-  build_quickshell_nix
+  cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="$QUICKSHELL_QT_DIR" \
+    -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
+    -DCMAKE_INSTALL_RPATH="$QUICKSHELL_QT_DIR/lib" \
+    -DVENDOR_CPPTRACE=ON
+  cmake --build build
+  cmake --install build
 }
 
 build_imv() {
@@ -347,6 +346,7 @@ main() {
     elephant)
       update_repo "$ELEPHANT_DIR"
       build_elephant
+      ensure_elephant_service
       ;;
     mako)
       update_repo "$MAKO_DIR"
@@ -399,6 +399,7 @@ main() {
   build_yazi
   build_walker
   build_elephant
+  ensure_elephant_service
   build_mako
   build_quickshell
   build_imv
