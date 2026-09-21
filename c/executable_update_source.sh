@@ -110,6 +110,15 @@ ensure_elephant_service() {
 ExecSearchPath=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 EOF
 
+  # systemd gives services the compiled-in PATH, not the session/uwsm PATH, so
+  # Elephant cannot find bare `omarchy-*` commands used by web app .desktop Exec
+  # lines (e.g. omarchy-launch-webapp). Set PATH explicitly so the menu can
+  # launch web apps.
+  cat >"$ELEPHANT_SERVICE_DROPIN_DIR/env.conf" <<'EOF'
+[Service]
+Environment=PATH=%h/.local/bin:%h/.local/share/omarchy/bin:%h/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+EOF
+
   local unit="$HOME/.config/systemd/user/elephant.service"
   local stamp
 
