@@ -145,6 +145,17 @@ asks.
 
 - review outcome vs summary, and planner reading wrong one?
 
+- when launching a runner purely to get the full dump of the command anyway,
+  just have it pipe to a file in /tmp and report the path, so as to not waste
+  output tokens
+
+- when an artifact becomes stale or superseded, allow either neovim side
+  functionality to hide it/mark stale, or add a tool that agents can mark it
+  stale and which artifacts supersedes it?
+
+- if a correction is being done, allow it to just append a follow-up, and then
+  resume the builder, without needing a separate plan + approval?
+
 - when planner starts builder, it then offers next task idea, or something to
   guide the session
 
@@ -317,3 +328,5 @@ knowledge already, and outputs the result via the ID and the tool
 
 This is also extensible to anything tree-sitter related, context aware snippet
 help and stuff, idk
+
+# Gitsigns history of hunk over time? per hunk blame/log popup?
