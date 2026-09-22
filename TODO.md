@@ -161,6 +161,20 @@ asks.
 
 builder report too similar to review's review in name; maybe builder brief?
 
+## Session hand-off
+
+With the artifact system set up, should be very easy to essentially make my own
+compaction via a formatted session artifact that the next planner loads as its
+first prompt. This would allow me to run super cheap low input context token
+sessions that implement decent working chunks at a time, and save money.
+
+Not too aggressive to take advantage of built-up session context and input
+caching, and we can also ensure that subagents hand-off smoothly between
+sessions,same with artifacts. Would be even better if opencode would allow
+subagents to move working directories and I could flag all artifacts in my
+plugin with a special hand-off flag that lets them be 'claimed' by another
+session?
+
 ---
 
 # Very cool plugin for annotations
