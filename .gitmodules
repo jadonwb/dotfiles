@@ -1,12 +1,3 @@
-[submodule "dot_config/external_opencode"]
-	path = dot_config/external_opencode
-	url = git@github.com:jadonwb/opencode.git
-[submodule "dot_config/external_wezterm"]
-	path = dot_config/external_wezterm
-	url = git@github.com:jadonwb/wezterm.git
-[submodule "dot_config/external_yazi"]
-	path = dot_config/external_yazi
-	url = git@github.com:jadonwb/yazi.git
 [submodule "dot_config/external_nvim"]
 	path = dot_config/external_nvim
 	url = git@github.com:jadonwb/nvim.git

@@ -1,0 +1,42 @@
+[[plugin.deps]]
+use = "yazi-rs/plugins:git"
+rev = "58c4f4e"
+hash = "5bb0bfab901d3601c370eafdd66edd31"
+
+[[plugin.deps]]
+use = "MasouShizuka/close-and-restore-tab"
+rev = "b2153bc"
+hash = "1493e40f8f4f222c9ecb24cf85ccabd2"
+
+[[plugin.deps]]
+use = "ndtoan96/ouch"
+rev = "596b666"
+hash = "c2f4f4aca257dcceafa9e3b828dbf1c9"
+
+[[plugin.deps]]
+use = "grappas/wl-clipboard"
+rev = "8cc5524"
+hash = "5c587834c274dca9059092714ece1f18"
+
+[[plugin.deps]]
+use = "atareao/convert"
+rev = "ce060d9"
+hash = "1c0465351f2a344e842f065ab316f265"
+
+[[plugin.deps]]
+use = "GianniBYoung/rsync"
+rev = "b5c657a"
+hash = "72828957273094ed0ef52792e3290900"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:chmod"
+rev = "58c4f4e"
+hash = "87472b05a8c420100f6a2b9cde1e7746"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:mount"
+rev = "58c4f4e"
+hash = "b95f898e6dc60b52edbc415952e14395"
+
+[flavor]
+deps = []

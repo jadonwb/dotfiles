@@ -1,0 +1,251 @@
+{
+  "$schema": "https://opencode.ai/theme.json",
+  "base": {
+    "categorical": [
+      "purple",
+      "orange",
+      "green",
+      "yellow",
+      "blue",
+      "red"
+    ],
+    "text": {
+      "base": "$hue.neutral.200",
+      "muted": "$hue.neutral.400",
+      "action": {
+        "primary": {
+          "base": "$text.base",
+          "$disabled": "$hue.neutral.400",
+          "$focused": "$hue.neutral.800",
+          "$selected": "$hue.interactive.200"
+        },
+        "secondary": {
+          "base": "$text.muted",
+          "$hovered": "$text.base"
+        },
+        "destructive": {
+          "base": "$hue.neutral.800",
+          "$disabled": "$hue.neutral.400"
+        }
+      },
+      "formfield": {
+        "base": "$hue.neutral.200",
+        "$hovered": "$hue.interactive.200",
+        "$focused": "$hue.interactive.200",
+        "$pressed": "$hue.interactive.200",
+        "$disabled": "$hue.neutral.400",
+        "$selected": "$hue.interactive.200"
+      },
+      "feedback": {
+        "error": {
+          "base": "$hue.red.200"
+        },
+        "warning": {
+          "base": "$hue.yellow.200"
+        },
+        "success": {
+          "base": "$hue.green.200"
+        },
+        "info": {
+          "base": "#5352cd"
+        }
+      }
+    },
+    "background": {
+      "base": "$hue.neutral.800",
+      "raised": {
+        "base": "#09081a",
+        "high": "#09081a",
+        "max": "#070614"
+      },
+      "action": {
+        "primary": {
+          "base": "transparent",
+          "$hovered": "$hue.neutral.700",
+          "$focused": "$hue.interactive.200",
+          "$selected": "transparent"
+        },
+        "secondary": {
+          "base": "transparent"
+        },
+        "destructive": {
+          "base": "$hue.red.200"
+        }
+      },
+      "formfield": {
+        "base": "$background.base"
+      },
+      "feedback": {
+        "error": {
+          "base": "$background.base"
+        },
+        "warning": {
+          "base": "$background.base"
+        },
+        "success": {
+          "base": "$background.base"
+        },
+        "info": {
+          "base": "$background.base"
+        }
+      }
+    },
+    "border": {
+      "base": "#070614"
+    },
+    "scrollbar": {
+      "base": "$hue.interactive.200"
+    },
+    "diff": {
+      "text": {
+        "added": "$hue.green.200",
+        "removed": "$hue.red.200",
+        "context": "$hue.neutral.400",
+        "hunkHeader": "#5c6296"
+      },
+      "background": {
+        "added": "#132834",
+        "removed": "#430930",
+        "context": "#42393b"
+      },
+      "highlight": {
+        "added": "$hue.green.200",
+        "removed": "$hue.red.200"
+      },
+      "lineNumber": {
+        "text": "#312e55",
+        "background": {
+          "added": "#132834",
+          "removed": "#430930"
+        }
+      }
+    },
+    "syntax": {
+      "comment": "#5c6296",
+      "keyword": "#d91c87",
+      "function": "$hue.interactive.200",
+      "variable": "$hue.neutral.200",
+      "string": "$hue.green.200",
+      "number": "$hue.accent.200",
+      "type": "#5352cd",
+      "operator": "#9ac1e5",
+      "punctuation": "$hue.neutral.400"
+    },
+    "markdown": {
+      "text": "$hue.neutral.200",
+      "heading": "$hue.interactive.200",
+      "link": "$hue.interactive.200",
+      "linkText": "#33d4b4",
+      "code": "$hue.yellow.200",
+      "blockQuote": "#5c6296",
+      "emphasis": "$hue.neutral.200",
+      "strong": "$hue.neutral.200",
+      "horizontalRule": "#312e55",
+      "listItem": "#9ac1e5",
+      "listEnumeration": "$hue.accent.200",
+      "image": "$hue.interactive.200",
+      "imageText": "#33d4b4",
+      "codeBlock": "$hue.neutral.200"
+    },
+    "@dialog": {
+      "background": {
+        "base": "$background.raised.base",
+        "raised": {
+          "base": "#09081a",
+          "high": "#161440",
+          "max": "#070614"
+        },
+        "action": {
+          "primary": {
+            "$hovered": "$background.raised.high"
+          }
+        }
+      }
+    }
+  },
+  "dark": {
+    "hue": {
+      "gray": {
+        "100": "#e3eafe",
+        "200": "#bec8e8",
+        "300": "#9da6d0",
+        "400": "#7e85b8",
+        "500": "#3f4163",
+        "600": "#09081a",
+        "700": "#09081a",
+        "800": "#0d0c25",
+        "900": "#111031"
+      },
+      "red": {
+        "100": "#f73662",
+        "200": "#e50050",
+        "300": "#c21d48",
+        "400": "#a80e3b",
+        "500": "#891531",
+        "600": "#710725",
+        "700": "#57071b",
+        "800": "#3f0412",
+        "900": "#290108"
+      },
+      "orange": {
+        "100": "#fbc38a",
+        "200": "#fb9b00",
+        "300": "#d48620",
+        "400": "#b46e06",
+        "500": "#915a10",
+        "600": "#71450e",
+        "700": "#533207",
+        "800": "#371f01",
+        "900": "#1c0e01"
+      },
+      "yellow": {
+        "100": "#ffffff",
+        "200": "#ffd888",
+        "300": "#dbb76f",
+        "400": "#b79856",
+        "500": "#95793e",
+        "600": "#745c27",
+        "700": "#554010",
+        "800": "#362702",
+        "900": "#191001"
+      },
+      "green": {
+        "100": "#359c7a",
+        "200": "#2a8a6b",
+        "300": "#1f785c",
+        "400": "#14674e",
+        "500": "#07563f",
+        "600": "#0b4433",
+        "700": "#013526",
+        "800": "#01251a",
+        "900": "#02160f"
+      },
+      "cyan": "$hue.gray",
+      "blue": {
+        "100": "#4b58f2",
+        "200": "#3f3bf5",
+        "300": "#3630db",
+        "400": "#2e26c1",
+        "500": "#261ba7",
+        "600": "#1e108f",
+        "700": "#160477",
+        "800": "#0f0559",
+        "900": "#08033f"
+      },
+      "purple": {
+        "100": "#9458e8",
+        "200": "#834ccf",
+        "300": "#7240b7",
+        "400": "#6234a0",
+        "500": "#522889",
+        "600": "#431d73",
+        "700": "#35125d",
+        "800": "#270749",
+        "900": "#180331"
+      },
+      "accent": "$hue.orange",
+      "interactive": "$hue.blue",
+      "neutral": "$hue.gray"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+    "$schema": "https://opencode.ai/v2/cli.json",
+    "theme": {
+        "name": "arrowlake_light",
+        "mode": "system"
+    },
+    "scroll": {
+        "speed": 5,
+        "acceleration": true
+    },
+    "keybinds": {
+        "app.exit": "alt+q",
+        "prompt.editor": "alt+t",
+        "service.restart": "alt+r",
+        "command.palette.show": "ctrl+space",
+        "session.line.up": "alt+k",
+        "session.line.down": "alt+j",
+        "composer.subagent.up": "k,up,ctrl+p",
+        "composer.subagent.down": "j,down,ctrl+n",
+        "session.child.first": "tab",
+        "prompt.history.previous": "none",
+        "prompt.history.next": "none"
+    },
+    "prompt": {
+        "image_preview": true
+    },
+    "attention": {
+        "notifications": true,
+        "sound": false
+    },
+    "session": {
+        "sidebar": "hide"
+    },
+    "terminal": {
+        "title": false
+    },
+    "tabs": {
+        "enabled": false
+    }
+}

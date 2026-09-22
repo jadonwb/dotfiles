@@ -1,7 +1,6 @@
 {{- if eq .machine.type "work" }}
 
 # omarchy quattro changes to ignore until I fix
-.pi/agent/skills/omarchy
 .config/kitty/kitty.conf
 .config/hyprland-preview-share-picker/config.yaml
 .config/hypr/hyprland.lua
@@ -25,12 +24,6 @@ c/update_source.sh
 # keep submodule git metadata out of deployed configs
 .config/nvim/.git
 .config/nvim/.gitignore
-.config/opencode/.git
-.config/opencode/.gitignore
-.config/wezterm/.git
-.config/wezterm/.gitignore
-.config/yazi/.git
-.config/yazi/.gitignore
 # Omarchy owns the generated Neovim theme link
 .config/nvim/lua/plugins/theme.lua
 .opencode
