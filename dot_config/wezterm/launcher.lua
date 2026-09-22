@@ -491,7 +491,7 @@ end
 local function build_dotfiles()
 	local add, get = new_builder()
 
-	local function add_repo(name, dir)
+	local function add_config(name, dir)
 		add(styled(name, "Green"), function(window, pane)
 			local tab, new_pane = window:mux_window():spawn_tab({
 				domain = {
@@ -522,11 +522,11 @@ local function build_dotfiles()
 		end)
 	end
 
-	add_repo("nvim", "~/.local/share/chezmoi/dot_config/external_nvim")
-	add_repo("yazi", "~/.local/share/chezmoi/dot_config/external_yazi")
-	add_repo("opencode", "~/.local/share/chezmoi/dot_config/external_opencode")
-	add_repo("wezterm", "~/.local/share/chezmoi/dot_config/external_wezterm")
-	add_repo("hypr", "~/.local/share/chezmoi/dot_config/hypr")
+	add_config("nvim", "~/.local/share/chezmoi/dot_config/external_nvim")
+	add_config("yazi", "~/.local/share/chezmoi/dot_config/yazi")
+	add_config("opencode", "~/.local/share/chezmoi/dot_config/opencode")
+	add_config("wezterm", "~/.local/share/chezmoi/dot_config/wezterm")
+	add_config("hypr", "~/.local/share/chezmoi/dot_config/hypr")
 
 	return get()
 end
