@@ -53,6 +53,11 @@ run = "plugin tree create"
 desc = "Tree: create at hovered level or stock create"
 
 [[mgr.prepend_keymap]]
+on = "A"
+run = "plugin tree bulk_create"
+desc = "Tree: bulk create at hovered level or stock bulk create"
+
+[[mgr.prepend_keymap]]
 on = "p"
 run = "plugin tree paste"
 desc = "Tree: paste into hovered level or stock paste"
