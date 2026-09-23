@@ -1,7 +1,7 @@
 ---
 description: Implements an approved plan.
 mode: subagent
-model: opencode-go/deepseek-v4.1-flash#default
+model: openai/gpt-6-luna#default
 permissions:
   - action: edit
     resource: "*"

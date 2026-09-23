@@ -1,7 +1,7 @@
 ---
 description: System Agent
 mode: primary
-model: openai/gpt-5.6-luna
+model: openai/gpt-6-luna#high
 color: "#6660AF"
 permissions:
   - action: "*"
