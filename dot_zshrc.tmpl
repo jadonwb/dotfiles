@@ -121,7 +121,34 @@ setopt hist_save_no_dups
 setopt hist_ignore_dups
 setopt hist_find_no_dups
 
+# Expand multi-dot path prefixes (..., ...., .....) to ../.., ../../.., etc.
+# Inline function invoked via the `completer` style; no fpath/autoload needed.
+_expand_dots() {
+  local word sub
+  local patl='(#b)([^\/])..' patr='(#b)..([^\/])'
+  local repl='/..' repr='../'
+  [[ _matcher_num -gt 1 ]] && return 1
+  if [[ "$funcstack[2]" = _prefix ]]; then
+    word="$IPREFIX$PREFIX$SUFFIX"
+  else
+    word="$IPREFIX$PREFIX$SUFFIX$ISUFFIX"
+  fi
+
+  # Leave all-dots words (., .., ..., ....) to the `alias ..`..`alias ......` lines
+  [[ "$word" = *[!.]* ]] || return 1
+
+  setopt localoptions extendedglob
+  sub="$word"
+  while [[ "$sub" = *...* ]]; do
+    sub="${sub/.../../..}"
+  done
+  sub="${sub//$~patl/$match[1]$repl}"
+  sub="${sub//$~patr/$repr$match[1]}"
+  [[ "$sub" != "$word" ]] && compadd -QU -S '' "$sub"
+}
+
 # Completion styling
+zstyle ':completion:*' completer _expand_dots _complete _ignored
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
