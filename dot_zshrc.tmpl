@@ -38,15 +38,40 @@ zinit light zsh-users/zsh-syntax-highlighting
 
 zinit ice wait lucid atload'eval "$(zoxide init --cmd cd zsh)"'
 zinit light ajeetdsouza/zoxide
+
+# refresh autosuggestion at proper place
+_zsh_tab_complete_refresh() {
+  fzf-tab-complete "$@"
+  POSTDISPLAY=
+  (( $+functions[_zsh_autosuggest_fetch] )) && _zsh_autosuggest_fetch
+  zle -R
+}
+zle -N _zsh_tab_complete_refresh
+_zsh_bind_tab_refresh() {
+  bindkey -M emacs '^I' _zsh_tab_complete_refresh
+  bindkey -M viins '^I' _zsh_tab_complete_refresh
+}
+
 zinit ice wait lucid multisrc"shell/{completion,key-bindings}.zsh"
 zinit light junegunn/fzf
-zinit ice wait lucid
+zinit ice wait lucid atload'_zsh_bind_tab_refresh'
 zinit light Aloxaf/fzf-tab
 
-# zsh vi mode TODO: remove?
+# clear stale autosuggestion
+ZSH_AUTOSUGGEST_CLEAR_WIDGETS+=(expand-or-complete)
+
+# zsh vi mode
 ZVM_SYSTEM_CLIPBOARD_ENABLED=true
-ZVM_VI_HIGHLIGHT_FOREGROUND=#c8d3f5
-ZVM_VI_HIGHLIGHT_BACKGROUND=#161440
+
+# set highlight
+_zvm_theme_colors="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/current/theme/zsh_vi_colors.zsh"
+if [[ -r $_zvm_theme_colors ]]; then
+  source "$_zvm_theme_colors"
+else
+  ZVM_VI_HIGHLIGHT_FOREGROUND=#54473F
+  ZVM_VI_HIGHLIGHT_BACKGROUND=#D4C6B3
+fi
+unset _zvm_theme_colors
 
 # Add in snippets
 zinit ice wait lucid
