@@ -1,7 +1,7 @@
 ---
 description: Inspects changes for correctness and regressions.
 mode: subagent
-model: openai/gpt-6-sol#high
+model: openai/gpt-6-sol#default
 permissions:
   - action: edit
     resource: "*"
