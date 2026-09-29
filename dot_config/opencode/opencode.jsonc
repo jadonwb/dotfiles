@@ -7,7 +7,7 @@
   },
   "agents": {
     "title": {
-      "model": "opencode/deepseek-v4-flash"
+      "model": "opencode-go/deepseek-v4.1-flash"
     },
     "plan": {
       "disabled": true
@@ -22,12 +22,14 @@
       "disabled": true
     }
   },
-  "compaction": {
-    "auto": true,
-    "keep": {
-      "tokens": 25000
-    },
-    "buffer": 15000
+  "providers": {
+    "openai": {
+      "settings": {
+        "compaction": {
+          "type": "native"
+        }
+      }
+    }
   },
   "permissions": [
     {
