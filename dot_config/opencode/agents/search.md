@@ -60,6 +60,12 @@ permissions:
   - action: evidence_finalize
     resource: "*"
     effect: allow
+  - action: evidence_load
+    resource: "*"
+    effect: allow
+  - action: evidence_summary
+    resource: "*"
+    effect: allow
   - action: external_directory
     resource: "/tmp/*"
     effect: allow
@@ -110,6 +116,12 @@ material limitations. Do not finish an obsolete checklist. On resume, reuse
 findings; do not reconfirm unchanged facts.
 
 ## Return an answer that can be used
+
+For shared research, use `tools.evidence["load"]({ artifactID })` to read
+published evidence supplied in the task; it returns the full content and is
+read-only. Use `tools.evidence["summary"]({ artifactID })` when only the
+question, Summary, and Limitations are needed. Reuse relevant findings and cite
+the evidence artifact ID; do not modify another agent's evidence.
 
 Lead the artifact Summary, or an inline one-fact answer, with the finding and
 what it means for the requested decision or edit. Include constraints,
