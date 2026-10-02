@@ -1,7 +1,7 @@
 ---
 description: Implements an approved plan.
 mode: subagent
-model: openai/gpt-6-luna#default
+model: openai/gpt-6-luna#high
 permissions:
   - action: edit
     resource: "*"
