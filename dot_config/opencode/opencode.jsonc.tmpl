@@ -7,7 +7,7 @@
   },
   "agents": {
     "title": {
-      "model": "opencode-go/deepseek-v4.1-flash"
+      "model": "deepseek/deepseek-flash"
     },
     "plan": {
       "disabled": true
@@ -188,4 +188,14 @@
       "effect": "deny"
     }
   ],
+{{- if eq .machine.type "work" }}
+  "mcp": {
+    "servers": {
+      "chipdocs": {
+        "type": "remote",
+        "url": "https://mcp.gw.ext.nxp.com/mcp"
+      }
+    }
+  },
+{{- end}}
 }
