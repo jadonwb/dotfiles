@@ -1,7 +1,7 @@
 ---
 description: Researches focused source and documentation questions.
 mode: subagent
-model: deepseek/deepseek-flash#default
+model: deepseek/deepseek-flash#low
 permissions:
   - action: pdf_read
     resource: "*"
