@@ -1,7 +1,7 @@
 ---
 description: Researches focused source and documentation questions.
 mode: subagent
-model: opencode-go/deepseek-v4.1-flash#default
+model: deepseek/deepseek-flash#default
 permissions:
   - action: pdf_read
     resource: "*"
