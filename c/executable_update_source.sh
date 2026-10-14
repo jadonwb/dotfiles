@@ -4,26 +4,16 @@ set -euo pipefail
 
 FOOT_DIR="$HOME/c/foot"
 YAZI_DIR="$HOME/c/yazi"
-WALKER_DIR="$HOME/c/walker"
-ELEPHANT_DIR="$HOME/c/elephant"
-MAKO_DIR="$HOME/c/mako"
-QUICKSHELL_DIR="$HOME/c/quickshell"
 TERMFILECHOOSER_DIR="$HOME/c/xdg-desktop-portal-termfilechooser"
 XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
 IMV_DIR="$HOME/c/imv"
 NEOVIM_DIR="$HOME/c/neovim"
-ELEPHANT_PROVIDERS_DIR="$HOME/.config/elephant/providers"
-ELEPHANT_BIN_DIR="$HOME/.local/bin"
-ELEPHANT_SERVICE_DROPIN_DIR="$HOME/.config/systemd/user/elephant.service.d"
-QUICKSHELL_QT_VERSION="${QUICKSHELL_QT_VERSION:-6.8.3}"
-QUICKSHELL_QT_DIR="${QUICKSHELL_QT_DIR:-$HOME/Qt/$QUICKSHELL_QT_VERSION/gcc_64}"
 XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
 TERMFILECHOOSER_CONFIG_DIR="$HOME/.config/xdg-desktop-portal-termfilechooser"
 TERMFILECHOOSER_CONFIG_FILE="$TERMFILECHOOSER_CONFIG_DIR/config"
 XDG_PORTAL_CONFIG_DIR="$HOME/.config/xdg-desktop-portal"
 XDG_PORTAL_CONFIG_FILE="$XDG_PORTAL_CONFIG_DIR/portals.conf"
 YAZI_DESKTOP_FILE="$HOME/.local/share/applications/yazi.desktop"
-# OMARCHY_LAUNCH_TUI="$HOME/.local/share/omarchy/bin/omarchy-launch-tui"
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -54,120 +44,6 @@ build_yazi() {
   cd "$YAZI_DIR"
   cargo build --release
   sudo install -m 0755 target/release/yazi target/release/ya /usr/local/bin/
-}
-
-build_walker() {
-  printf '\n==> Building walker\n'
-  cd "$WALKER_DIR"
-  cargo build --release
-  mkdir -p "$HOME/.cargo/bin"
-  install -m 0755 target/release/walker "$HOME/.cargo/bin/"
-}
-
-build_elephant() {
-  local providers=()
-  local provider_path
-
-  printf '\n==> Building elephant\n'
-  cd "$ELEPHANT_DIR"
-  mkdir -p "$ELEPHANT_PROVIDERS_DIR"
-
-  if compgen -G "$ELEPHANT_PROVIDERS_DIR/*.so" >/dev/null; then
-    while IFS= read -r provider_path; do
-      providers+=("$(basename "$provider_path" .so)")
-    done < <(printf '%s\n' "$ELEPHANT_PROVIDERS_DIR"/*.so | sort)
-  else
-    providers=(clipboard desktopapplications files menus symbols)
-  fi
-
-  mkdir -p "$ELEPHANT_BIN_DIR"
-  (
-    cd cmd/elephant
-    # Build to a stable, version-independent path instead of mise's
-    # version-specific GOBIN (which breaks systemd ExecStart on every Go bump).
-    go build -o "$ELEPHANT_BIN_DIR/elephant" elephant.go
-  )
-
-  for provider in "${providers[@]}"; do
-    printf '   -> %s\n' "$provider"
-    (
-      cd "internal/providers/$provider"
-      go build -buildmode=plugin
-      install -m 0644 "$provider.so" "$ELEPHANT_PROVIDERS_DIR/"
-    )
-  done
-}
-
-ensure_elephant_service() {
-  printf '\n==> Ensuring elephant systemd user service\n'
-
-  # systemd resolves a bare ExecStart=elephant with its own compiled-in search
-  # path, which does not include ~/.local/bin on Ubuntu. Give it one via a
-  # drop-in so the unit itself keeps the canonical Omarchy content.
-  mkdir -p "$ELEPHANT_SERVICE_DROPIN_DIR"
-  cat >"$ELEPHANT_SERVICE_DROPIN_DIR/path.conf" <<'EOF'
-[Service]
-ExecSearchPath=%h/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-EOF
-
-  # systemd gives services the compiled-in PATH, not the session/uwsm PATH, so
-  # Elephant cannot find bare `omarchy-*` commands used by web app .desktop Exec
-  # lines (e.g. omarchy-launch-webapp). Set PATH explicitly so the menu can
-  # launch web apps.
-  cat >"$ELEPHANT_SERVICE_DROPIN_DIR/env.conf" <<'EOF'
-[Service]
-Environment=PATH=%h/.local/bin:%h/.local/share/omarchy/bin:%h/.local/share/mise/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-EOF
-
-  local unit="$HOME/.config/systemd/user/elephant.service"
-  local stamp
-
-  # `elephant service enable` only writes the unit if it is absent; repair any
-  # stale hand-written unit (e.g. one with a version-pinned absolute ExecStart).
-  if [[ ! -f "$unit" ]] || ! grep -q '^ExecStart=elephant$' "$unit"; then
-    if [[ -f "$unit" ]]; then
-      stamp="$(date +%s)"
-      cp -a "$unit" "$unit.bak-$stamp"
-      printf '   Replaced non-canonical unit (backup: elephant.service.bak-%s)\n' "$stamp"
-      rm -f "$unit"
-    fi
-    "$ELEPHANT_BIN_DIR/elephant" service enable
-  fi
-
-  if command_exists systemctl; then
-    systemctl --user daemon-reload || true
-    systemctl --user enable elephant.service >/dev/null 2>&1 || true
-    systemctl --user restart elephant.service || true
-  fi
-}
-
-build_mako() {
-  printf '\n==> Building mako\n'
-  cd "$MAKO_DIR"
-  meson setup --reconfigure build
-  ninja -C build install
-}
-
-build_quickshell() {
-  printf '\n==> Building quickshell (Qt %s)\n' "$QUICKSHELL_QT_VERSION"
-
-  if [[ ! -d "$QUICKSHELL_QT_DIR" ]]; then
-    printf 'Qt %s not found at %s\n' "$QUICKSHELL_QT_VERSION" "$QUICKSHELL_QT_DIR" >&2
-    printf 'Install it with:\n' >&2
-    printf '  aqt install-qt linux desktop %s linux_gcc_64 --outputdir "$HOME/Qt" -m qtshadertools qt5compat qtimageformats\n' \
-      "$QUICKSHELL_QT_VERSION" >&2
-    return 1
-  fi
-
-  cd "$QUICKSHELL_DIR"
-
-  cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="$QUICKSHELL_QT_DIR" \
-    -DCMAKE_INSTALL_PREFIX="$HOME/.local" \
-    -DCMAKE_INSTALL_RPATH="$QUICKSHELL_QT_DIR/lib" \
-    -DVENDOR_CPPTRACE=ON
-  cmake --build build
-  cmake --install build
 }
 
 build_imv() {
@@ -331,7 +207,14 @@ restart_portal_services() {
 main() {
   local target="${1:-}"
 
-  printf '==> Updating Rust toolchain\n'
+  case "$target" in
+    walker|elephant|mako|quickshell)
+      printf '%s is retired or package-managed. Use omarchy update for the Quattro runtime.\n' "$target" >&2
+      return 78
+      ;;
+  esac
+
+  printf '==> Updating Rust toolchain\n' 
   rustup update
 
   if [[ -n "$target" ]]; then
@@ -347,23 +230,6 @@ main() {
     yazi)
       update_repo "$YAZI_DIR"
       build_yazi
-      ;;
-    walker)
-      update_repo "$WALKER_DIR"
-      build_walker
-      ;;
-    elephant)
-      update_repo "$ELEPHANT_DIR"
-      build_elephant
-      ensure_elephant_service
-      ;;
-    mako)
-      update_repo "$MAKO_DIR"
-      build_mako
-      ;;
-    quickshell)
-      update_repo "$QUICKSHELL_DIR"
-      build_quickshell
       ;;
     imv)
       update_repo "$IMV_DIR"
@@ -386,7 +252,7 @@ main() {
       ;;
     *)
       printf 'Unknown target: %s\n' "$target" >&2
-      printf 'Available: neovim yazi walker elephant mako quickshell imv xdg-terminal-exec termfilechooser\n' >&2
+      printf 'Available: neovim foot yazi imv tensaku xdg-terminal-exec termfilechooser\n' >&2
       return 1
       ;;
     esac
@@ -395,10 +261,6 @@ main() {
   fi
 
   update_repo "$YAZI_DIR"
-  update_repo "$WALKER_DIR"
-  update_repo "$ELEPHANT_DIR"
-  update_repo "$MAKO_DIR"
-  update_repo "$QUICKSHELL_DIR"
   update_repo "$TERMFILECHOOSER_DIR"
   update_repo "$XDG_TERMINAL_EXEC_DIR"
   update_repo "$IMV_DIR"
@@ -406,11 +268,6 @@ main() {
   update_repo "$FOOT_DIR"
 
   build_yazi
-  build_walker
-  build_elephant
-  ensure_elephant_service
-  build_mako
-  build_quickshell
   build_imv
   build_tensaku
   build_neovim
@@ -424,8 +281,7 @@ main() {
   refresh_desktop_database
   restart_portal_services
 
-  printf '\nDone. Consider restarting Walker and Elephant services.\n'
-  printf 'systemctl --user restart elephant.service app-walker@autostart.service\n'
+  printf '\nDone. Quattro runtime updates are managed separately by omarchy update.\n'
 }
 
 main "$@"

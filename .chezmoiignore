@@ -1,22 +1,8 @@
-{{- if eq .machine.type "work" }}
-
-# omarchy quattro changes to ignore until I fix
-.config/kitty/kitty.conf
-.config/hyprland-preview-share-picker/config.yaml
-.config/hypr/hyprland.lua
-.config/alacritty/alacritty.toml
-.config/foot/foot.ini
-.config/ghostty/config
-.XCompose
-
-{{- else}}
-
-# ignore work files
-.config/systemd/user/elephant.service
+{{- if ne .machine.type "work" }}
+# Work-only toolchain and source-build configuration.
 c/update_source.sh
 .config/xdg-terminals.list
 .mise.toml
-
 {{- end}}
 
 # global
