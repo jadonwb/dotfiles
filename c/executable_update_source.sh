@@ -6,7 +6,6 @@ FOOT_DIR="$HOME/c/foot"
 YAZI_DIR="$HOME/c/yazi"
 TERMFILECHOOSER_DIR="$HOME/c/xdg-desktop-portal-termfilechooser"
 XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
-IMV_DIR="$HOME/c/imv"
 NEOVIM_DIR="$HOME/c/neovim"
 XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
 TERMFILECHOOSER_CONFIG_DIR="$HOME/.config/xdg-desktop-portal-termfilechooser"
@@ -46,15 +45,8 @@ build_yazi() {
   sudo install -m 0755 target/release/yazi target/release/ya /usr/local/bin/
 }
 
-build_imv() {
-  printf '\n==> Building imv\n'
-  cd "$IMV_DIR"
-  meson setup --reconfigure build --prefix="$HOME/.local"
-  ninja -C build install
-}
-
 build_tensaku() {
-  printf '\n==> Building imv\n'
+  printf '\n==> Building tensaku\n'
   cargo install --locked tensaku
   tensaku --install-desktop # add the icon + desktop entry
 }
@@ -231,10 +223,6 @@ main() {
       update_repo "$YAZI_DIR"
       build_yazi
       ;;
-    imv)
-      update_repo "$IMV_DIR"
-      build_imv
-      ;;
     tensaku)
       build_tensaku
       ;;
@@ -252,7 +240,7 @@ main() {
       ;;
     *)
       printf 'Unknown target: %s\n' "$target" >&2
-      printf 'Available: neovim foot yazi imv tensaku xdg-terminal-exec termfilechooser\n' >&2
+      printf 'Available: neovim foot yazi tensaku xdg-terminal-exec termfilechooser\n' >&2
       return 1
       ;;
     esac
@@ -263,12 +251,10 @@ main() {
   update_repo "$YAZI_DIR"
   update_repo "$TERMFILECHOOSER_DIR"
   update_repo "$XDG_TERMINAL_EXEC_DIR"
-  update_repo "$IMV_DIR"
   update_repo "$NEOVIM_DIR"
   update_repo "$FOOT_DIR"
 
   build_yazi
-  build_imv
   build_tensaku
   build_neovim
   build_foot
