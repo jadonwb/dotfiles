@@ -1,0 +1,63 @@
+{
+  "foreground": "#bec8e8",
+  "background": "#0D0C25",
+  "cursor_bg": "#bec8e8",
+  "cursor_border": "#bec8e8",
+  "cursor_fg": "#0D0C25",
+  "selection_bg": "#161440",
+  "selection_fg": "#bec8e8",
+  "split": "#09081a",
+  "compose_cursor": "#FB9B00",
+  "scrollbar_thumb": "#161440",
+  "ansi": [
+    "#070614",
+    "#E50050",
+    "#2A8A6B",
+    "#FFD888",
+    "#3F3BF5",
+    "#D91C87",
+    "#33D4B4",
+    "#5c6296"
+  ],
+  "brights": [
+    "#312e55",
+    "#fd0059",
+    "#009a74",
+    "#ffe8c2",
+    "#4f4cff",
+    "#f50097",
+    "#00e5c0",
+    "#bec8e8"
+  ],
+  "tab_bar": {
+    "inactive_tab_edge": "#09081a",
+    "background": "#0D0C25",
+    "active_tab": {
+      "fg_color": "#3F3BF5",
+      "bg_color": "#0D0C25"
+    },
+    "inactive_tab": {
+      "fg_color": "#312e55",
+      "bg_color": "#0D0C25"
+    },
+    "inactive_tab_hover": {
+      "fg_color": "#FB9B00",
+      "bg_color": "#0D0C25"
+    },
+    "new_tab_hover": {
+      "fg_color": "#FB9B00",
+      "bg_color": "#0D0C25",
+      "intensity": "Bold"
+    },
+    "new_tab": {
+      "fg_color": "#312e55",
+      "bg_color": "#0D0C25"
+    }
+  },
+  "copy_mode_inactive_highlight_bg": {
+    "Color": "#161440"
+  },
+  "copy_mode_inactive_highlight_fg": {
+    "Color": "#bec8e8"
+  }
+}
