@@ -1,0 +1,7 @@
+#!/bin/bash
+# Keep native Wayland scaling independent of the package-owned desktop launcher.
+set -euo pipefail
+if [[ ${XDG_SESSION_TYPE:-} == wayland || -n ${WAYLAND_DISPLAY:-} ]]; then
+  exec /usr/bin/chatgpt --ozone-platform=wayland --enable-features=UseOzonePlatform "$@"
+fi
+exec /usr/bin/chatgpt "$@"
