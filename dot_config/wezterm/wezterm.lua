@@ -15,6 +15,8 @@ config.colors = {
 	copy_mode_inactive_highlight_fg = { Color = "#54473f" },
 }
 
+require("omarchy").apply(config, wezterm)
+
 config.quit_when_all_windows_are_closed = true
 
 config.enable_tab_bar = true
