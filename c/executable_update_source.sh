@@ -45,12 +45,6 @@ build_yazi() {
   sudo install -m 0755 target/release/yazi target/release/ya /usr/local/bin/
 }
 
-build_tensaku() {
-  printf '\n==> Building tensaku\n'
-  cargo install --locked tensaku
-  tensaku --install-desktop # add the icon + desktop entry
-}
-
 build_neovim() {
   printf '\n==> Building neovim\n'
   cd "$NEOVIM_DIR"
@@ -223,9 +217,6 @@ main() {
       update_repo "$YAZI_DIR"
       build_yazi
       ;;
-    tensaku)
-      build_tensaku
-      ;;
     xdg-terminal-exec)
       update_repo "$XDG_TERMINAL_EXEC_DIR"
       build_xdg_terminal_exec
@@ -240,7 +231,7 @@ main() {
       ;;
     *)
       printf 'Unknown target: %s\n' "$target" >&2
-      printf 'Available: neovim foot yazi tensaku xdg-terminal-exec termfilechooser\n' >&2
+      printf 'Available: neovim foot yazi xdg-terminal-exec termfilechooser\n' >&2
       return 1
       ;;
     esac
@@ -255,7 +246,6 @@ main() {
   update_repo "$FOOT_DIR"
 
   build_yazi
-  build_tensaku
   build_neovim
   build_foot
   build_xdg_terminal_exec
