@@ -188,14 +188,4 @@
       "effect": "deny"
     }
   ],
-{{- if eq .machine.type "work" }}
-  "mcp": {
-    "servers": {
-      "chipdocs": {
-        "type": "remote",
-        "url": "https://mcp.gw.ext.nxp.com/mcp"
-      }
-    }
-  },
-{{- end}}
 }
