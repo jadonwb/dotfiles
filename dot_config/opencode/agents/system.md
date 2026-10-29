@@ -20,11 +20,6 @@ appended after the global and base rules, so it overrides the global
 
 ## Custom tools
 
-- `pdf_read` — read 1–3 physical pages of a local PDF as bounded text, or attach
-  selected pages as images/PDF; never attaches the original document.
-- `pdf_search` — literal case-insensitive phrase search over a physical page
-  range, returning one bounded excerpt per matching page plus a continuation
-  cursor; no regex, semantic search, or OCR.
 - Plan namespace (`tools.plan["create"]`, `tools.plan["field_set"]`,
   `tools.plan["field_patch"]`, `tools.plan["evidence_add"]`,
   `tools.plan["evidence_remove"]`, `tools.plan["finalize"]`,
@@ -73,7 +68,6 @@ the same registry.
 ## Tool boundaries
 
 Call `subagent` (launch/resume workers) and `search` (explore available tools)
-directly, never inside `execute`. Inside a code block only the artifact tools
-are callable: `tools.pdf_read`, `tools.pdf_search`, `tools.plan["*"]`,
-`tools.evidence["*"]`, `tools.review["*"]`, `tools.report["*"]`. Everything else
-runs outside the block.
+directly, never inside `execute`. Inside a code block the artifact tools and
+MCP namespaces are callable. Follow the PDF MCP server instructions and tool
+descriptions for PDF access; search first and read only the pages needed.

@@ -31,14 +31,18 @@
       }
     }
   },
+  "mcp": {
+    "servers": {
+      "pdf": {
+        "type": "local",
+        "command": ["pdf-mcp"],
+        "timeout": { "startup": 120000, "execution": 300000 }
+      }
+    }
+  },
   "permissions": [
     {
-      "action": "pdf_read",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "pdf_search",
+      "action": "pdf_*",
       "resource": "*",
       "effect": "deny"
     },

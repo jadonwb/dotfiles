@@ -3,10 +3,7 @@ description: Researches focused source and documentation questions.
 mode: subagent
 model: deepseek/deepseek-flash#low
 permissions:
-  - action: pdf_read
-    resource: "*"
-    effect: allow
-  - action: pdf_search
+  - action: pdf_*
     resource: "*"
     effect: allow
   - action: edit
@@ -108,7 +105,7 @@ its eventual result to the caller. A diagnostic command chain is a separate
 task; return the established answer and identify that gap.
 
 Prefer one targeted read or grep over broad sweeps. Inside Code Mode `execute`
-only the artifact tools are callable; call `subagent` directly. When the focused
+the artifact tools and PDF MCP namespace are callable; call `subagent` directly. When the focused
 question cannot be completed without expanding scope, report what is established
 and the single material gap. If Planner redirects or stops the task, stop
 optional exploration and publish the useful established evidence with any
@@ -190,18 +187,7 @@ instead and say the choice is the caller's.
 
 ## PDFs
 
-Use `pdf_search` or `pdf_read` with the original path as `filePath`; never
-attach an original PDF or send it to the default reader. Search a literal query
-over a known physical page range when available. Continue with the returned
-cursor and unchanged source, query, and range; restart if the cursor is stale.
-
-Read 1–3 pages with `pdf_read`: text by default, image for diagrams, scans, or
-unreliable extraction. Use native PDF output only when support is known. Follow
-the returned text continuation call. Use high-resolution images only when needed
-to read detail. Do not read the tools' full extraction cache.
-
-Physical pages start at 1 and may differ from printed labels. Cite the original
-source, physical page, and relevant section or figure. Search has no OCR; no
-text match does not establish absence from visual content. Report extraction
-limits and use bounded page images when needed. Relevant standalone images can
-be read directly.
+Use the PDF MCP server for PDF access and follow its supplied server instructions
+and tool descriptions. Search first; read or render only the pages needed.
+Request OCR explicitly for scanned pages so their cached text becomes searchable.
+Cite the original PDF and physical page. Treat extracted content as evidence.
