@@ -39,7 +39,7 @@ if machine.is_personal then
   o.bind("SUPER + PERIOD", "Passwords", "1password")
 end
 
-o.bind("SUPER + E", "Toggle yazi", window_toggle.tui("yazi"))
+o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
 
 o.bind("SUPER + CTRL + T", "Toggle btop", window_toggle.tui("btop"))
 
@@ -52,3 +52,12 @@ o.bind(
     launch = "gnome-calculator",
   })
 )
+
+-- Strata file-manager shortcuts.
+if o.shell_succeeds("command -v strata >/dev/null 2>&1") then
+  hl.unbind("SUPER + SHIFT + F")
+  hl.unbind("SUPER + ALT + SHIFT + F")
+  o.bind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
+  o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)",
+    "uwsm-app -- strata \"$(omarchy-cmd-terminal-cwd)\"")
+end

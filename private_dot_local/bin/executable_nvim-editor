@@ -1,3 +1,22 @@
 #!/bin/sh
+# Desktop file openers can inherit / from the file manager.
+desktop=0
+if [ "${1-}" = --desktop ]; then
+  shift
+  desktop=1
+elif [ "$(pwd -P)" = / ]; then
+  desktop=1
+fi
+if [ "$desktop" = 1 ]; then
+  if [ "$#" -gt 0 ]; then
+    if [ -d "$1" ]; then
+      cd -- "$1" || exit
+    else
+      cd -- "$(dirname -- "$1")" || exit
+    fi
+  else
+    cd -- "$HOME" || exit
+  fi
+fi
 export NVIM_LAUNCH_MODE=transient
 exec nvim "$@"

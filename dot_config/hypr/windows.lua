@@ -5,14 +5,6 @@ hl.window_rule({
 })
 
 hl.window_rule({
-  name = "yazi",
-  match = { class = "org.omarchy.yazi" },
-  float = true,
-  center = true,
-  size = { "(monitor_w*0.8)", "(monitor_h*0.8)" },
-})
-
-hl.window_rule({
   name = "gstreamer",
   match = { class = "GStreamer" },
   no_anim = true,

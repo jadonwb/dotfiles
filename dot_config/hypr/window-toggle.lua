@@ -1,4 +1,4 @@
--- Toggle a window by class between the active workspace and a dedicated
+-- Toggle a window by class (and optional tag) between the active workspace and a dedicated
 -- special workspace:
 --   visible on current workspace -> hide to special workspace
 --   hidden -> summon to current workspace
@@ -13,7 +13,6 @@
 --     special = "special:calculator",
 --     launch = "gnome-calculator",
 --   })
---   window_toggle.tui("yazi")
 --   window_toggle.tui("btop")
 
 local M = {}
@@ -22,6 +21,15 @@ function M.new(config)
   local app_class = config.class
   local special = config.special
   local launch = config.launch
+
+  local function matches(window)
+    if window.class ~= app_class then return false end
+    if not config.tag then return true end
+    for _, tag in ipairs(window.tags or {}) do
+      if tag == config.tag then return true end
+    end
+    return false
+  end
 
   local function move_to(workspace, window)
     hl.dispatch(hl.dsp.window.move({
@@ -44,7 +52,7 @@ function M.new(config)
     local current, elsewhere, hidden
 
     for _, window in ipairs(hl.get_windows() or {}) do
-      if window.class == app_class and window.workspace then
+      if matches(window) and window.workspace then
         if window.workspace.special then
           hidden = window
         elseif window.workspace.id == ws.id then
@@ -64,7 +72,11 @@ function M.new(config)
       move_to(ws.id, elsewhere)
       focus(elsewhere)
     else
-      hl.dispatch(hl.dsp.exec_cmd(launch))
+      if type(launch) == "function" then
+        launch()
+      else
+        hl.dispatch(hl.dsp.exec_cmd(launch))
+      end
     end
   end
 end

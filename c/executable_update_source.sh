@@ -4,15 +4,9 @@ set -euo pipefail
 
 FOOT_DIR="$HOME/c/foot"
 YAZI_DIR="$HOME/c/yazi"
-TERMFILECHOOSER_DIR="$HOME/c/xdg-desktop-portal-termfilechooser"
+YAZI_DESKTOP_FILE="$HOME/.local/share/applications/yazi.desktop"
 XDG_TERMINAL_EXEC_DIR="$HOME/c/xdg-terminal-exec"
 NEOVIM_DIR="$HOME/c/neovim"
-XDG_TERMINALS_LIST="$HOME/.config/xdg-terminals.list"
-TERMFILECHOOSER_CONFIG_DIR="$HOME/.config/xdg-desktop-portal-termfilechooser"
-TERMFILECHOOSER_CONFIG_FILE="$TERMFILECHOOSER_CONFIG_DIR/config"
-XDG_PORTAL_CONFIG_DIR="$HOME/.config/xdg-desktop-portal"
-XDG_PORTAL_CONFIG_FILE="$XDG_PORTAL_CONFIG_DIR/portals.conf"
-YAZI_DESKTOP_FILE="$HOME/.local/share/applications/yazi.desktop"
 
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -43,6 +37,24 @@ build_yazi() {
   cd "$YAZI_DIR"
   cargo build --release
   sudo install -m 0755 target/release/yazi target/release/ya /usr/local/bin/
+}
+
+ensure_yazi_desktop_entry() {
+  printf '\n==> Installing yazi desktop entry\n'
+  mkdir -p "$(dirname "$YAZI_DESKTOP_FILE")"
+  cat >"$YAZI_DESKTOP_FILE" <<'EOF'
+[Desktop Entry]
+Name=Yazi File Manager
+Comment=Blazing fast terminal file manager written in Rust, based on async I/O
+TryExec=yazi
+Exec=omarchy-launch-tui yazi %f
+Icon=yazi
+Terminal=false
+Type=Application
+MimeType=inode/directory;
+Categories=System;FileManager;FileTools;
+Keywords=File;Manager;Explorer;Browser;Launcher;
+EOF
 }
 
 build_neovim() {
@@ -113,80 +125,10 @@ build_xdg_terminal_exec() {
   sudo make install prefix=/usr/local
 }
 
-build_termfilechooser() {
-  printf '\n==> Building xdg-desktop-portal-termfilechooser\n'
-  cd "$TERMFILECHOOSER_DIR"
-  meson setup --reconfigure build
-  ninja -C build
-  sudo ninja -C build install
-  sudo install -Dm 0644 termfilechooser.portal /usr/share/xdg-desktop-portal/portals/termfilechooser.portal
-}
-
-ensure_xdg_terminals_list() {
-  printf '\n==> Ensuring xdg-terminal-exec config\n'
-  mkdir -p "$(dirname "$XDG_TERMINALS_LIST")"
-  cat >"$XDG_TERMINALS_LIST" <<'EOF'
-# Terminal emulator preference order for xdg-terminal-exec
-# The first found and valid terminal will be used
-com.mitchellh.ghostty.desktop
-Alacritty.desktop
-kitty.desktop
-EOF
-}
-
-ensure_termfilechooser_config() {
-  printf '\n==> Ensuring termfilechooser config\n'
-  mkdir -p "$TERMFILECHOOSER_CONFIG_DIR"
-  cat >"$TERMFILECHOOSER_CONFIG_FILE" <<'EOF'
-[filechooser]
-cmd=yazi-wrapper.sh
-default_dir=$HOME
-env=TERMCMD=omarchy-launch-tui
-
-open_mode=suggested
-save_mode=suggested
-EOF
-}
-
-ensure_portals_conf() {
-  printf '\n==> Ensuring portal preference config\n'
-  mkdir -p "$XDG_PORTAL_CONFIG_DIR"
-  cat >"$XDG_PORTAL_CONFIG_FILE" <<'EOF'
-[preferred]
-org.freedesktop.impl.portal.FileChooser=termfilechooser
-EOF
-}
-
-ensure_yazi_desktop_entry() {
-  printf '\n==> Installing yazi desktop entry\n'
-  mkdir -p "$(dirname "$YAZI_DESKTOP_FILE")"
-  cat >"$YAZI_DESKTOP_FILE" <<'EOF'
-[Desktop Entry]
-Name=Yazi File Manager
-Comment=Blazing fast terminal file manager written in Rust, based on async I/O
-TryExec=yazi
-Exec=omarchy-launch-tui yazi %f
-Icon=yazi
-Terminal=false
-Type=Application
-MimeType=inode/directory;
-Categories=System;FileManager;FileTools;
-Keywords=File;Manager;Explorer;Browser;Launcher;
-EOF
-}
-
 refresh_desktop_database() {
   if command_exists update-desktop-database; then
     printf '\n==> Refreshing desktop database\n'
     update-desktop-database "$HOME/.local/share/applications" || true
-  fi
-}
-
-restart_portal_services() {
-  if command_exists systemctl; then
-    printf '\n==> Restarting XDG portal services\n'
-    systemctl --user daemon-reload || true
-    systemctl --user restart xdg-desktop-portal-termfilechooser.service xdg-desktop-portal.service || true
   fi
 }
 
@@ -200,11 +142,14 @@ main() {
       ;;
   esac
 
-  printf '==> Updating Rust toolchain\n' 
-  rustup update
-
   if [[ -n "$target" ]]; then
     case "$target" in
+    yazi)
+      update_repo "$YAZI_DIR"
+      build_yazi
+      ensure_yazi_desktop_entry
+      refresh_desktop_database
+      ;;
     neovim)
       update_repo "$NEOVIM_DIR"
       build_neovim
@@ -213,25 +158,13 @@ main() {
       update_repo "$FOOT_DIR"
       build_foot
       ;;
-    yazi)
-      update_repo "$YAZI_DIR"
-      build_yazi
-      ;;
     xdg-terminal-exec)
       update_repo "$XDG_TERMINAL_EXEC_DIR"
       build_xdg_terminal_exec
       ;;
-    termfilechooser)
-      update_repo "$TERMFILECHOOSER_DIR"
-      build_termfilechooser
-      ensure_xdg_terminals_list
-      ensure_termfilechooser_config
-      ensure_portals_conf
-      restart_portal_services
-      ;;
     *)
       printf 'Unknown target: %s\n' "$target" >&2
-      printf 'Available: neovim foot yazi xdg-terminal-exec termfilechooser\n' >&2
+      printf 'Available: neovim foot yazi xdg-terminal-exec\n' >&2
       return 1
       ;;
     esac
@@ -240,22 +173,16 @@ main() {
   fi
 
   update_repo "$YAZI_DIR"
-  update_repo "$TERMFILECHOOSER_DIR"
   update_repo "$XDG_TERMINAL_EXEC_DIR"
   update_repo "$NEOVIM_DIR"
   update_repo "$FOOT_DIR"
 
   build_yazi
+  ensure_yazi_desktop_entry
   build_neovim
   build_foot
   build_xdg_terminal_exec
-  build_termfilechooser
-  ensure_xdg_terminals_list
-  ensure_termfilechooser_config
-  ensure_portals_conf
-  ensure_yazi_desktop_entry
   refresh_desktop_database
-  restart_portal_services
 
   printf '\nDone. Quattro runtime updates are managed separately by omarchy update.\n'
 }
