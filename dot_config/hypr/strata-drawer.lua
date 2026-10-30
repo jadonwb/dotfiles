@@ -28,6 +28,9 @@ return window_toggle.new({
   class = "io.github.lgse.Strata",
   tag = tag,
   special = "special:strata",
+  on_show = function(window)
+    hl.dispatch(hl.dsp.window.center({ window = window }))
+  end,
   launch = function()
     if os.time() <= pending_until then return end
     pending_until = os.time() + 10

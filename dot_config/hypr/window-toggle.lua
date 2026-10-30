@@ -40,6 +40,7 @@ function M.new(config)
   end
 
   local function focus(window)
+    if config.on_show then config.on_show(window) end
     hl.dispatch(hl.dsp.focus({ window = window }))
   end
 
