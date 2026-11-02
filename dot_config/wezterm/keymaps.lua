@@ -57,6 +57,14 @@ local keys = {
 	{ key = "n", mods = "ALT|SHIFT", action = act.MoveTabRelative(1) },
 	-- panes / tabs
 	{ key = "x", mods = "ALT", action = act.CloseCurrentPane({ confirm = false }) },
+	{ key = "LeftArrow", mods = "CTRL", action = act.ActivatePaneDirection("Left") },
+	{ key = "RightArrow", mods = "CTRL", action = act.ActivatePaneDirection("Right") },
+	{ key = "UpArrow", mods = "CTRL", action = act.ActivatePaneDirection("Up") },
+	{ key = "DownArrow", mods = "CTRL", action = act.ActivatePaneDirection("Down") },
+	{ key = "LeftArrow", mods = "CTRL|SHIFT", action = act.AdjustPaneSize({ "Left", 1 }) },
+	{ key = "RightArrow", mods = "CTRL|SHIFT", action = act.AdjustPaneSize({ "Right", 1 }) },
+	{ key = "UpArrow", mods = "CTRL|SHIFT", action = act.AdjustPaneSize({ "Up", 1 }) },
+	{ key = "DownArrow", mods = "CTRL|SHIFT", action = act.AdjustPaneSize({ "Down", 1 }) },
 	{
 		key = "c",
 		mods = "ALT",

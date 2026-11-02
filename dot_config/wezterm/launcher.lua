@@ -593,6 +593,14 @@ local function build_main()
 		M.rename(window, pane)
 	end)
 
+	add(styled("split horizontally", "Fuchsia", true), function(window, pane)
+		window:perform_action(act.SplitVertical({ domain = "CurrentPaneDomain" }), pane)
+	end)
+
+	add(styled("split vertically", "Fuchsia", true), function(window, pane)
+		window:perform_action(act.SplitHorizontal({ domain = "CurrentPaneDomain" }), pane)
+	end)
+
 	return get()
 end
 
