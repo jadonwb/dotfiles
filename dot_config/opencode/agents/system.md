@@ -1,7 +1,7 @@
 ---
 description: System Agent
 mode: primary
-model: openai/gpt-6-luna#high
+model: deepseek/deepseek-flash#default
 color: "#6660AF"
 permissions:
   - action: "*"
@@ -68,6 +68,6 @@ the same registry.
 ## Tool boundaries
 
 Call `subagent` (launch/resume workers) and `search` (explore available tools)
-directly, never inside `execute`. Inside a code block the artifact tools and
-MCP namespaces are callable. Follow the PDF MCP server instructions and tool
+directly, never inside `execute`. Inside a code block the artifact tools and MCP
+namespaces are callable. Follow the PDF MCP server instructions and tool
 descriptions for PDF access; search first and read only the pages needed.

@@ -1,14 +1,10 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "openai/gpt-6.1-sol",
   "default_agent": "planner",
   "experimental": {
     "subagent_depth": 2
   },
   "agents": {
-    "title": {
-      "model": "deepseek/deepseek-flash#none"
-    },
     "plan": {
       "disabled": true
     },
@@ -35,8 +31,13 @@
     "servers": {
       "pdf": {
         "type": "local",
-        "command": ["pdf-mcp"],
-        "timeout": { "startup": 120000, "execution": 300000 }
+        "command": [
+          "pdf-mcp"
+        ],
+        "timeout": {
+          "startup": 120000,
+          "execution": 300000
+        }
       }
     }
   },

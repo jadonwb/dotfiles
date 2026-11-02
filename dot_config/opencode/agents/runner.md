@@ -2,7 +2,7 @@
 description:
   Executes one bounded shell observation and returns a concise result.
 mode: subagent
-model: deepseek/deepseek-flash#none
+model: opencode-go/deepseek-v4.1-flash#none
 permissions:
   - action: edit
     resource: "*"

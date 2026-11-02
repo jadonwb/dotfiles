@@ -1,7 +1,7 @@
 ---
 description: Inspects changes for correctness and regressions.
 mode: subagent
-model: openai/gpt-6.1-sol#high
+model: opencode-go/deepseek-v4.1-flash#max
 permissions:
   - action: edit
     resource: "*"

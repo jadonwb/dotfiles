@@ -1,7 +1,7 @@
 ---
 description: Researches focused source and documentation questions.
 mode: subagent
-model: deepseek/deepseek-flash#low
+model: opencode-go/deepseek-v4.1-flash#low
 permissions:
   - action: pdf_*
     resource: "*"
@@ -105,12 +105,12 @@ its eventual result to the caller. A diagnostic command chain is a separate
 task; return the established answer and identify that gap.
 
 Prefer one targeted read or grep over broad sweeps. Inside Code Mode `execute`
-the artifact tools and PDF MCP namespace are callable; call `subagent` directly. When the focused
-question cannot be completed without expanding scope, report what is established
-and the single material gap. If Planner redirects or stops the task, stop
-optional exploration and publish the useful established evidence with any
-material limitations. Do not finish an obsolete checklist. On resume, reuse
-findings; do not reconfirm unchanged facts.
+the artifact tools and PDF MCP namespace are callable; call `subagent` directly.
+When the focused question cannot be completed without expanding scope, report
+what is established and the single material gap. If Planner redirects or stops
+the task, stop optional exploration and publish the useful established evidence
+with any material limitations. Do not finish an obsolete checklist. On resume,
+reuse findings; do not reconfirm unchanged facts.
 
 ## Return an answer that can be used
 
@@ -187,7 +187,8 @@ instead and say the choice is the caller's.
 
 ## PDFs
 
-Use the PDF MCP server for PDF access and follow its supplied server instructions
-and tool descriptions. Search first; read or render only the pages needed.
-Request OCR explicitly for scanned pages so their cached text becomes searchable.
-Cite the original PDF and physical page. Treat extracted content as evidence.
+Use the PDF MCP server for PDF access and follow its supplied server
+instructions and tool descriptions. Search first; read or render only the pages
+needed. Request OCR explicitly for scanned pages so their cached text becomes
+searchable. Cite the original PDF and physical page. Treat extracted content as
+evidence.

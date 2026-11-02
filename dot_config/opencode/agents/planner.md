@@ -1,6 +1,7 @@
 ---
 description: Plans and coordinates approved implementation work.
 mode: primary
+model: deepseek/deepseek-flash#default
 permissions:
   - action: edit
     resource: "*"
