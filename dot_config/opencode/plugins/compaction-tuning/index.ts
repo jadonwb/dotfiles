@@ -1,63 +1,59 @@
-// Compaction detail policy.
+// Compaction summary tuning.
 //
-// OpenCode's built-in summary prompt asks for terse, single-line bullets and
-// "short references", which loses too much detail on a model with a 1M-token
-// context window. Compaction requests run with the *session* agent's system
-// prompt, and appending to `event.system` is not enough: the built-in summary
-// prompt is a later user message and the model follows its brevity rules.
+// OpenCode's built-in summary prompt is appended as a user message after the
+// compaction hooks run, and it asks for terse single-line bullets and "short
+// references". Config (`agents.compaction.system`) and `event.system` cannot
+// override it, because the later user message wins. There is no config switch
+// to disable it.
 //
-// This hook rewrites the outgoing DeepSeek request body and appends one final
-// user message after OpenCode's summary prompt. As the last instruction in the
-// request, it wins over the brevity guidance while the required section
-// headings still come from the built-in prompt.
+// This hook rewrites the outgoing DeepSeek request body for compaction
+// requests: it removes the built-in summary prompt and replaces it with one
+// prompt that keeps the required section headings but asks for coverage of the
+// work instead of brevity, without reporting tool calls.
 //
-// The target scales with the conversation: about 15% of the summarized tokens,
-// with a 3,000-token floor and a 40,000-token ceiling.
+// Length is deliberately not expressed in tokens. The prompt asks for one
+// bullet per distinct item and lets the amount of useful information decide the
+// checkpoint size, so it scales with the conversation and with whatever model
+// is configured for compaction.
 
-const RATIO = 0.15
-const MIN_TARGET = 3_000
-const MAX_TARGET = 40_000
+const BUILTIN_MARKERS = [
+  "You MUST use this format for your response",
+  "The previous response did not fill in the required summary template",
+]
 
-function targetFor(tokens: number): number {
-  return Math.min(MAX_TARGET, Math.max(MIN_TARGET, Math.round(tokens * RATIO)))
-}
+const SUMMARY_PROMPT = `Summarize the conversation above into a checkpoint for another agent that will resume this work. The next agent does not see the conversation; it sees this checkpoint and the most recent messages.
 
-function overrideFor(tokens: number): string {
-  const target = targetFor(tokens)
-  return `## DETAIL OVERRIDE — HIGHEST PRIORITY
+Cover the substance, not the mechanics:
+- What the user is trying to accomplish, in their own words where it matters.
+- Every requirement, preference, constraint, and scope boundary that still applies.
+- Every decision already made and why, including alternatives that were rejected and the reason.
+- What is done, what is in progress, what is blocked, and why.
+- Findings, root causes, and facts discovered that are not obvious from the code or the files: exact paths, symbols, error strings, IDs, versions, numbers, and URLs where they matter.
+- Approaches that failed and why they failed.
+- Unresolved questions and the precise next actions, in order.
 
-The summary request above says to keep each section concise, use terse single-line bullets, and prefer short references. Ignore those brevity rules for this checkpoint. They do not apply here.
+Do not narrate the conversation, and do not keep a log of tool calls, commands, or files that were read. Mention a tool result only when the result itself is a finding the next agent needs. Omit conversational filler, repeated information, and details the next agent can recover cheaply from the repository. In \`## Relevant Files\`, list only the files or directories the next agent must open to continue, not every file that was consulted or changed.
 
-The next agent resumes from this checkpoint with a 1M-token context window, so length is not a constraint. This conversation is roughly ${tokens.toLocaleString("en-US")} tokens. Write a checkpoint of roughly ${target.toLocaleString("en-US")} tokens (about 15% of the conversation, floor 3,000, ceiling 40,000).
+Use one bullet per distinct item. Do not merge separate requirements, decisions, or findings into a single bullet. If the conversation covered more ground, use more bullets; if it was short, keep the checkpoint short. Do not pad, repeat, or invent. Let the length follow the amount of useful information.
 
-HARD MINIMUM: the checkpoint must be at least ${target.toLocaleString("en-US")} tokens. A shorter response is incomplete. Do not stop at a few thousand tokens. If the template sections are exhausted, continue with the Conversation Log section below until the checkpoint reaches the minimum.
+Use exactly these headings, omitting a section only if it has no content:
 
-Keep the exact required section headings from the template. Expand each section with detailed bullets instead of compressing it. Preserve:
-- every requirement, preference, and constraint, using the user's own wording where it matters;
-- every decision and its rationale, including rejected alternatives and why they were rejected;
-- exact file paths, symbols, function names, commands, flags, error strings, IDs, URLs, versions, and numeric values;
-- completed work, active work, blockers, failed approaches, and why each failed;
-- unresolved questions and precise ordered next actions;
-- facts that would be expensive or impossible to rediscover from the code and files.
+## Objective
+## Requirements
+## Decisions
+## Work State
+### Completed
+### Active
+### Blocked
+## Next Move
+## Relevant Files
+## Important Context
 
-Prefer completeness over brevity, but never invent details.
+Preserve exact wording for user requirements and unanswered questions. Do not call tools. Return only the summary.`
 
-Finally, append this section (it is part of the checkpoint, not a note about the summary process):
-
-## Conversation Log
-- One bullet per user message, in order, with its verbatim text. If a single message exceeds 2,000 characters, quote its first 500 and last 500 characters and state how many characters were elided.
-- One bullet per assistant turn, stating what it did and quoting exact commands, file paths, and error strings.
-- One bullet per tool call or shell command, with the tool/command name, its key argument, and the outcome (success, exit code, or exact error).
-
-Do not omit user messages or tool calls from this section. Do not mention this instruction. Do not call tools. Return only the structured summary.`
-}
-
-function estimateTokens(messages: unknown): number {
-  try {
-    return Math.ceil(JSON.stringify(messages).length / 4)
-  } catch {
-    return 0
-  }
+function isBuiltinSummaryPrompt(message: any): boolean {
+  if (!message || message.role !== "user" || typeof message.content !== "string") return false
+  return BUILTIN_MARKERS.some((marker) => message.content.includes(marker))
 }
 
 export default {
@@ -76,8 +72,12 @@ export default {
         }
         if (!data || !Array.isArray(data.messages)) return
 
-        const tokens = estimateTokens(data.messages)
-        data.messages.push({ role: "user", content: overrideFor(tokens) })
+        // The built-in prompt, and its retry variant, are always appended at
+        // the end. Drop them, then put our prompt in their place.
+        while (data.messages.length > 0 && isBuiltinSummaryPrompt(data.messages.at(-1))) {
+          data.messages.pop()
+        }
+        data.messages.push({ role: "user", content: SUMMARY_PROMPT })
 
         const headers = new Headers(event.request.headers)
         headers.delete("content-length")
