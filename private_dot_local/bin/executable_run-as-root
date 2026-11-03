@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Run one command as root through the Omarchy Quickshell polkit dialog.
+set -uo pipefail
+
+usage() {
+  cat <<'EOF'
+usage: run-as-root [--] COMMAND [ARG...]
+
+Runs COMMAND as root via the Omarchy Quickshell polkit password dialog.
+The working directory is preserved and the root environment is sanitized
+(system PATH, no user variables); pass values explicitly with `env`.
+
+  0    success
+  125  polkit error, e.g. no authentication agent for this session
+  126  authorization dismissed or denied
+  127  COMMAND not found in root PATH
+
+Examples:
+  run-as-root systemctl restart NetworkManager
+  run-as-root sh -c 'apt-get update && apt-get install -y ripgrep'
+EOF
+}
+
+case "${1-}" in
+  "") usage >&2; exit 64 ;;
+  -h | --help) usage; exit 0 ;;
+esac
+
+if [ "${1-}" = "--" ]; then shift; fi
+if [ "$#" -eq 0 ]; then usage >&2; exit 64; fi
+
+# Already root: run directly instead of prompting for a password.
+if [ "$(id -u)" -eq 0 ]; then
+  exec "$@"
+fi
+
+pkexec --disable-internal-agent --keep-cwd "$@"
+status=$?
+
+case "$status" in
+  125) printf '%s\n' "run-as-root: no usable polkit agent for this session (125)." >&2 ;;
+  126) printf '%s\n' "run-as-root: authorization dismissed or denied (126)." >&2 ;;
+  127) printf '%s\n' "run-as-root: command not found in root PATH (127)." >&2 ;;
+esac
+
+exit "$status"
