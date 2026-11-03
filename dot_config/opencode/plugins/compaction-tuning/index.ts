@@ -32,7 +32,9 @@ Cover the substance, not the mechanics:
 - Approaches that failed and why they failed.
 - Unresolved questions and the precise next actions, in order.
 
-Do not narrate the conversation, and do not keep a log of tool calls, commands, or files that were read. Mention a tool result only when the result itself is a finding the next agent needs. Omit conversational filler, repeated information, and details the next agent can recover cheaply from the repository. In \`## Relevant Files\`, list only the files or directories the next agent must open to continue, not every file that was consulted or changed.
+Do not narrate the conversation, and do not keep a log of tool calls or commands. Mention a tool result only when the result itself is a finding the next agent needs. Omit conversational filler, repeated information, and details the next agent can recover cheaply from the repository.
+
+For \`## Relevant Files\`, list the files and directories the next agent is likely to need: files that must be opened to continue, and reference material already consulted that may need to be re-referenced, such as manuals, source code, specifications, or design documents. Do not list every file that was merely touched.
 
 Use one bullet per distinct item. Do not merge separate requirements, decisions, or findings into a single bullet. If the conversation covered more ground, use more bullets; if it was short, keep the checkpoint short. Do not pad, repeat, or invent. Let the length follow the amount of useful information.
 
