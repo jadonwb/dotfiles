@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""OpenCode Go allowance collector for the native Omarchy agents panel."""
+import argparse
+from datetime import datetime, timezone
+import json
+import math
+import os
+from pathlib import Path
+import subprocess
+import time
+import urllib.error
+import urllib.request
+
+ENDPOINT = 'https://opencode.ai/zen/go/v1/usage'
+
+
+class UsageError(Exception):
+    pass
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        # Never forward an existing account credential through a redirect.
+        return None
+
+
+def command_json(args, timeout=6):
+    try:
+        result = subprocess.run(['opencode', *args], cwd=Path.home(),
+                                capture_output=True, text=True, timeout=timeout)
+        if result.returncode:
+            return None
+        return json.loads(result.stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return None
+
+
+def connection_key():
+    # v2 owns credentials in its database. Export only Go into process memory;
+    # do not copy credentials to another file, argv, log or usage record.
+    rows = command_json(['auth', 'export', 'opencode-go'])
+    if not isinstance(rows, list):
+        return None
+    for row in rows:
+        if row.get('integrationID') != 'opencode-go' or row.get('active') is not True:
+            continue
+        value = row.get('value', {})
+        if value.get('type') == 'key' and isinstance(value.get('key'), str):
+            return value['key']
+    return None
+
+
+def read_allowance():
+    response = command_json(['api', 'GET', '/api/experimental/usage/limits'])
+    info = response.get('data') if isinstance(response, dict) else None
+    if isinstance(info, dict) and isinstance(info.get('go'), dict):
+        return info['go']
+    key = connection_key()
+    if not key:
+        raise UsageError('Connect OpenCode Go in OpenCode with /connect or opencode auth login opencode-go.')
+    request = urllib.request.Request(ENDPOINT, headers={
+        'Authorization': 'Bearer ' + key,
+        'Accept': 'application/json',
+        'User-Agent': 'omarchy-agent-usage/1',
+    })
+    try:
+        with urllib.request.build_opener(NoRedirect()).open(request, timeout=10) as response:
+            body = json.load(response)
+        return body['usage']
+    except urllib.error.HTTPError as error:
+        if error.code in (401, 403):
+            raise UsageError('Go usage rejected key-only access. Sign in with opencode auth login opencode --method device, then refresh; keep your Go key.') from None
+        raise UsageError('Go usage service returned HTTP ' + str(error.code) + '; refresh later.') from None
+    except (OSError, ValueError, KeyError):
+        raise UsageError('Go usage service is unavailable; refresh later.') from None
+
+
+def limits(allowance, now=None):
+    now = time.time() if now is None else now
+    result = []
+    for key, label, title in [('rolling', '5-hour', 'Session'), ('weekly', '7-day', 'Weekly'), ('monthly', 'Monthly', 'Monthly')]:
+        meter = allowance.get(key)
+        if not isinstance(meter, dict):
+            raise UsageError('Go usage response changed; collector review is required.')
+        try:
+            percent = float(meter['percent'])
+            reset = meter['resetsAt']
+            if isinstance(reset, (int, float)):
+                instant = float(reset) / 1000  # OpenCode's local API returns epoch milliseconds.
+                reset = datetime.fromtimestamp(instant, timezone.utc).isoformat()
+            else:
+                instant = datetime.fromisoformat(reset.replace('Z', '+00:00')).timestamp()
+            if not math.isfinite(percent) or not 0 <= percent <= 100:
+                raise ValueError('Invalid percent')
+        except (KeyError, ValueError, TypeError, OverflowError):
+            raise UsageError('Go usage response changed; collector review is required.') from None
+        result.append({'label': label, 'title': title, 'percent': 0 if instant <= now else percent,
+                       'resetsAt': '' if instant <= now else reset})
+    return result
+
+
+def collect():
+    record = {'schemaVersion': 1, 'id': 'opencode-go', 'name': 'OpenCode Go',
+              'updatedAt': datetime.now(timezone.utc).isoformat(), 'scope': 'account',
+              'hasLocalStats': False, 'hasPromptStats': False, 'ready': False,
+              'tierLabel': 'Go', 'usageStatusText': '', 'authHelpText': '', 'limits': []}
+    try:
+        record['limits'] = limits(read_allowance())
+        record['ready'] = True
+    except UsageError as error:
+        record['usageStatusText'] = 'Go limits unavailable'
+        record['authHelpText'] = str(error)
+    return record
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--force', action='store_true')
+    parser.add_argument('--limits-only', action='store_true')
+    args = parser.parse_args()
+    cache = Path(os.environ.get('XDG_CACHE_HOME', str(Path.home() / '.cache'))) / 'omarchy/agents/opencode-go.json'
+    record = None
+    try:
+        if not args.force and time.time() - cache.stat().st_mtime < 60:
+            record = json.loads(cache.read_text())
+    except (OSError, ValueError):
+        pass
+    if record is None:
+        record = collect()
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        import tempfile
+        fd, name = tempfile.mkstemp(dir=cache.parent, prefix='.opencode-go-')
+        try:
+            with os.fdopen(fd, 'w') as stream:
+                json.dump(record, stream)
+            os.replace(name, cache)
+        finally:
+            Path(name).unlink(missing_ok=True)
+    print(json.dumps(record, separators=(',', ':')))
+
+
+if __name__ == '__main__':
+    main()
