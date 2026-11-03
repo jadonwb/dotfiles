@@ -11,9 +11,8 @@ The working directory is preserved and the root environment is sanitized
 (system PATH, no user variables); pass values explicitly with `env`.
 
   0    success
-  125  polkit error, e.g. no authentication agent for this session
-  126  authorization dismissed or denied
-  127  COMMAND not found in root PATH
+  126  authorization dialog dismissed
+  127  not authorized, or COMMAND could not be executed
 
 Examples:
   run-as-root systemctl restart NetworkManager
@@ -38,9 +37,8 @@ pkexec --disable-internal-agent --keep-cwd "$@"
 status=$?
 
 case "$status" in
-  125) printf '%s\n' "run-as-root: no usable polkit agent for this session (125)." >&2 ;;
-  126) printf '%s\n' "run-as-root: authorization dismissed or denied (126)." >&2 ;;
-  127) printf '%s\n' "run-as-root: command not found in root PATH (127)." >&2 ;;
+  126) printf '%s\n' "run-as-root: authorization dialog dismissed (126)." >&2 ;;
+  127) printf '%s\n' "run-as-root: not authorized or command could not be executed (127)." >&2 ;;
 esac
 
 exit "$status"
