@@ -31,8 +31,16 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
   --force | --limits-only) flags+=("$1") ;;
   --except)
+    if [[ $# -lt 2 || -z $2 ]]; then
+      echo "omarchy-agent-usage-update: --except requires an agent" >&2
+      exit 2
+    fi
     excluded[$2]=1
     shift
+    ;;
+  -*)
+    echo "omarchy-agent-usage-update: unknown option: $1" >&2
+    exit 2
     ;;
   *) only+=("$1") ;;
   esac
@@ -57,9 +65,15 @@ collect() {
     echo "omarchy-agent-usage-update: $agent collector failed" >&2
     return 1
   fi
-  tmp=$(mktemp "$USAGE_DIR/.$agent.XXXXXX")
-  printf '%s\n' "$record" >"$tmp"
-  mv "$tmp" "$USAGE_DIR/$agent.json"
+  tmp=$(mktemp "$USAGE_DIR/.$agent.XXXXXX") || return 1
+  # A failed or interrupted write must not leave mktemp debris in the watched
+  # usage directory; the panel discovers every *.json file there.
+  trap 'rm -f -- "$tmp"' EXIT
+  if ! printf '%s\n' "$record" >"$tmp" || ! mv -- "$tmp" "$USAGE_DIR/$agent.json"; then
+    echo "omarchy-agent-usage-update: $agent record write failed" >&2
+    return 1
+  fi
+  trap - EXIT
 }
 
 pids=()

@@ -41,7 +41,12 @@ Item {
     var lines = String(output || "").split("\n")
     for (var i = 0; i < lines.length; i++) {
       var name = lines[i].trim()
-      if (name.slice(-5) === ".json") ids.push(name.slice(0, -5))
+      if (name.slice(-5) !== ".json") continue
+      var id = name.slice(0, -5)
+      // Ignore updater/dpkg debris left in the directory by older runs. The
+      // collector side filters these too; discovery must never surface them.
+      if (id === "update" || !/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(id)) continue
+      ids.push(id)
     }
     ids.sort()
     // Same list, same objects: reassigning the model would tear down every
