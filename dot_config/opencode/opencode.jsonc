@@ -8,8 +8,10 @@
   // sessions smaller so responses stay fast even on large-context models.
   "compaction": {
     "auto": true,
-    "keep": { "tokens": 30000 },
-    "buffer": "60%"
+    "keep": {
+      "tokens": 25000
+    },
+    "buffer": "50%"
   },
   "experimental": {
     "subagent_depth": 2,
