@@ -13,6 +13,11 @@
         "prompt.editor": "alt+t",
         "service.restart": "alt+r",
         "command.palette.show": "ctrl+space",
+        "session.fork": "ctrl+f",
+        "session.new": "ctrl+t,<leader>n",
+        "session.tab.close": "ctrl+w,<leader>w",
+        "variant.cycle": "none",
+        "input.delete.word.backward": "ctrl+backspace,alt+backspace",
         "session.line.up": "alt+k",
         "session.line.down": "alt+j",
         "composer.subagent.up": "k,up,ctrl+p",
@@ -33,8 +38,5 @@
     },
     "terminal": {
         "title": false
-    },
-    "tabs": {
-        "enabled": false
     }
 }
