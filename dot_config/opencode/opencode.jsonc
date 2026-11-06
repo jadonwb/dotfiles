@@ -9,7 +9,7 @@
   "compaction": {
     "auto": true,
     "keep": {
-      "tokens": 45000
+      "tokens": 50000
     },
     "buffer": "30%"
   },
