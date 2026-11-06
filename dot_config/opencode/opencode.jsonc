@@ -9,9 +9,9 @@
   "compaction": {
     "auto": true,
     "keep": {
-      "tokens": 25000
+      "tokens": 45000
     },
-    "buffer": "50%"
+    "buffer": "30%"
   },
   "experimental": {
     "subagent_depth": 2,
