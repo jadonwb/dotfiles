@@ -1,11 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "planner",
-  // Compaction reserves `buffer` of each model's window as free space, then
-  // starts when the conversation reaches the rest. 50% = compact at ~50% full.
-  // Background precompute begins at 85% of that threshold (about 43% of the
-  // window) instead of pausing the session at the threshold. The reserve keeps
-  // sessions smaller so responses stay fast even on large-context models.
   "compaction": {
     "auto": true,
     "keep": {
