@@ -1,6 +1,9 @@
 ---
 name: Run as root
-description: Run commands as root/sudo on this Omarchy desktop through the Quickshell polkit password dialog. Use for package installs, systemctl, mounts, editing /etc, or any privileged command.
+description:
+  Run commands as root/sudo on this Omarchy desktop through the Quickshell
+  polkit password dialog. Use for package installs, systemctl, mounts, editing
+  /etc, or any privileged command.
 ---
 
 # Run as root
