@@ -17,16 +17,6 @@ require("git"):setup()
 
 require("close-and-restore-tab"):setup()
 
--- YAZI_TREE=1 selects an embedded per-launch mode (tree on, preview hidden) so
--- the first frame is already tree-shaped; plain launches keep normal defaults.
-local embedded_tree = os.getenv("YAZI_TREE") == "1"
-
-require("tree"):setup({
-	style = "indent",
-	startup = { tree = embedded_tree, preview = not embedded_tree },
-	filter_mode = "adopt",
-})
-
 Status:children_add(function()
 	local h = cx.active.current.hovered
 	if not h or ya.target_family() ~= "unix" then
