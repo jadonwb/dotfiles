@@ -10,6 +10,10 @@ dofile((os.getenv("OMARCHY_PATH") or "/usr/share/omarchy") .. "/default/hypr/boo
 -- keeping core window-manager bindings:
 -- omarchy_preinstalled_bindings = false
 
+-- Disable Omarchy's default touchpad gestures. Add your own in hypr/input.lua.
+-- Must be set before requiring the defaults, or they register first and win.
+omarchy_default_gestures = false
+
 -- Load Omarchy defaults.
 require("default.hypr.omarchy")
 
