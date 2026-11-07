@@ -65,6 +65,16 @@
           "startup": 120000,
           "execution": 300000
         }
+      },
+      "browse": {
+        "type": "local",
+        "command": [
+          "/home/jadon/.local/bin/browse",
+          "mcp"
+        ],
+        "environment": {
+          "OPENCODE_BROWSER_RUNTIME": "auto-update"
+        }
       }
     }
   },
@@ -219,5 +229,8 @@
       "resource": "*",
       "effect": "deny"
     }
+  ],
+  "plugins": [
+    "opencode-mobile-notifications"
   ],
 }
