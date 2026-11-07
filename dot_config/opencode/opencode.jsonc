@@ -1,15 +1,15 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "planner",
+  "default_agent": "system",
   "compaction": {
     "auto": true,
     "keep": {
-      "tokens": 50000
+      "tokens": 32000
     },
-    "buffer": "30%"
+    "buffer": "25%"
   },
   "experimental": {
-    "subagent_depth": 2,
+    "subagent_depth": 1,
     "background_compaction": true
   },
   "agents": {
@@ -27,31 +27,6 @@
     },
     "compaction": {
       "model": "deepseek/deepseek-flash#max"
-    }
-  },
-  "providers": {
-    "opencode-go": {
-      "models": {
-        "deepseek-v4.1-flash": {
-          "variants": [
-            {
-              "id": "none",
-              "body": {
-                "thinking": {
-                  "type": "disabled"
-                }
-              }
-            }
-          ]
-        }
-      }
-    },
-    "openai": {
-      "settings": {
-        "compaction": {
-          "type": "native"
-        }
-      }
     }
   },
   "mcp": {
@@ -78,158 +53,6 @@
       }
     }
   },
-  "permissions": [
-    {
-      "action": "pdf_*",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_create",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_field_set",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_field_patch",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_evidence_add",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_evidence_remove",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_finalize",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_status",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "plan_load_approved",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_create",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_overview_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_finding_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_finding_remove",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_finalize",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_load",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "evidence_summary",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_create",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_outcome_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_summary_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_finding_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_finding_remove",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_finalize",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_load",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "review_summary",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_create",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_content_put",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_content_remove",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_finalize",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_load",
-      "resource": "*",
-      "effect": "deny"
-    },
-    {
-      "action": "report_summary",
-      "resource": "*",
-      "effect": "deny"
-    }
-  ],
   "plugins": [
     "opencode-mobile-notifications"
   ],
