@@ -49,6 +49,9 @@ local keys = {
 	--copy/paste
 	{ key = "Insert", mods = "CTRL", action = wezterm.action.CopyTo("Clipboard") },
 	{ key = "Insert", mods = "SHIFT", action = wezterm.action.PasteFrom("Clipboard") },
+	-- Omarchy universal copy/paste sends these chords to terminal windows.
+	{ key = "c", mods = "CTRL|SHIFT", action = act.CopyTo("Clipboard") },
+	{ key = "v", mods = "CTRL|SHIFT", action = act.PasteFrom("Clipboard") },
 	-- tab navigation
 	{ key = "p", mods = "ALT", action = act.ActivateTabRelative(-1) },
 	{ key = "n", mods = "ALT", action = act.ActivateTabRelative(1) },
