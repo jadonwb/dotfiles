@@ -1,8 +1,6 @@
 local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
-config.color_scheme = "arrowlake_light"
-
 -- WezTerm paints the *current* search match with the terminal selection
 -- colors (selection_*) and the *other* matches with
 -- copy_mode_inactive_highlight_*. So these two are swapped on purpose:

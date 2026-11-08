@@ -10,14 +10,14 @@
   "compose_cursor": "#FB9B00",
   "scrollbar_thumb": "#161440",
   "ansi": [
-    "#070614",
+    "#0D0C25",
     "#E50050",
     "#2A8A6B",
     "#FFD888",
     "#3F3BF5",
     "#D91C87",
     "#33D4B4",
-    "#5c6296"
+    "#bec8e8"
   ],
   "brights": [
     "#312e55",
@@ -27,7 +27,7 @@
     "#4f4cff",
     "#f50097",
     "#00e5c0",
-    "#bec8e8"
+    "#dbe3ff"
   ],
   "tab_bar": {
     "inactive_tab_edge": "#09081a",

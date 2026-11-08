@@ -1,14 +1,13 @@
 return {
   {
-    'jadonwb/arrowlake.nvim',
-    opts = {
-      style = "light",
-    }
+    "jadonwb/arrowlake.nvim",
+    dev = true,
+    priority = 1000,
   },
   {
-    'LazyVim/LazyVim',
+    "LazyVim/LazyVim",
     opts = {
-      colorscheme = 'arrowlake-light',
+      colorscheme = "arrowlake-light",
     },
   },
 }

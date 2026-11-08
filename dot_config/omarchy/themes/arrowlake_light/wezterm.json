@@ -4,20 +4,20 @@
   "cursor_bg": "#54473f",
   "cursor_border": "#54473f",
   "cursor_fg": "#ebe0cf",
-  "selection_bg": "#D7A9B1",
-  "selection_fg": "#54473F",
+  "selection_bg": "#d7a9b1",
+  "selection_fg": "#54473f",
   "split": "#e3d7c7",
   "compose_cursor": "#56AEA9",
   "scrollbar_thumb": "#d4c6b3",
   "ansi": [
-    "#DED0BF",
+    "#ebe0cf",
     "#BC495D",
     "#4E7469",
     "#AE984C",
     "#4A74A8",
     "#C16C90",
     "#56AEA9",
-    "#87786c"
+    "#54473f"
   ],
   "brights": [
     "#ad9b88",
