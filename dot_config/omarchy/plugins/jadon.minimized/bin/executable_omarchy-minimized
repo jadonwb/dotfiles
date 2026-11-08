@@ -1,0 +1,373 @@
+#!/usr/bin/env bash
+# omarchy:summary=Minimize a window to special:minimized, or restore one
+# omarchy:args=minimize [window-address] | restore <window-address> [--here] | prune | list
+#
+# Hyprland has no minimize. Omarchy hides a window by moving it to the
+# special:minimized workspace, which is what the dock reads. This helper does
+# that from any workspace, not only floating ones, and remembers what a window
+# needs to come back: its workspace, monitor, floating state, exact geometry,
+# pinned state, and fullscreen state.
+#
+# State lives in ${XDG_STATE_HOME:-~/.local/state}/omarchy/minimized/state.json,
+# keyed by window address. The matching origin workspace is also written to a
+# window tag, so a window minimized by something else still restores.
+
+set -uo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/minimized"
+STATE_FILE="$STATE_DIR/state.json"
+MINIMIZED_WORKSPACE="special:minimized"
+TAG_PREFIX="omarchy-minimized-from-"
+
+die() {
+  printf 'omarchy-minimized: %s\n' "$*" >&2
+  exit 1
+}
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || die "missing $1"
+}
+
+need hyprctl
+need jq
+
+mkdir -p "$STATE_DIR"
+[[ -s $STATE_FILE ]] || printf '{"version":1,"windows":{}}\n' >"$STATE_FILE"
+
+# One writer at a time. The lock is advisory and kept for the whole command,
+# which is why restore holds it through its short settling delays.
+exec 9>"$STATE_DIR/state.lock"
+flock -w 3 9 2>/dev/null || true
+
+clients_json() {
+  hyprctl clients -j
+}
+
+window_json() {
+  clients_json | jq -c --arg address "$1" 'first(.[] | select(.address == $address)) // empty'
+}
+
+active_address() {
+  hyprctl activewindow -j | jq -r '.address // empty'
+}
+
+active_workspace_id() {
+  hyprctl activeworkspace -j | jq -r '.id // empty'
+}
+
+# ---------------------------------------------------------------- state file
+
+state_get() {
+  jq -c --arg address "$1" '.windows[$address] // empty' "$STATE_FILE" 2>/dev/null
+}
+
+state_put() {
+  local address=$1 entry=$2 tmp
+  tmp=$(mktemp "$STATE_DIR/.state.XXXXXX") || return 1
+  if jq --arg address "$address" --argjson entry "$entry" \
+      '.windows[$address] = $entry' "$STATE_FILE" >"$tmp" 2>/dev/null; then
+    mv -f "$tmp" "$STATE_FILE"
+  else
+    rm -f "$tmp"
+    return 1
+  fi
+}
+
+state_drop() {
+  local address=$1 tmp
+  tmp=$(mktemp "$STATE_DIR/.state.XXXXXX") || return 1
+  if jq --arg address "$address" 'del(.windows[$address])' "$STATE_FILE" >"$tmp" 2>/dev/null; then
+    mv -f "$tmp" "$STATE_FILE"
+  else
+    rm -f "$tmp"
+    return 1
+  fi
+}
+
+# Entries whose window is gone or no longer parked on the minimized workspace
+# are stale: closed apps, windows restored from the dock, or windows the user
+# moved out by hand.
+cmd_prune() {
+  local live tmp
+  live=$(clients_json | jq -c '[.[] | select(.workspace.name == "'"$MINIMIZED_WORKSPACE"'") | .address]') || return 0
+  tmp=$(mktemp "$STATE_DIR/.state.XXXXXX") || return 1
+  if jq --argjson live "$live" \
+      '.windows |= with_entries(select(.key as $key | $live | index($key)))' \
+      "$STATE_FILE" >"$tmp" 2>/dev/null; then
+    mv -f "$tmp" "$STATE_FILE"
+  else
+    rm -f "$tmp"
+  fi
+}
+
+# ------------------------------------------------------------ workspace keys
+
+# A Lua dispatcher argument: numbers stay numbers, everything else is quoted.
+lua_workspace() {
+  local value=$1
+  if [[ $value =~ ^-?[0-9]+$ ]]; then
+    printf '%s' "$value"
+  else
+    printf '"%s"' "${value//\"/\\\"}"
+  fi
+}
+
+origin_tag() {
+  local id=$1 name=$2
+  if [[ $id =~ ^[0-9]+$ ]]; then
+    printf '%s%s' "$TAG_PREFIX" "$id"
+  else
+    printf '%s%s' "$TAG_PREFIX" "$(jq -rn --arg name "$name" '$name | gsub("[^A-Za-z0-9]+"; "-")')"
+  fi
+}
+
+# The origin tag is a fallback for windows no state entry names. A window that
+# has been minimized more than once should not accumulate them.
+clear_origin_tags() {
+  local address=$1 window tag
+  window=$(window_json "$address")
+  [[ -n $window ]] || return 0
+  while IFS= read -r tag; do
+    [[ -n $tag ]] || continue
+    hyprctl dispatch "hl.dsp.window.tag({ tag = \"-$tag\", window = \"address:$address\" })" >/dev/null 2>&1
+  done < <(jq -r --arg prefix "$TAG_PREFIX" '.tags[]? | select(startswith($prefix))' <<<"$window")
+}
+
+monitor_name_for() {
+  local id=$1
+  [[ $id =~ ^[0-9]+$ ]] || return 0
+  hyprctl monitors -j | jq -r --argjson id "$id" 'first(.[] | select(.id == $id) | .name) // empty'
+}
+
+# ---------------------------------------------------------------- minimize
+
+cmd_minimize() {
+  local address=${1:-}
+  [[ -n $address ]] || address=$(active_address)
+  [[ -n $address ]] || die "no active window"
+  [[ $address == 0x* ]] || address="0x$address"
+
+  local window workspace_name workspace_id focused=0 origin
+  window=$(window_json "$address")
+  [[ -n $window ]] || die "window not found: $address"
+
+  workspace_name=$(jq -r '.workspace.name // ""' <<<"$window")
+  [[ $workspace_name != "$MINIMIZED_WORKSPACE" ]] || return 0
+  workspace_id=$(jq -r '.workspace.id // empty' <<<"$window")
+  [[ $(active_address) == "$address" ]] && focused=1
+
+  origin=$(origin_tag "$workspace_id" "$workspace_name")
+  clear_origin_tags "$address"
+  hyprctl dispatch "hl.dsp.window.tag({ tag = \"+$origin\", window = \"address:$address\" })" >/dev/null 2>&1
+
+  # A pinned window is visible on every workspace, including while parked, so
+  # take the pin off now and put it back on restore.
+  if [[ $(jq -r '.pinned' <<<"$window") == true ]]; then
+    hyprctl dispatch "hl.dsp.window.pin({ action = \"disable\", window = \"address:$address\" })" >/dev/null 2>&1
+  fi
+
+  local entry
+  entry=$(jq -c \
+    --arg monitor "$(monitor_name_for "$(jq -r '.monitor' <<<"$window")")" \
+    --argjson now "$(date +%s%3N)" \
+    '{
+      address,
+      class,
+      initialClass,
+      title,
+      workspace: { id: (.workspace.id // null), name: (.workspace.name // "") },
+      monitor: $monitor,
+      monitorId: .monitor,
+      floating,
+      at,
+      size,
+      pinned,
+      fullscreen: (.fullscreen // 0),
+      fullscreenClient: (.fullscreenClient // .fullscreen // 0),
+      minimizedAt: $now
+    }' <<<"$window")
+  state_put "$address" "$entry"
+
+  hyprctl dispatch \
+    "hl.dsp.window.move({ workspace = \"$MINIMIZED_WORKSPACE\", window = \"address:$address\", follow = false })" \
+    >/dev/null 2>&1
+
+  # The focused window was carrying focus; without this the next window opened
+  # would join it on the hidden workspace. Only refocus when the window really
+  # held focus, so minimizing another workspace's window never moves the view.
+  if (( focused )); then
+    if [[ -n $workspace_id ]]; then
+      hyprctl dispatch "hl.dsp.focus({ workspace = $(lua_workspace "$workspace_id") })" >/dev/null 2>&1
+    elif [[ $workspace_name == special:* ]]; then
+      hyprctl dispatch "hl.dsp.focus({ workspace = $(lua_workspace "$workspace_name") })" >/dev/null 2>&1
+    fi
+  fi
+
+  cmd_prune
+}
+
+# ---------------------------------------------------------------- restore
+
+# Hyprland keeps a floating window's geometry across the special-workspace
+# round trip. When something did move it — a different monitor, a layout change
+# — put back the saved size and position, but only within the monitor it came
+# from: global coordinates from another output would fling it off screen.
+restore_geometry() {
+  local address=$1 entry=$2 window saved_size current_size saved_monitor monitor
+  [[ $(jq -r '.floating' <<<"$entry") == true ]] || return 0
+
+  window=$(window_json "$address")
+  [[ -n $window ]] || return 0
+
+  if [[ $(jq -r '.floating' <<<"$window") != true ]]; then
+    hyprctl dispatch "hl.dsp.window.float({ action = \"enable\", window = \"address:$address\" })" >/dev/null 2>&1
+    sleep 0.05
+    window=$(window_json "$address")
+    [[ -n $window ]] || return 0
+  fi
+
+  saved_size=$(jq -c '.size // empty' <<<"$entry")
+  current_size=$(jq -c '.size' <<<"$window")
+  if [[ -n $saved_size && $saved_size != null && $saved_size != "$current_size" ]]; then
+    hyprctl dispatch "hl.dsp.window.resize({ x = $(jq '.[0]' <<<"$saved_size"), y = $(jq '.[1]' <<<"$saved_size"), window = \"address:$address\" })" >/dev/null 2>&1
+    sleep 0.05
+    window=$(window_json "$address")
+    [[ -n $window ]] || return 0
+  fi
+
+  saved_monitor=$(jq -r '.monitor // empty' <<<"$entry")
+  monitor=$(monitor_name_for "$(jq -r '.monitor' <<<"$window")")
+  if [[ -n $saved_monitor && $saved_monitor == "$monitor" ]]; then
+    local saved_at current_at
+    saved_at=$(jq -c '.at // empty' <<<"$entry")
+    current_at=$(jq -c '.at' <<<"$window")
+    if [[ -n $saved_at && $saved_at != null && $saved_at != "$current_at" ]]; then
+      hyprctl dispatch "hl.dsp.window.move({ x = $(jq '.[0]' <<<"$saved_at"), y = $(jq '.[1]' <<<"$saved_at"), window = \"address:$address\" })" >/dev/null 2>&1
+    fi
+  fi
+}
+
+restore_fullscreen() {
+  local address=$1 entry=$2 state client_state
+  state=$(jq -r '.fullscreen // 0' <<<"$entry")
+  client_state=$(jq -r '.fullscreenClient // 0' <<<"$entry")
+  (( state > 0 )) || return 0
+  hyprctl dispatch \
+    "hl.dsp.window.fullscreen_state({ internal = $state, client = $client_state, window = \"address:$address\" })" \
+    >/dev/null 2>&1
+}
+
+cmd_restore() {
+  local address=${1:-}
+  [[ -n $address ]] || die "restore needs a window address"
+  [[ $address == 0x* ]] || address="0x$address"
+  shift || true
+
+  local here=0
+  while (($# > 0)); do
+    case $1 in
+      --here | -h) here=1 ;;
+      *) die "unknown option: $1" ;;
+    esac
+    shift
+  done
+
+  local window entry
+  window=$(window_json "$address")
+  [[ -n $window ]] || die "window not found: $address"
+  entry=$(state_get "$address")
+  [[ -n $entry ]] || entry='{}'
+
+  local target=""
+  if ((here)); then
+    target=$(active_workspace_id)
+  else
+    local name id
+    name=$(jq -r '.workspace.name // empty' <<<"$entry")
+    id=$(jq -r '.workspace.id // empty' <<<"$entry")
+    if [[ $name == special:* ]]; then
+      target=$name
+    elif [[ -n $id ]]; then
+      # Hyprland creates an empty workspace again when a window returns to it,
+      # so an id with no live workspace is still a valid destination.
+      target=$id
+    else
+      # A window minimized by the stock command (or before this plugin saved
+      # state) still carries its origin workspace in a tag.
+      local tag
+      tag=$(jq -r --arg prefix "$TAG_PREFIX" \
+        'first(.tags[]? | select(startswith($prefix)) | ltrimstr($prefix)) // empty' <<<"$window")
+      [[ $tag =~ ^[0-9]+$ ]] && target=$tag
+    fi
+  fi
+  [[ -n $target ]] || target=$(active_workspace_id)
+  [[ -n $target ]] || die "no workspace to restore to"
+
+  # Restored windows are simply back, without animating in from nowhere.
+  hyprctl dispatch "hl.dsp.window.set_prop({ prop = \"no_anim\", value = \"1\", window = \"address:$address\" })" >/dev/null 2>&1
+  hyprctl dispatch \
+    "hl.dsp.window.move({ workspace = $(lua_workspace "$target"), window = \"address:$address\", follow = false })" \
+    >/dev/null 2>&1
+  sleep 0.12
+
+  # A window going back to a hidden special workspace would otherwise take
+  # focus while staying invisible. Show the workspace it belongs to.
+  if [[ $target == special:* ]]; then
+    hyprctl dispatch "hl.dsp.focus({ workspace = $(lua_workspace "$target") })" >/dev/null 2>&1
+  fi
+
+  restore_geometry "$address" "$entry"
+  restore_fullscreen "$address" "$entry"
+
+  hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null 2>&1
+  hyprctl dispatch "hl.dsp.window.alter_zorder({ mode = \"top\", window = \"address:$address\" })" >/dev/null 2>&1
+
+  if [[ $(jq -r '.pinned' <<<"$entry") == true ]]; then
+    hyprctl dispatch "hl.dsp.window.pin({ action = \"enable\", window = \"address:$address\" })" >/dev/null 2>&1
+  fi
+
+  clear_origin_tags "$address"
+
+  (
+    sleep 0.35
+    hyprctl dispatch "hl.dsp.window.set_prop({ prop = \"no_anim\", value = \"unset\", window = \"address:$address\" })" >/dev/null 2>&1
+  ) &
+
+  state_drop "$address"
+  cmd_prune
+}
+
+# ---------------------------------------------------------------- reporting
+
+cmd_list() {
+  local live
+  live=$(clients_json | jq -c '[.[] | select(.workspace.name == "'"$MINIMIZED_WORKSPACE"'")]')
+  jq -c --argjson live "$live" '
+    .windows as $state
+    | $live
+    | map(. + { saved: ($state[.address] // null) })
+    | sort_by([(.saved.minimizedAt // 0), .class])
+    | reverse
+  ' "$STATE_FILE" 2>/dev/null || printf '[]\n'
+}
+
+case ${1:-} in
+  minimize)
+    shift
+    cmd_minimize "${1:-}"
+    ;;
+  restore)
+    shift
+    cmd_restore "$@"
+    ;;
+  prune)
+    cmd_prune
+    ;;
+  list)
+    cmd_list
+    ;;
+  *)
+    printf 'usage: %s {minimize [window-address] | restore <window-address> [--here] | prune | list}\n' "$0" >&2
+    exit 2
+    ;;
+esac

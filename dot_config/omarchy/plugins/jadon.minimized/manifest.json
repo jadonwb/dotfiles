@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "jadon.minimized",
+  "name": "Minimized",
+  "version": "1.0.0",
+  "author": "Jadon",
+  "license": "MIT",
+  "description": "Minimized windows on the bar, with a keyboard-driven list that restores each window to where it came from.",
+  "kinds": ["bar-widget"],
+  "activation": "on-demand",
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Minimized",
+    "description": "One bar icon and one list: every window tucked away on special:minimized. Restores its workspace, floating state, size, and position.",
+    "category": "Windows",
+    "aliases": ["minimized", "minimize", "windows"],
+    "allowMultiple": false,
+    "defaults": {
+      "alwaysShow": true
+    },
+    "schema": [
+      {
+        "key": "alwaysShow",
+        "type": "boolean",
+        "label": "Always show the icon",
+        "defaultValue": true,
+        "description": "Keep the bar icon visible when nothing is minimized. Turn off to have it appear only while a window is tucked away."
+      }
+    ]
+  }
+}

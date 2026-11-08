@@ -1,0 +1,20 @@
+{
+  "minimized.title": "Minimized",
+  "minimized.count": { "one": "%1 window", "other": "%1 windows" },
+  "minimized.barTooltip": { "one": "%1 minimized window", "other": "%1 minimized windows" },
+  "minimized.barTooltipEmpty": "No minimized windows",
+  "minimized.empty": "No minimized windows",
+  "minimized.emptyHint": "Press SUPER + ALT + M to tuck the focused window away.",
+  "minimized.fromWorkspace": "workspace %1",
+  "minimized.fromSpecial": "special %1",
+  "minimized.unknownOrigin": "workspace unknown",
+  "minimized.floating": "floating",
+  "minimized.tiled": "tiled",
+  "minimized.justNow": "just now",
+  "minimized.minutesAgo": "%1m ago",
+  "minimized.hoursAgo": "%1h ago",
+  "minimized.daysAgo": "%1d ago",
+  "minimized.hint": "j/k move · Enter restore · t bring here · x close app · Esc close",
+  "minimized.untitled": "Untitled window",
+  "minimized.closeWindow": "Close window"
+}

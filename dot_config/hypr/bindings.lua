@@ -16,6 +16,13 @@
 local machine = require("hypr.host")
 local window_toggle = require("hypr.window-toggle")
 
+-- Tuck the focused window away from any workspace, and open the list of what
+-- is hidden. The helper records workspace, floating state, and geometry.
+local minimized = (os.getenv("HOME") or "") .. "/.config/omarchy/plugins/jadon.minimized/bin/omarchy-minimized"
+
+o.rebind("SUPER + M", "Minimized windows", { panel = "jadon.minimized" })
+o.rebind("SUPER + ALT + M", "Minimize window", minimized .. " minimize")
+
 o.rebind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar=false start --always-new-process" })
 o.rebind("SUPER + ALT + RETURN", "Persistent Terminal", function()
   local command = "wezterm start --always-new-process --domain $(hostname)"
