@@ -47,7 +47,7 @@
       "browse": {
         "type": "local",
         "command": [
-          "/home/jadon/.local/bin/browse",
+          "browse",
           "mcp"
         ],
         "environment": {
