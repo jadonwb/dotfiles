@@ -31,34 +31,32 @@ otherwise stays out of the way.
 | `planning`          | the user asks to plan, or a scope decision is expensive to reverse |
 | `research-evidence` | source/documentation research that should be reused    |
 | `review-workflow`   | an independent correctness check, or the user asks     |
+| `past-conversations` | the user asks to recall an earlier session or decision |
 | `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
 
-Memory is deliberately **not** a skill: project memory is indexed on every
-primary request, and session memory is appended to the compaction summary. Other
-discovered skills (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`,
-`report`, …) load when their descriptions match.
+Past-conversation recall is deliberately a skill (`past-conversations`): it
+queries the local session database only when the user asks to remember
+something. Nothing is injected on every request. Other discovered skills
+(`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …) load when
+their descriptions match.
 
 The split follows the current guidance: a system prompt defines permanent
 behavior and policy; a skill defines a repeatable procedure for a task that only
-applies sometimes. Moving a core behavior such as memory into a skill makes it
-opt-in, and the agent often will not load it at the moment it matters.
+applies sometimes. Durable project knowledge belongs in `AGENTS.md` and in the
+repository, not in the prompt.
 
 Skill authoring follows the current best practices: a specific what-and-when
 description with trigger terms, a body well under 500 lines, the workflow and
 tool sequence rather than a restatement of the system prompt, and supporting
 detail only where it changes behavior. The always-loaded prompt is kept stable
-because prompt caching keys on the prefix; variable memory is appended after the
-stable instructions rather than rewriting them.
+because prompt caching keys on the prefix; no per-session document is appended to
+it.
 
 ## Artifacts
 
 `plugins/artifacts/` is a standalone filesystem-backed registry and the
 `personal.artifacts` RPC used by Neovim. Kinds:
 
-- `memory` — **project memory**, one structured document per repository, shared
-  by sessions, subdirectories, and linked worktrees of that checkout.
-- `session_memory` — the session's exact
-  objective/requirements/decisions/references record.
 - `plan` — an optional working document; an approval gate only when the user
   asked for a plan. A completed plan records its outcome, changed files,
   verification, and unfinished work, then freezes. Later work starts a new plan
@@ -66,7 +64,7 @@ stable instructions rather than rewriting them.
 - `evidence` — reusable research with self-contained findings.
 - `review` — an independent outcome and findings.
 
-Create artifacts early. `memory_init`, `plan_create`, `evidence_create`, and
+Create artifacts early. `plan_create`, `evidence_create`, and
 `review_create` accept initial content, so a draft can be filled incrementally
 as the work teaches you something. `artifact_search` finds existing artifact
 text, so discovery does not require knowing an ID. `plan_update` accepts whole
@@ -80,27 +78,16 @@ they did not ask, approval is only a review marker and never a precondition.
 Editing a reviewed artifact returns it to draft for re-review; a completed plan
 cannot be edited.
 
-## Compaction and memory
+## Compaction
 
-- Every agent-loop request from a **primary** agent (`context` hook) gets a
-  `<memory-context>` system part with the project-memory **index**: a plain
-  `Project memory` heading, the bounded `Core` content, and every other
-  section's title and short preview. The index is built from the record's
-  structured sections, not from Markdown headings; the agent loads one section
-  by title, or the whole document, on demand.
-- Session memory is appended to the **compaction summary** by the
-  `http.response` hook for `kind: "compaction"`, before the finish event. It is
-  the exact state that survives the summary, not an always-on duplicate of the
-  transcript.
-- Compaction uses OpenCode's built-in summary prompt unmodified. The response
-  hook appends session memory after the model's summary; nothing is injected
-  into the transcript as a separate message.
-- Requirements and corrections belong in session memory, recorded when they are
-  given. The summary cannot recover a requirement the agent never saved.
+- Compaction uses OpenCode's built-in summary prompt unmodified. No response hook
+  rewrites the summary and no memory document is appended.
 - `buffer: "30%"` keeps the last 30% of the 1M window free, so automatic
   compaction starts at ~700k tokens. `keep.tokens: 32000` keeps the recent tail.
-  The threshold is a policy choice, not a measured optimum; see RESEARCH.md.
-- Session memory is appended verbatim; it is not clipped.
+  The threshold is a policy choice, not a measured optimum.
+- Compaction is lossy: it keeps terse bullets and drops detail it judges
+  recoverable from code or files. Write decisions and comparisons to repository
+  notes or evidence while they are fresh.
 
 ## Layout
 
@@ -108,14 +95,13 @@ cannot be edited.
 - `skills/` — on-demand workflows.
 - `plugins/bridge/` — frontend RPC seam: `personal.bridge` handshake and the
   domain registry every RPC domain registers through.
-- `plugins/artifacts/` — artifact store, agent tools, and memory injection. No
-  bridge or RPC imports.
+- `plugins/artifacts/` — artifact store and agent tools. No bridge or RPC
+  imports.
 - `plugins/artifacts-rpc/` — the editor-facing adapter: registers
   `personal.artifacts` through the bridge.
 - `tests/artifacts/` — artifact store and tool/RPC tests.
 - `opencode.jsonc` — default agent, compaction, MCP servers, plugin list.
 - `cli.json` — terminal preferences and keybinds.
-- `RESEARCH.md` — research notes behind the design.
 
 ## Bridge
 

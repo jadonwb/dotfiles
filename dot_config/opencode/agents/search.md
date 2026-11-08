@@ -30,9 +30,6 @@ permissions:
   - action: artifact_search
     resource: "*"
     effect: allow
-  - action: memory_load
-    resource: "*"
-    effect: allow
   - action: evidence_create
     resource: "*"
     effect: allow

@@ -1,6 +1,6 @@
 // Artifact RPC adapter: the Neovim-facing half of the artifact registry.
 //
-// Storage, agent tools, and memory injection stay in ../artifacts. This plugin
+// Storage and agent tools stay in ../artifacts. This plugin
 // only exposes the registry over RPC (personal.artifacts) and registers that
 // domain through the bridge. Keeping the adapter separate means the artifact
 // tools never import bridge code.
@@ -19,6 +19,7 @@ import {
   type ArtifactView,
 } from "../artifacts/artifact-tools.ts";
 import { registerDomain, mintRequestID } from "../bridge/registry.ts";
+import { projectLocation } from "../artifacts/project.mjs";
 
 // Return the store's bookkeeping delivery object verbatim; output validation
 // needs the full shape (state, attemptedAt, deliveredAt, error).
@@ -45,6 +46,7 @@ export default {
   id: "personal.artifacts-rpc",
   async setup(ctx) {
     const directory = ctx.location.directory;
+    const projectDirectory = projectLocation(directory);
     const store = createStore();
 
     // In-process guard so concurrent duplicate submissions of the same
@@ -134,7 +136,7 @@ export default {
           });
           const marked = await markDelivery({
             artifactID: input.artifactID,
-            location: directory,
+            location: projectDirectory,
             requestID: input.requestID,
             kind: input.submission,
             state: "delivered",
@@ -146,7 +148,7 @@ export default {
           try {
             const marked = await markDelivery({
               artifactID: input.artifactID,
-              location: directory,
+              location: projectDirectory,
               requestID: input.requestID,
               kind: input.submission,
               state: "failed",
@@ -173,12 +175,12 @@ export default {
 
     await registerDomain(ctx, {
       contract: Artifacts,
-      description: "Durable session memory, plans, evidence, and reviews.",
+      description: "Durable plans, evidence, and reviews.",
       handlers: {
         list: async (_input, context) => {
           try {
             const artifacts = await store.listArtifacts({
-              location: directory,
+              location: projectDirectory,
             });
             return { artifacts: artifacts.map(rpcSummaryOf) };
           } catch (error) {
@@ -192,7 +194,7 @@ export default {
               artifact: rpcViewOf(
                 await store.getArtifact({
                   artifactID: input.artifactID,
-                  location: directory,
+                  location: projectDirectory,
                 }),
               ),
             };
@@ -208,7 +210,7 @@ export default {
           try {
             submission = await store.addArtifactFeedback({
               artifactID: input.artifactID,
-              location: directory,
+              location: projectDirectory,
               requestID,
               question: input.question,
               selectedText: input.selectedText,
@@ -262,7 +264,7 @@ export default {
           try {
             submission = await store.approveArtifact({
               artifactID: input.artifactID,
-              location: directory,
+              location: projectDirectory,
               requestID,
             });
           } catch (error) {
@@ -309,7 +311,7 @@ export default {
           try {
             submission = await store.markArtifactRead({
               artifactID: input.artifactID,
-              location: directory,
+              location: projectDirectory,
               requestID,
             });
           } catch (error) {
@@ -330,7 +332,7 @@ export default {
           try {
             record = await store.getArtifact({
               artifactID: input.artifactID,
-              location: directory,
+              location: projectDirectory,
             });
           } catch (error) {
             rpcError(context, error);

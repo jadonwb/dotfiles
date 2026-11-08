@@ -47,9 +47,10 @@ Do not write file-by-file edit instructions, code, line anchors, or a full task
 breakdown before the work is understood. Those belong in the work itself. If a
 stage needs its own design pass, do that pass when you reach it.
 
-## Progress belongs in session memory
+## Keep one progress record
 
-Session memory (see the memory tools) is the only progress log:
+For a multi-phase task, keep progress in one place: the plan, or a short note in
+the repository (`docs/`, `notes/`, or a file next to the work). Record:
 
 - objective and current requirements
 - decisions made
@@ -62,9 +63,8 @@ state.
 
 ## Workflow
 
-1. `tools.memory["init"]({ scope: "project" })` when the work will produce
-   lasting project knowledge; `{ scope: "session" }` for a multi-phase task. Use
-   `tools.memory["load"]` to read an existing document.
+1. Read the project `AGENTS.md` and use `artifact_search` for existing evidence or
+   plans before re-deriving anything.
 2. `tools.plan["create"]({ title, description, workingDirectory, goalScope?,
    intendedChanges?, context?, checks?, previousPlanID? })` — returns the bare
    plan ID. Put the outcome and major stages in the create call when you already
@@ -75,7 +75,7 @@ state.
    occurrence.
 4. `tools.plan["finalize"]({ artifactID })` — ready for review.
 5. If the user asked for planning: report the plan ID and ask for approval, then
-   stop. Otherwise implement, updating session memory as you go. When the
+   stop. Otherwise implement, updating the progress note as you go. When the
    significant work is done, record the outcome with `plan_complete`.
 
 ## Shape
@@ -134,5 +134,5 @@ both.
 - Planning because the change touches several files.
 - Implementing before the approval you were asked to wait for.
 - Turning the plan into a file-by-file task list before the work is understood.
-- Keeping progress in both the plan and session memory.
+- Keeping progress in both the plan and a separate note.
 - Expanding scope silently instead of updating the plan.

@@ -1,6 +1,5 @@
 // Capability-specific artifact tools. Mutations are create/update/finalize per
 // kind and the kind is fixed by the tool:
-// - memory: memory_init, memory_update, memory_load.
 // - plan: plan_create, plan_update, plan_complete, plan_finalize, plan_load.
 // - evidence: evidence_create, evidence_update, evidence_finding,
 //   evidence_finalize, evidence_load, evidence_summary.
@@ -38,16 +37,14 @@ const MAX_ANCESTRY_HOPS = 16;
 // Only kinds with a model-facing loader belong here. Search must never return
 // an ID the model has no tool to load.
 const SEARCHABLE_KINDS = Object.freeze([
-  "memory",
-  "session_memory",
   "plan",
   "evidence",
   "review",
 ]);
 
 // The primary agent that owns a tree of worker sessions. Artifacts authored by
-// a worker resolve to this owner so user feedback and session memory route back
-// to the main conversation.
+// a worker resolve to this owner so user feedback routes back to the main
+// conversation.
 const PRIMARY_AGENT = "system";
 
 export type ToolContext = {
@@ -325,17 +322,6 @@ export type ArtifactView = ArtifactSummary & {
   content: string;
 };
 
-/** One structured `## ` section of project memory or a session memory. */
-export type MemorySection = {
-  title: string;
-  content: string;
-};
-
-export type MemoryView = ArtifactView & {
-  sections: MemorySection[];
-  preamble: string;
-};
-
 export type ArtifactStructure = {
   evidence?: string[];
   findings?: { id: string; title: string }[];
@@ -357,27 +343,6 @@ export type ArtifactToolDeps = {
       workingDirectory?: string;
       previousPlanID?: string | null;
       initial?: Record<string, unknown>;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    memoryPut(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      content: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    memoryAppend(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      content: string;
-      section?: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    memoryPatch(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      oldText: string;
-      newText: string;
-      section?: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     planFieldSet(input: {
       artifactID: string;
@@ -518,32 +483,6 @@ export type ArtifactToolDeps = {
       artifactID: string;
       location: string;
     }): Promise<ArtifactView>;
-    getMemory(input: {
-      artifactID: string;
-      location: string;
-    }): Promise<ArtifactView>;
-    getMemorySummary(input: {
-      artifactID: string;
-      location: string;
-    }): Promise<
-      ArtifactSummary & {
-        content: string;
-        sections: MemorySection[];
-        preamble: string;
-      }
-    >;
-    getMemorySection(input: {
-      artifactID: string;
-      location: string;
-      section: string;
-    }): Promise<ArtifactSummary & { section: MemorySection }>;
-    findProjectMemory(input: {
-      location: string;
-    }): Promise<MemoryView | null>;
-    findSessionMemoryForSession(input: {
-      sessionID: string;
-      location: string;
-    }): Promise<MemoryView | null>;
     artifactSearch(input: {
       location: string;
       query: string;
@@ -582,49 +521,12 @@ export type ArtifactToolDeps = {
       location: string;
     }): Promise<ArtifactSummary & { outcome: string | null; summary: string }>;
   };
-  /** Session/registry location (plans, evidence, session memory documents). */
+  /** Session working directory (plan workingDirectory defaults come from here). */
   directory: string;
-  /** Project root that owns shared project memory (git common checkout). */
+  /** Shared project root: all worktrees of a checkout store artifacts here. */
   projectDirectory: string;
   getSession: SessionGetter;
 };
-
-/**
- * Memory artifacts live at the project root and session memory documents at the session
- * directory, so a mutation addressed by ID must find which scope owns it while
- * keeping the store's location scoping.
- */
-async function memoryLocationFor(
-  deps: {
-    store: {
-      getMemorySummary: (input: {
-        artifactID: string;
-        location: string;
-      }) => Promise<unknown>;
-    };
-    directory: string;
-    projectDirectory: string;
-  },
-  artifactID: string,
-): Promise<string> {
-  const candidates = [...new Set([deps.projectDirectory, deps.directory])];
-  for (const location of candidates) {
-    try {
-      await deps.store.getMemorySummary({ artifactID, location });
-      return location;
-    } catch (error) {
-      // An artifact that exists at a scope but has the wrong kind is a real
-      // error, not a reason to try the other scope.
-      if (error instanceof StoreError && error.code === "invalid_kind") {
-        throw error;
-      }
-    }
-  }
-  throw new StoreError(
-    "not_found",
-    `No memory or session memory artifact ${artifactID} in this project`,
-  );
-}
 
 function finalizedLabel(finalized: boolean): string {
   return finalized ? "true" : "false";
@@ -694,11 +596,6 @@ export function addArtifactTools(
       "Searches artifact text in this project to discover memories and evidence without IDs.",
   });
   editor.namespace({
-    name: "memory",
-    description:
-      "Maintains project memory and session memory as live documents.",
-  });
-  editor.namespace({
     name: "plan",
     description:
       "Creates, modifies, finalizes, and reads plan artifacts. Plans are optional working documents; implementation waits for approval only when the user asked for a plan.",
@@ -752,283 +649,11 @@ export function addArtifactTools(
     return `${summary.artifactID} ${summary.status === "published" ? "published" : "finalized"}`;
   }
 
-  // -------------------------------------------------------------------------
-  // Memory tools (namespace "memory")
-  //
-  // Two live documents, both always published and injected into later requests:
-  // project memory (one per project, lasting knowledge shared by sessions) and
-  // session memory (small running state for this session). Tools work
-  // incrementally so the agent records a finding, continues working, and
-  // appends the next section instead of writing once at the end.
-  // -------------------------------------------------------------------------
-
-  addTool({
-    name: "init",
-    namespace: "memory",
-    description:
-      "Get or create a memory document and return its bare artifact ID. scope=project is lasting project knowledge shared by every session; scope=session is this session's exact record — important requirements, decisions, facts, and artifact references that must survive compaction. This does not read the document: use memory_load. content is used only when creating; each memory is a `## ` section titled by what it records.",
-    input: {
-      type: "object",
-      properties: {
-        scope: {
-          type: "string",
-          enum: ["project", "session"],
-          description:
-            "project (default) for lasting project knowledge; session for this session's exact record: requirements, decisions, facts, and references.",
-        },
-        title: {
-          type: "string",
-          description: "Optional title used only when creating the document.",
-        },
-        description: {
-          type: "string",
-          description:
-            "Optional one-line description used only when creating the document.",
-        },
-        content: {
-          type: "string",
-          description:
-            "Optional initial Markdown body used only when creating the document.",
-        },
-      },
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const provenance = await resolveProvenance(deps, toolContext);
-      const writer = await resolveWriter(deps, toolContext);
-      const scope = input.scope === "session" ? "session" : "project";
-      const existing =
-        scope === "session"
-          ? await deps.store.findSessionMemoryForSession({
-              sessionID: provenance.ownerSessionID,
-              location: deps.directory,
-            })
-          : await deps.store.findProjectMemory({
-              location: deps.projectDirectory,
-            });
-      if (existing) return { content: existing.id };
-      const created = await deps.store.createArtifact({
-        kind: scope === "session" ? "session_memory" : "memory",
-        ownerSessionID: provenance.ownerSessionID,
-        writerSessionID: writer,
-        primaryAuthor: primaryAuthorOf(toolContext.agent),
-        location: scope === "session" ? deps.directory : deps.projectDirectory,
-        title:
-          typeof input.title === "string" && input.title.trim().length > 0
-            ? input.title
-            : scope === "session"
-              ? "Session memory"
-              : "Project memory",
-        description:
-          typeof input.description === "string" &&
-          input.description.trim().length > 0
-            ? input.description
-            : scope === "session"
-              ? "Recorded exact memories for this session."
-              : "Lasting recorded memories: decisions, pitfalls, and findings.",
-        initial: { content: input.content },
-      });
-      return { content: created.artifactID };
-    },
-  });
-
-  addTool({
-    name: "update",
-    namespace: "memory",
-    description:
-      "Mutate project memory or session memory. mode=append adds a `## ` section or appends to an existing section title; mode=patch replaces one exact oldText with newText (empty newText deletes) in the document or in a named section; mode=replace replaces the whole document when consolidating. Returns the artifact ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: {
-          type: "string",
-          description: "Memory or session memory artifact ID.",
-        },
-        mode: {
-          type: "string",
-          enum: ["append", "patch", "replace"],
-          description:
-            "append adds content; patch replaces one exact oldText; replace replaces the whole document.",
-        },
-        content: {
-          type: "string",
-          description:
-            "Markdown body for append or replace. Ignored for patch.",
-        },
-        oldText: {
-          type: "string",
-          description: "Exact text to replace; required for patch.",
-        },
-        newText: {
-          type: "string",
-          description:
-            "Replacement text for patch; empty deletes the matched text.",
-        },
-        section: {
-          type: "string",
-          description:
-            "Optional unique section title from the injected index. For append, target that section (content must not contain `## ` headings). For patch, search only that section. Not used by replace.",
-        },
-      },
-      required: ["artifactID", "mode"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const location = await memoryLocationFor(deps, input.artifactID);
-      if (input.mode === "append") {
-        if (typeof input.content !== "string" || input.content.length === 0) {
-          throw new StoreError(
-            "validation",
-            "append requires a non-empty content string",
-          );
-        }
-        const appended = await deps.store.memoryAppend({
-          artifactID: input.artifactID,
-          location,
-          writerSessionID: writer,
-          content: input.content,
-          section:
-            typeof input.section === "string" ? input.section : undefined,
-        });
-        return { content: appended.artifactID };
-      }
-      if (input.mode === "patch") {
-        if (
-          typeof input.oldText !== "string" ||
-          typeof input.newText !== "string"
-        ) {
-          throw new StoreError(
-            "validation",
-            "patch requires oldText and newText strings",
-          );
-        }
-        const patched = await deps.store.memoryPatch({
-          artifactID: input.artifactID,
-          location,
-          writerSessionID: writer,
-          oldText: input.oldText,
-          newText: input.newText,
-          section:
-            typeof input.section === "string" ? input.section : undefined,
-        });
-        return { content: patched.artifactID };
-      }
-      if (input.mode === "replace") {
-        if (typeof input.section === "string") {
-          throw new StoreError(
-            "validation",
-            "replace does not target a section; omit section",
-          );
-        }
-        if (typeof input.content !== "string") {
-          throw new StoreError(
-            "validation",
-            "replace requires a content string",
-          );
-        }
-        const put = await deps.store.memoryPut({
-          artifactID: input.artifactID,
-          location,
-          writerSessionID: writer,
-          content: input.content,
-        });
-        return { content: put.artifactID };
-      }
-      throw new StoreError(
-        "validation",
-        "mode must be append, patch, or replace",
-      );
-    },
-  });
-
-  addTool({
-    name: "load",
-    namespace: "memory",
-    description:
-      "Load project memory (or session memory by ID). Omit section for the full document plus its section titles; pass a section title from the injected index to load just that section. Omit artifactID for project memory.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: {
-          type: "string",
-          description:
-            "Optional project or session memory artifact ID; omitted resolves this project's memory.",
-        },
-        section: {
-          type: "string",
-          description:
-            "Optional unique section title from the injected index; loads only that section.",
-        },
-      },
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      let artifactID =
-        typeof input.artifactID === "string" && input.artifactID.length > 0
-          ? input.artifactID
-          : undefined;
-      if (!artifactID) {
-        const existing = await deps.store.findProjectMemory({
-          location: deps.projectDirectory,
-        });
-        if (!existing) {
-          throw new StoreError(
-            "not_found",
-            "No project memory exists yet; call memory_init first",
-          );
-        }
-        artifactID = existing.id;
-      }
-      const location = await memoryLocationFor(deps, artifactID);
-      if (typeof input.section === "string") {
-        const result = await deps.store.getMemorySection({
-          artifactID,
-          location,
-          section: input.section,
-        });
-        return {
-          content: [
-            "ARTIFACT_SECTION",
-            `Kind: ${result.kind}`,
-            `Status: ${result.status}`,
-            `Title: ${result.title}`,
-            `Artifact: ${result.id}`,
-            `Section: ${result.section.title}`,
-            "",
-            result.section.content,
-          ].join("\n"),
-        };
-      }
-      const summary = await deps.store.getMemorySummary({
-        artifactID,
-        location,
-      });
-      const sectionList = summary.sections
-        .map((section) => section.title)
-        .join(", ");
-      return {
-        content: [
-          "ARTIFACT_CONTENT",
-          `Kind: ${summary.kind}`,
-          `Status: ${summary.status}`,
-          `Title: ${summary.title}`,
-          `Artifact: ${summary.id}`,
-          sectionList.length > 0 ? `Sections: ${sectionList}` : null,
-          "",
-          summary.content,
-        ]
-          .filter((line): line is string => line !== null)
-          .join("\n"),
-      };
-    },
-  });
-
   addTool({
     name: "search",
     namespace: "artifact",
     description:
-      "Search artifact text in this session's directory and shared project memory (memory, session_memory, evidence, plans, reviews) and return matching IDs with line snippets. Use to discover relevant memories and evidence without knowing IDs.",
+      "Search artifact text across this project, including every worktree, and return matching IDs with line snippets. Use to discover relevant evidence and plans without knowing IDs.",
     input: {
       type: "object",
       properties: {
@@ -1041,7 +666,7 @@ export function addArtifactTools(
           type: "array",
           items: { type: "string" },
           description:
-            "Optional kind filter: memory, session_memory, plan, evidence, review.",
+            "Optional kind filter: plan, evidence, review.",
         },
         limit: {
           type: "number",
@@ -1059,21 +684,11 @@ export function addArtifactTools(
           : [];
       const allKinds =
         requestedKinds.length > 0 ? requestedKinds : [...SEARCHABLE_KINDS];
-      // Session artifacts are stored at the session directory and project
-      // memory at the project root. Query each at its own scope so every hit
-      // is loadable without a location mismatch.
+      // Artifacts are project-scoped, so one query covers the main checkout and
+      // every linked worktree.
       const scopes: Array<{ location: string; kinds?: string[] }> = [
-        { location: deps.directory, kinds: allKinds },
+        { location: deps.projectDirectory, kinds: allKinds },
       ];
-      if (deps.projectDirectory !== deps.directory) {
-        const memoryKinds = allKinds.filter((kind) => kind === "memory");
-        if (memoryKinds.length > 0) {
-          scopes.push({
-            location: deps.projectDirectory,
-            kinds: memoryKinds,
-          });
-        }
-      }
 
       type SearchResult = {
         id: string;
@@ -1175,7 +790,7 @@ export function addArtifactTools(
         ownerSessionID: provenance.ownerSessionID,
         writerSessionID: writer,
         primaryAuthor: primaryAuthorOf(toolContext.agent),
-        location: deps.directory,
+        location: deps.projectDirectory,
         title: input.title,
         description: input.description,
         workingDirectory: input.workingDirectory,
@@ -1257,7 +872,7 @@ export function addArtifactTools(
       }
       const updated = await deps.store.planUpdate({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         fields,
         evidenceIDs: input.evidenceIDs,
@@ -1301,7 +916,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const completed = await deps.store.planComplete({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         summary: input.summary,
         changed: input.changed,
@@ -1329,7 +944,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const finalized = await deps.store.planFinalize({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
       });
       return { content: bareFinalize(finalized) };
@@ -1352,11 +967,11 @@ export function addArtifactTools(
     async handler(input, toolContext) {
       const view = await deps.store.getPlan({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       const structure = await deps.store.getArtifactStructure({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       return {
         content: [
@@ -1412,7 +1027,7 @@ export function addArtifactTools(
         ownerSessionID: provenance.ownerSessionID,
         writerSessionID: writer,
         primaryAuthor: primaryAuthorOf(toolContext.agent),
-        location: deps.directory,
+        location: deps.projectDirectory,
         title: input.title,
         description: input.description,
         initial: {
@@ -1451,7 +1066,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const put = await deps.store.evidenceOverviewPut({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         question: input.question,
         summary: input.summary,
@@ -1511,7 +1126,7 @@ export function addArtifactTools(
         }
         const removed = await deps.store.evidenceFindingRemove({
           artifactID: input.artifactID,
-          location: deps.directory,
+          location: deps.projectDirectory,
           writerSessionID: writer,
           findingID: input.findingID,
         });
@@ -1525,7 +1140,7 @@ export function addArtifactTools(
       }
       const put = await deps.store.evidenceFindingPut({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         findingID: input.findingID,
         title: input.title,
@@ -1561,7 +1176,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const finalized = await deps.store.evidenceFinalize({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         question: input.question,
         summary: input.summary,
@@ -1587,11 +1202,11 @@ export function addArtifactTools(
     async handler(input, toolContext) {
       const view = await deps.store.getEvidence({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       const structure = await deps.store.getArtifactStructure({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       return {
         content: [
@@ -1620,7 +1235,7 @@ export function addArtifactTools(
     async handler(input, toolContext) {
       const summary = await deps.store.getEvidenceSummary({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       const lines = [
         "ARTIFACT_SUMMARY",
@@ -1677,7 +1292,7 @@ export function addArtifactTools(
         ownerSessionID: provenance.ownerSessionID,
         writerSessionID: writer,
         primaryAuthor: primaryAuthorOf(toolContext.agent),
-        location: deps.directory,
+        location: deps.projectDirectory,
         title: input.title,
         description: input.description,
         initial: { outcome: input.outcome, summary: input.summary },
@@ -1713,7 +1328,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const updated = await deps.store.reviewUpdate({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         outcome: input.outcome,
         summary: input.summary,
@@ -1793,7 +1408,7 @@ export function addArtifactTools(
         }
         const removed = await deps.store.reviewFindingRemove({
           artifactID: input.artifactID,
-          location: deps.directory,
+          location: deps.projectDirectory,
           writerSessionID: writer,
           findingID: input.findingID,
         });
@@ -1811,7 +1426,7 @@ export function addArtifactTools(
       }
       const put = await deps.store.reviewFindingPut({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         findingID: input.findingID,
         title: input.title,
@@ -1851,7 +1466,7 @@ export function addArtifactTools(
       const writer = await resolveWriter(deps, toolContext);
       const finalized = await deps.store.reviewFinalize({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
         writerSessionID: writer,
         outcome: input.outcome,
         summary: input.summary,
@@ -1876,11 +1491,11 @@ export function addArtifactTools(
     async handler(input, toolContext) {
       const view = await deps.store.getReview({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       const structure = await deps.store.getArtifactStructure({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       return {
         content: [
@@ -1909,7 +1524,7 @@ export function addArtifactTools(
     async handler(input, toolContext) {
       const summary = await deps.store.getReviewSummary({
         artifactID: input.artifactID,
-        location: deps.directory,
+        location: deps.projectDirectory,
       });
       const lines = [
         "ARTIFACT_SUMMARY",

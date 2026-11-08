@@ -21,7 +21,7 @@ const artifactSummary = {
     id: { type: "string" },
     kind: {
       type: "string",
-      description: "memory, plan, evidence, or review",
+      description: "plan, evidence, or review",
     },
     title: { type: "string" },
     description: { type: ["string", "null"] },
@@ -33,7 +33,7 @@ const artifactSummary = {
     status: {
       type: "string",
       description:
-        "draft, published, approved, or read (memory is always published)",
+        "draft, published, approved, or read",
     },
     path: {
       type: "string",

@@ -36,9 +36,6 @@ const EXPECTED_TOOL_NAMES = [
   "evidence_load",
   "evidence_summary",
   "evidence_update",
-  "memory_init",
-  "memory_load",
-  "memory_update",
   "plan_complete",
   "plan_create",
   "plan_finalize",
@@ -215,7 +212,7 @@ test("registration declares plan/evidence/review namespaces and the exact effect
 
   assert.deepEqual(
     namespaces.map((namespace) => namespace.name).sort(),
-    ["artifact", "evidence", "memory", "plan", "review"],
+    ["artifact", "evidence", "plan", "review"],
     "the Code Mode namespaces are declared",
   );
   const permissions = tools.map((tool) => tool.options.permission).sort();
@@ -1009,7 +1006,6 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
   assert.deepEqual(namespaces.map((namespace) => namespace.name).sort(), [
     "artifact",
     "evidence",
-    "memory",
     "plan",
     "review",
   ]);
@@ -1628,281 +1624,6 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
   );
 });
 
-test("memory tools: init is idempotent, update append/patch are incremental, load resolves the session", async (t) => {
-  const sessions = {
-    [PRIMARY_SESSION]: sessionInfo(),
-    [SEARCH_SESSION]: sessionInfo({
-      id: SEARCH_SESSION,
-      agent: "search",
-      parentID: PRIMARY_SESSION,
-    }),
-  };
-  const { tools, contracts } = await setupPlugin(t, { sessions });
-  const rpc = contracts.find(
-    (entry) => entry.contract.id === "personal.artifacts",
-  ).handlers;
-  const ctx = toolContext(PRIMARY_SESSION, "system");
-
-  const memoryID = await execTool(tools, "memory_init", {}, ctx);
-  assert.match(
-    memoryID,
-    /^art_[a-f0-9]{8}$/,
-    "memory_init returns the bare artifact ID",
-  );
-  assert.equal(
-    await execTool(tools, "memory_init", {}, ctx),
-    memoryID,
-    "memory_init is idempotent for the project",
-  );
-
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: memoryID,
-      mode: "append",
-      content: "## Objective\n\nShip the refactor.",
-    },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: memoryID,
-      mode: "append",
-      content: "## Work State\n\nTesting.",
-    },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: memoryID,
-      mode: "patch",
-      oldText: "Testing.",
-      newText: "Testing and documenting.",
-    },
-    ctx,
-  );
-
-  const loaded = await execTool(tools, "memory_load", {}, ctx);
-  assert.match(loaded, /^ARTIFACT_CONTENT/);
-  assert.match(loaded, /## Objective/);
-  assert.match(loaded, /Ship the refactor\./);
-  assert.match(loaded, /Testing and documenting\./);
-  const sectionLine = loaded.match(/^Sections: (.+)$/m);
-  assert.ok(sectionLine, "the full load lists section titles");
-  assert.match(sectionLine[1], /(?:^|, )Objective(?:,|$)/);
-  assert.match(sectionLine[1], /(?:^|, )Work State(?:,|$)/);
-
-  const section = await execTool(
-    tools,
-    "memory_load",
-    { artifactID: memoryID, section: "Objective" },
-    ctx,
-  );
-  assert.match(section, /^ARTIFACT_SECTION/);
-  assert.match(section, /Section: Objective/);
-  assert.match(section, /Ship the refactor\./);
-  assert.doesNotMatch(
-    section,
-    /Testing and documenting\./,
-    "a section load excludes the other sections",
-  );
-
-  const list = await rpc.list(
-    {},
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  const row = list.artifacts.find((entry) => entry.id === memoryID);
-  assert.ok(row, "memory is listed by the RPC");
-  assert.equal(row.kind, "memory");
-  assert.equal(row.status, "published");
-
-  const planID = await execTool(
-    tools,
-    "plan_create",
-    { title: "P", description: "d", workingDirectory: DIRECTORY },
-    ctx,
-  );
-  const wrongKind = await execTool(
-    tools,
-    "memory_load",
-    { artifactID: planID },
-    ctx,
-  );
-  assert.match(wrongKind, /^ARTIFACT_ERROR/);
-  assert.match(wrongKind, /invalid_kind/);
-});
-
-test("project memory is injected as background context and the session memory is appended to the compaction summary", async (t) => {
-  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
-  const { tools, hooks } = await setupPlugin(t, { sessions });
-  const ctx = toolContext(PRIMARY_SESSION, "system");
-
-  const projectID = await execTool(tools, "memory_init", {}, ctx);
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: projectID,
-      mode: "append",
-      content: "## Build quirk\n\nTurbo needs a clean cache.",
-    },
-    ctx,
-  );
-  const sessionMemoryID = await execTool(
-    tools,
-    "memory_init",
-    { scope: "session" },
-    ctx,
-  );
-  assert.notEqual(
-    sessionMemoryID,
-    projectID,
-    "the session memory is a second document",
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "append",
-      content: "## Next Move\n\nRun the tests.",
-    },
-    ctx,
-  );
-
-  const contextHook = hooks.find((entry) => entry.name === "context");
-  assert.ok(contextHook, "the context hook is registered");
-  assert.equal(
-    hooks.find((entry) => entry.name === "compaction"),
-    undefined,
-    "the context hook does not carry the session memory",
-  );
-
-  const contextEvent = {
-    sessionID: PRIMARY_SESSION,
-    agent: "system",
-    system: [],
-    messages: [],
-  };
-  await contextHook.callback(contextEvent);
-  assert.equal(contextEvent.system.length, 1, "project memory is injected");
-  assert.equal(
-    contextEvent.messages.length,
-    0,
-    "no synthetic user message is added",
-  );
-  const contextText = contextEvent.system[0].text;
-  assert.match(contextText, /<memory-context>/);
-  assert.match(
-    contextText,
-    new RegExp(`<project-memory artifact="${projectID}">`),
-  );
-  assert.match(contextText, /Turbo needs a clean cache/);
-  assert.doesNotMatch(
-    contextText,
-    /# Session Memory/,
-    "the session memory is never part of the normal context",
-  );
-  assert.match(
-    contextText,
-    /newest user instruction and freshly verified tool results override/i,
-    "memory is background, not authority",
-  );
-
-  const responseHook = hooks.find((entry) => entry.name === "http.response");
-  assert.ok(responseHook, "the compaction response hook is registered");
-  const sse = [
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
-    "",
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
-    "",
-    "data: [DONE]",
-    "",
-  ].join("\n");
-  const event = {
-    kind: "compaction",
-    sessionID: PRIMARY_SESSION,
-    response: new Response(sse, {
-      headers: { "content-type": "text/event-stream" },
-    }),
-  };
-  await responseHook.callback(event);
-  const summary = await event.response.text();
-  assert.match(summary, /## Objective/);
-  assert.match(summary, /# Session Memory/);
-  assert.match(summary, new RegExp(`Artifact: ${sessionMemoryID}`));
-  assert.match(summary, /Run the tests\./);
-  const sessionMemoryIndex = summary.indexOf("# Session Memory");
-  const finishIndex = summary.indexOf('"finish_reason":"stop"');
-  assert.ok(sessionMemoryIndex >= 0 && finishIndex >= 0);
-  assert.ok(
-    sessionMemoryIndex < finishIndex,
-    "the session memory is inserted before the finish event",
-  );
-});
-
-test("memory injection follows the primary mode, not the agent name", async (t) => {
-  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
-  const { tools, hooks } = await setupPlugin(t, {
-    sessions,
-    agents: {
-      system: { mode: "primary" },
-      plan: { mode: "primary" },
-      search: { mode: "subagent" },
-    },
-  });
-  const ctx = toolContext(PRIMARY_SESSION, "system");
-
-  const projectID = await execTool(tools, "memory_init", {}, ctx);
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: projectID,
-      mode: "append",
-      content: "## Core\n\nKeep this across primaries.",
-    },
-    ctx,
-  );
-
-  const contextHook = hooks.find((entry) => entry.name === "context");
-  const primaryEvent = {
-    sessionID: PRIMARY_SESSION,
-    agent: "plan",
-    system: [],
-    messages: [],
-  };
-  await contextHook.callback(primaryEvent);
-  assert.equal(
-    primaryEvent.system.length,
-    1,
-    "a non-system primary agent gets the memory block",
-  );
-  assert.match(primaryEvent.system[0].text, /Keep this across primaries\./);
-
-  const subagentEvent = {
-    sessionID: PRIMARY_SESSION,
-    agent: "search",
-    system: [],
-    messages: [],
-  };
-  await contextHook.callback(subagentEvent);
-  assert.equal(
-    subagentEvent.system.length,
-    0,
-    "a subagent does not inherit the primary's memory",
-  );
-});
-
 test("create and finalize accept initial content so a draft can be filled incrementally", async (t) => {
   const sessions = { [PRIMARY_SESSION]: sessionInfo() };
   const { tools } = await setupPlugin(t, { sessions });
@@ -1971,20 +1692,6 @@ test("create and finalize accept initial content so a draft can be filled increm
   assert.match(reviewLoaded, /Changes required/);
   assert.match(reviewLoaded, /Final review\./);
 
-  const memoryID = await execTool(
-    tools,
-    "memory_init",
-    { content: "## Objective\n\nStart early." },
-    ctx,
-  );
-  const memoryLoaded = await execTool(
-    tools,
-    "memory_load",
-    { artifactID: memoryID },
-    ctx,
-  );
-  assert.match(memoryLoaded, /Start early\./);
-
   const planID = await execTool(
     tools,
     "plan_create",
@@ -2026,286 +1733,49 @@ test("create and finalize accept initial content so a draft can be filled increm
   assert.match(planLoaded, /One\. Three\./);
 });
 
-test("large project memory is injected as an index and the full session memory is appended to the compaction summary", async (t) => {
-  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
-  const { tools, hooks } = await setupPlugin(t, { sessions });
-  const ctx = toolContext(PRIMARY_SESSION, "system");
-
-  const projectID = await execTool(tools, "memory_init", {}, ctx);
-  const sections = [
-    "## Core",
-    "Always load this core decision.",
-    ...Array.from(
-      { length: 30 },
-      (_, index) => `## Area ${index + 1}\n\n${"detail ".repeat(20)}`,
-    ),
-  ].join("\n\n");
-  await execTool(
-    tools,
-    "memory_update",
-    { artifactID: projectID, mode: "append", content: sections },
-    ctx,
-  );
-
-  const sessionMemoryID = await execTool(
-    tools,
-    "memory_init",
-    { scope: "session" },
-    ctx,
-  );
-  const longBody = [
-    "## Objective",
-    "Keep the newest progress.",
-    "## Requirements",
-    "- The deploy target is PROD-BETA and must survive compaction.",
-    "## Progress",
-    ...Array.from({ length: 400 }, (_, index) => `- filler line ${index}`),
-    "## Next Move",
-    "Run the final verification.",
-  ].join("\n\n");
-  await execTool(
-    tools,
-    "memory_update",
-    { artifactID: sessionMemoryID, mode: "append", content: longBody },
-    ctx,
-  );
-
-  const contextHook = hooks.find((entry) => entry.name === "context");
-  const contextEvent = {
-    sessionID: PRIMARY_SESSION,
-    agent: "system",
-    system: [],
-    messages: [],
-  };
-  await contextHook.callback(contextEvent);
-  const text = contextEvent.system[0].text;
-
-  assert.match(
-    text,
-    /^Project memory$/m,
-    "the project-memory index has a plain heading",
-  );
-  assert.match(
-    text,
-    /Core:\nAlways load this core decision\./,
-    "the project index always inlines the Core content",
-  );
-  assert.match(
-    text,
-    /- Area 30: /,
-    "project memory is injected as section titles",
-  );
-  assert.match(
-    text,
-    /Load a section by title with memory_load\(section\)/,
-    "the project memory body is loaded on demand",
-  );
-  assert.doesNotMatch(
-    text,
-    /(?:detail ){16,}/,
-    "the project memory body is not inlined when large",
-  );
-  assert.doesNotMatch(
-    text,
-    /PROD-BETA/,
-    "the session memory is not in the normal context",
-  );
-
-  const responseHook = hooks.find((entry) => entry.name === "http.response");
-  const sse = [
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
-    "",
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
-    "",
-    "data: [DONE]",
-    "",
-  ].join("\n");
-  const responseEvent = {
-    kind: "compaction",
-    sessionID: PRIMARY_SESSION,
-    response: new Response(sse, {
-      headers: { "content-type": "text/event-stream" },
-    }),
-  };
-  await responseHook.callback(responseEvent);
-  const summary = await responseEvent.response.text();
-  assert.match(summary, /PROD-BETA/);
-  assert.match(summary, /filler line 399/);
-  assert.match(summary, /Run the final verification\./);
-  assert.match(summary, /# Session Memory/);
-});
-
-test("successive session memory revisions keep corrections, rejected approaches, and unfinished work", async (t) => {
-  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
-  const { tools, hooks } = await setupPlugin(t, { sessions });
-  const ctx = toolContext(PRIMARY_SESSION, "system");
-
-  const sessionMemoryID = await execTool(
-    tools,
-    "memory_init",
-    { scope: "session" },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "replace",
-      content: [
-        "## Objective",
-        "Port the parser.",
-        "",
-        "## Requirements",
-        "- Use the old API.",
-        "",
-        "## Decisions",
-        "- Keep the streaming path unchanged.",
-      ].join("\n"),
-    },
-    ctx,
-  );
-
-  // A user correction: the superseded requirement is replaced, not duplicated.
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "patch",
-      oldText: "- Use the old API.",
-      newText: "- Use the new API (user correction).",
-    },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "patch",
-      oldText: "- Keep the streaming path unchanged.",
-      newText: "- Superseded: the streaming path had to change.",
-    },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "append",
-      content:
-        "## Rejected Approaches\n\n- Rewriting the parser: it broke streaming.",
-    },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_update",
-    {
-      artifactID: sessionMemoryID,
-      mode: "append",
-      content:
-        "## Work State\n\n- Complete: parser port.\n- Unfinished: streaming tests.",
-    },
-    ctx,
-  );
-
-  const loaded = await execTool(
-    tools,
-    "memory_load",
-    { artifactID: sessionMemoryID },
-    ctx,
-  );
-  assert.match(loaded, /Use the new API \(user correction\)\./);
-  assert.doesNotMatch(
-    loaded,
-    /Use the old API\./,
-    "the correction replaced the old text",
-  );
-  assert.match(loaded, /Rewriting the parser: it broke streaming\./);
-  assert.match(loaded, /Complete: parser port\./);
-  assert.match(loaded, /Unfinished: streaming tests\./);
-
-  // The compaction summary gets the same reconciled state, and no stale
-  // version.
-  const responseHook = hooks.find((entry) => entry.name === "http.response");
-  const sse = [
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
-    "",
-    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
-    "",
-    "data: [DONE]",
-    "",
-  ].join("\n");
-  const event = {
-    kind: "compaction",
-    sessionID: PRIMARY_SESSION,
-    response: new Response(sse, {
-      headers: { "content-type": "text/event-stream" },
-    }),
-  };
-  await responseHook.callback(event);
-  const injected = await event.response.text();
-  assert.match(injected, /Use the new API/);
-  assert.doesNotMatch(injected, /Use the old API\./);
-  assert.match(injected, /Rejected Approaches/);
-  assert.match(injected, /Unfinished: streaming tests\./);
-});
-
-test("artifact search covers session artifacts plus shared project memory, not other scopes", async (t) => {
+test("artifact search covers the project, not another location", async (t) => {
   const { store } = await makeStore(t);
   const PROJECT = "/tmp/opencode/search-project";
-  const SESSION = "/tmp/opencode/search-session";
+  const WORKTREE = "/tmp/opencode/search-worktree";
+  const OTHER = "/tmp/opencode/search-other";
 
-  const memory = await store.createArtifact({
-    kind: "memory",
-    ownerSessionID: PRIMARY_SESSION,
-    writerSessionID: PRIMARY_SESSION,
-    primaryAuthor: "System",
-    location: PROJECT,
-    title: "Project memory",
-    description: "Shared.",
-    initial: { content: "## Deploy\n\nshared needle phrase." },
-  });
   const evidence = await store.createArtifact({
     kind: "evidence",
     ownerSessionID: PRIMARY_SESSION,
     writerSessionID: PRIMARY_SESSION,
     primaryAuthor: "Search",
-    location: SESSION,
-    title: "Session evidence",
-    description: "Local.",
+    location: PROJECT,
+    title: "Project evidence",
+    description: "Shared by worktrees.",
   });
   await store.evidenceFindingPut({
     artifactID: evidence.artifactID,
-    location: SESSION,
+    location: PROJECT,
     writerSessionID: PRIMARY_SESSION,
-    title: "Local finding",
-    content: "local needle phrase.",
+    title: "Project finding",
+    content: "project needle phrase.",
   });
-  const rootEvidence = await store.createArtifact({
+  const otherEvidence = await store.createArtifact({
     kind: "evidence",
     ownerSessionID: PRIMARY_SESSION,
     writerSessionID: PRIMARY_SESSION,
     primaryAuthor: "Search",
-    location: PROJECT,
-    title: "Root evidence",
-    description: "Another scope.",
+    location: OTHER,
+    title: "Other evidence",
+    description: "Another location.",
   });
   await store.evidenceFindingPut({
-    artifactID: rootEvidence.artifactID,
-    location: PROJECT,
+    artifactID: otherEvidence.artifactID,
+    location: OTHER,
     writerSessionID: PRIMARY_SESSION,
-    title: "Root finding",
-    content: "root needle phrase.",
+    title: "Other finding",
+    content: "project needle phrase.",
   });
 
   const tools = [];
   addArtifactTools(installEditor({ tools }), {
     store,
-    directory: SESSION,
+    directory: WORKTREE,
     projectDirectory: PROJECT,
     getSession: async () => {
       throw new Error("search does not resolve sessions");
@@ -2318,15 +1788,81 @@ test("artifact search covers session artifacts plus shared project memory, not o
     toolContext(PRIMARY_SESSION, "system"),
   );
 
-  assert.match(output, new RegExp(memory.artifactID), "shared memory is found");
-  assert.match(
-    output,
-    new RegExp(evidence.artifactID),
-    "local evidence is found",
-  );
+  assert.match(output, new RegExp(evidence.artifactID), "project evidence is found");
   assert.doesNotMatch(
     output,
-    new RegExp(rootEvidence.artifactID),
-    "evidence in another directory is not returned as unloadable",
+    new RegExp(otherEvidence.artifactID),
+    "artifacts in another location are not returned",
   );
+});
+
+test("artifacts created in one worktree load and search from another worktree", async (t) => {
+  const { store } = await makeStore(t);
+  const PROJECT = "/tmp/opencode/worktree-project";
+  const WORKTREE_A = "/tmp/opencode/worktree-project/a";
+  const WORKTREE_B = "/tmp/opencode/worktree-project/b";
+  const SESSION_B = "ses_worktreeb0000000000000";
+  const sessions = {
+    [PRIMARY_SESSION]: sessionInfo({
+      location: { directory: WORKTREE_A },
+    }),
+    [SESSION_B]: sessionInfo({
+      id: SESSION_B,
+      location: { directory: WORKTREE_B },
+    }),
+  };
+  const depsFor = (directory) => ({
+    store,
+    directory,
+    projectDirectory: PROJECT,
+    getSession: async ({ sessionID }) => sessions[sessionID],
+  });
+
+  const toolsA = [];
+  addArtifactTools(installEditor({ tools: toolsA }), depsFor(WORKTREE_A));
+  const planID = await execTool(
+    toolsA,
+    "plan_create",
+    {
+      title: "Cross-worktree plan",
+      description: "Authored in A.",
+      workingDirectory: WORKTREE_A,
+      goalScope: "Share one artifact scope.",
+      context: "worktree needle phrase.",
+    },
+    toolContext(PRIMARY_SESSION, "system"),
+  );
+  assert.match(planID, /^art_[a-f0-9]{8}$/);
+
+  const toolsB = [];
+  addArtifactTools(installEditor({ tools: toolsB }), depsFor(WORKTREE_B));
+  const loadedFromB = await execTool(
+    toolsB,
+    "plan_load",
+    { artifactID: planID },
+    toolContext(SESSION_B, "system"),
+  );
+  assert.match(loadedFromB, /Share one artifact scope\./);
+
+  const searchFromB = await execTool(
+    toolsB,
+    "artifact_search",
+    { query: "worktree needle phrase" },
+    toolContext(SESSION_B, "system"),
+  );
+  assert.match(searchFromB, new RegExp(planID), "search spans the project");
+
+  await execTool(
+    toolsA,
+    "plan_update",
+    { artifactID: planID, checks: "Run the tests in A." },
+    toolContext(PRIMARY_SESSION, "system"),
+  );
+  const reloadedFromB = await execTool(
+    toolsB,
+    "plan_load",
+    { artifactID: planID },
+    toolContext(SESSION_B, "system"),
+  );
+  assert.match(reloadedFromB, /Run the tests in A\./);
 });

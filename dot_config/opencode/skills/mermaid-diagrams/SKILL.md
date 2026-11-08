@@ -27,7 +27,7 @@ with one or two sentences that say what it shows and why it matters.
 - Keep a diagram small: aim for 4–12 nodes, and split a large one rather than
   shrinking it.
 - Prefer `flowchart TD` for top-down flows and `flowchart LR` for pipelines.
-- Use short node IDs and readable labels: `A[User]`, `B[Session memory]`.
+- Use short node IDs and readable labels: `A[User]`, `B[Evidence]`.
 - Quote labels that contain spaces, punctuation, or parentheses:
   `A["Store (v2)"]`.
 - Do not put Markdown links, HTML, or backticks inside labels.
@@ -44,7 +44,7 @@ isolated contexts:
 ```mermaid
 flowchart LR
   U[User] --> S[system]
-  S --> M[(session memory)]
+  S --> M[(evidence)]
   S --> P[(plans)]
   S --> Q[search]
   S --> R[review]

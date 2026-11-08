@@ -2282,179 +2282,6 @@ test("resumable create/set/finalize chains preserve partial work across interrup
   );
 });
 
-test("session memory is always published, appends incrementally, patches exactly, and resolves by owner", async (t) => {
-  const { store, root } = await makeStore(t);
-  const memory = await store.createArtifact({
-    kind: "memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Session memory",
-    description: "Durable session state.",
-  });
-  assert.equal(memory.kind, "memory");
-  assert.equal(memory.status, "published", "memory is readable immediately");
-  assert.equal(memory.finalized, true);
-
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Objective\n\nFinish the migration.",
-  });
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Decisions\n\nKeep the store flat.",
-  });
-  let record = await readRecord(root, memory.artifactID);
-  assert.deepEqual(
-    record.sections.map((section) => section.title),
-    ["Objective", "Decisions"],
-    "each `## ` block becomes a structured section",
-  );
-  assert.match(record.sections[0].content, /Finish the migration\./);
-  assert.match(record.sections[1].content, /Keep the store flat\./);
-  assert.equal(record.content, undefined, "the raw body is not duplicated");
-  assert.equal(record.status, "published", "appends keep memory published");
-
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "Objective",
-    content: "- Verify before handoff.",
-  });
-  record = await readRecord(root, memory.artifactID);
-  assert.match(record.sections[0].content, /Verify before handoff\./);
-  assert.equal(record.sections.length, 2, "a targeted append adds no section");
-
-  await store.memoryPatch({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "Objective",
-    oldText: "Finish the migration.",
-    newText: "Finish the migration and verify it.",
-  });
-  record = await readRecord(root, memory.artifactID);
-  assert.match(record.sections[0].content, /Finish the migration and verify it\./);
-
-  const loadedSection = await store.getMemorySection({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    section: "Objective",
-  });
-  assert.equal(loadedSection.section.title, "Objective");
-  assert.match(loadedSection.section.content, /Verify before handoff\./);
-
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Duplicate A\n\nsame text.",
-  });
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Duplicate B\n\nsame text.",
-  });
-  await assert.rejects(
-    store.memoryPatch({
-      artifactID: memory.artifactID,
-      location: LOCATION_A,
-      writerSessionID: WRITER,
-      oldText: "same text.",
-      newText: "changed.",
-    }),
-    (error) => error instanceof StoreError && error.code === "patch_conflict",
-    "a base that occurs in more than one section is refused",
-  );
-
-  const found = await store.findProjectMemory({ location: LOCATION_A });
-  assert.equal(
-    found.id,
-    memory.artifactID,
-    "project memory is resolved without an ID",
-  );
-  assert.equal(
-    await store.findProjectMemory({ location: LOCATION_B }),
-    null,
-    "another project has no memory",
-  );
-
-  // A stale index entry falls back to a scan and repairs the index.
-  const indexPath = join(root, "project-memory-index.json");
-  await writeFile(
-    indexPath,
-    JSON.stringify({ [LOCATION_A]: "art_00000000" }) + "\n",
-  );
-  const recovered = await store.findProjectMemory({ location: LOCATION_A });
-  assert.equal(
-    recovered.id,
-    memory.artifactID,
-    "a stale index is repaired by scanning",
-  );
-  const repaired = JSON.parse(await readFile(indexPath, "utf8"));
-  assert.equal(repaired[LOCATION_A], memory.artifactID);
-
-  const loaded = await store.getMemory({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-  });
-  assert.match(loaded.content, /## Objective/);
-  assert.match(loaded.content, /Finish the migration and verify it\./);
-
-  // Project memory is shared: any primary session in the project may append.
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: OTHER_WRITER,
-    content: "## Shared\n\n- visible to every session in the project.",
-  });
-  record = await readRecord(root, memory.artifactID);
-  assert.equal(record.sections.at(-1).title, "Shared");
-  assert.match(record.sections.at(-1).content, /visible to every session/);
-
-  // The session memory is a second, session-owned document.
-  const sessionMemory = await store.createArtifact({
-    kind: "session_memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Session memory",
-    description: "Objective and progress.",
-  });
-  assert.equal(sessionMemory.status, "published");
-  assert.equal(sessionMemory.finalized, true);
-  const sessionMemoryView = await store.findSessionMemoryForSession({
-    sessionID: OWNER,
-    location: LOCATION_A,
-  });
-  assert.equal(sessionMemoryView.id, sessionMemory.artifactID);
-  assert.equal(
-    await store.findSessionMemoryForSession({
-      sessionID: "ses_none00000000000000000",
-      location: LOCATION_A,
-    }),
-    null,
-  );
-  await assert.rejects(
-    store.memoryAppend({
-      artifactID: sessionMemory.artifactID,
-      location: LOCATION_A,
-      writerSessionID: OTHER_WRITER,
-      content: "x",
-    }),
-    (error) => error instanceof StoreError && error.code === "forbidden",
-    "the session memory stays owned by its session",
-  );
-});
-
 test("plan field patch requires the exact oldText; conflicts refuse the write and leave the record untouched", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
@@ -4446,21 +4273,8 @@ test("resumable create/set/finalize chains preserve partial work across interrup
   );
 });
 
-test("artifact search finds project memory and evidence by text, with a kind filter", async (t) => {
+test("artifact search finds evidence and plans by text, with a kind filter", async (t) => {
   const { store } = await makeStore(t);
-  const memory = await store.createArtifact({
-    kind: "memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Project memory",
-    description: "Lasting knowledge.",
-    initial: {
-      content:
-        "## Deploy quirk\n\nNginx needs the trailing slash on proxy_pass.",
-    },
-  });
   const evidence = await store.createArtifact({
     kind: "evidence",
     ownerSessionID: OWNER,
@@ -4482,6 +4296,20 @@ test("artifact search finds project memory and evidence by text, with a kind fil
     location: LOCATION_A,
     writerSessionID: WRITER,
   });
+  const plan = await store.createArtifact({
+    kind: "plan",
+    ownerSessionID: OWNER,
+    writerSessionID: WRITER,
+    primaryAuthor: "System",
+    location: LOCATION_A,
+    title: "Proxy plan",
+    description: "Plan.",
+    workingDirectory: LOCATION_A,
+    initial: {
+      goalScope: "Fix the proxy.",
+      context: "Preserve the trailing slash on proxy_pass.",
+    },
+  });
 
   const both = await store.artifactSearch({
     location: LOCATION_A,
@@ -4500,13 +4328,15 @@ test("artifact search finds project memory and evidence by text, with a kind fil
   );
   assert.match(onlyEvidence.results[0].matches[0].text, /trailing slash/);
 
-  const memoryOnly = await store.artifactSearch({
+  const onlyPlan = await store.artifactSearch({
     location: LOCATION_A,
-    query: "PROXY_PASS",
-    kinds: ["memory"],
+    query: "trailing slash",
+    kinds: ["plan"],
   });
-  assert.equal(memoryOnly.results[0].id, memory.artifactID);
-  assert.ok(memoryOnly.results[0].matches.length > 0);
+  assert.deepEqual(
+    onlyPlan.results.map((result) => result.id),
+    [plan.artifactID],
+  );
 
   const none = await store.artifactSearch({
     location: LOCATION_A,
@@ -4520,66 +4350,62 @@ test("artifact search finds project memory and evidence by text, with a kind fil
   );
 });
 
-test("session memory content is rendered verbatim and searchable", async (t) => {
-  const { store, root } = await makeStore(t);
-  const sessionMemory = await store.createArtifact({
-    kind: "session_memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Session memory",
-    description: "Objective and progress.",
-    initial: { content: "## Objective\n\nFinish the split." },
-  });
-
-  const view = await store.getMemory({
-    artifactID: sessionMemory.artifactID,
-    location: LOCATION_A,
-  });
-  assert.match(view.content, /## Objective\n\nFinish the split\./);
-
-  const onDisk = await readFile(
-    join(root, sessionMemory.artifactID, "current.md"),
-    "utf8",
-  );
-  assert.match(onDisk, /kind: "session_memory"/);
-  assert.match(onDisk, /Finish the split\./);
-
-  const found = await store.artifactSearch({
-    location: LOCATION_A,
-    query: "finish split",
-    kinds: ["session_memory"],
-  });
-  assert.deepEqual(
-    found.results.map((result) => result.id),
-    [sessionMemory.artifactID],
-  );
-});
-
 test("artifact search reads stored text without rendering or rewriting the view", async (t) => {
   const { store, root } = await makeStore(t);
-  const memory = await store.createArtifact({
-    kind: "memory",
+  const evidence = await store.createArtifact({
+    kind: "evidence",
     ownerSessionID: OWNER,
     writerSessionID: WRITER,
-    primaryAuthor: "System",
+    primaryAuthor: "Search",
     location: LOCATION_A,
-    title: "Project memory",
+    title: "Search fixture",
     description: "Search fixture.",
-    initial: { content: "## Quirk\n\nstored-only phrase." },
   });
-  const viewPath = join(root, memory.artifactID, "current.md");
+  await store.evidenceFindingPut({
+    artifactID: evidence.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    title: "Stored finding",
+    content: "stored-only phrase.",
+  });
+  const viewPath = join(root, evidence.artifactID, "current.md");
   await rm(viewPath);
 
   const found = await store.artifactSearch({
     location: LOCATION_A,
     query: "stored-only phrase",
   });
-  assert.equal(found.results[0].id, memory.artifactID);
+  assert.equal(found.results[0].id, evidence.artifactID);
   await assert.rejects(
     readFile(viewPath),
     (error) => error.code === "ENOENT",
     "search must not render or recreate current.md",
   );
+});
+
+test("scans skip a record whose kind was removed instead of failing the registry", async (t) => {
+  const { store, root } = await makeStore(t);
+  const evidence = await store.createArtifact({
+    kind: "evidence",
+    ownerSessionID: OWNER,
+    writerSessionID: WRITER,
+    primaryAuthor: "Search",
+    location: LOCATION_A,
+    title: "Removed kind",
+    description: "Stale record.",
+  });
+  const recordPath = join(root, evidence.artifactID, "record.json");
+  const text = await readFile(recordPath, "utf8");
+  assert.match(text, /"kind": "evidence"/);
+  await writeFile(
+    recordPath,
+    text.replace('"kind": "evidence"', '"kind": "memory"'),
+  );
+
+  assert.deepEqual(await store.listArtifacts({ location: LOCATION_A }), []);
+  const found = await store.artifactSearch({
+    location: LOCATION_A,
+    query: "stale",
+  });
+  assert.deepEqual(found.results, []);
 });

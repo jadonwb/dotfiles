@@ -65,8 +65,8 @@ to act.
 
 - **Pass** — record the result and continue.
 - **Changes required** — apply the correction in scope, rerun the focused check,
-  and update the plan or session memory. If the correction expands scope, stop and put
-  the decision to the user.
+  and update the plan or the progress note. If the correction expands scope, stop
+  and put the decision to the user.
 - **Blocked** — obtain the missing fact or tell the user what is missing.
 
 Do not argue with a finding without evidence. If you disagree, state the

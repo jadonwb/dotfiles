@@ -35,9 +35,6 @@ permissions:
   - action: artifact_search
     resource: "*"
     effect: allow
-  - action: memory_load
-    resource: "*"
-    effect: allow
   - action: plan_load
     resource: "*"
     effect: allow

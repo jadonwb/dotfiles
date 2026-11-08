@@ -1,14 +1,14 @@
-// Project identity for shared project memory.
+// Project identity for shared artifacts.
 //
-// Project memory must follow the repository, not the tab: sessions opened in a
-// subdirectory, and sessions opened in a git worktree, should read the same
-// lasting knowledge. The rule is:
+// Artifacts must follow the repository, not the tab: sessions opened in a
+// subdirectory, and sessions opened in a git worktree, should share one
+// artifact scope. The rule is:
 //
 //   - a normal checkout or a submodule: the repository root
 //   - a linked worktree: the main checkout that owns the common git directory
 //   - no git repository: the directory itself
 //
-// `OPENCODE_PROJECT_MEMORY_ROOT` overrides the result, which keeps tests and
+// `OPENCODE_PROJECT_ROOT` overrides the result, which keeps tests and
 // unusual layouts deterministic.
 
 import { execFileSync } from "node:child_process";
@@ -27,7 +27,7 @@ function git(directory, args) {
 
 /** Resolve the shared project root for one session directory. */
 export function projectLocation(directory) {
-  const override = process.env.OPENCODE_PROJECT_MEMORY_ROOT;
+  const override = process.env.OPENCODE_PROJECT_ROOT;
   if (typeof override === "string" && override.trim().length > 0) {
     return resolve(override.trim());
   }
@@ -35,7 +35,7 @@ export function projectLocation(directory) {
   const toplevel = git(resolved, ["rev-parse", "--show-toplevel"]);
   if (!toplevel) return resolved;
 
-  // Submodules have their own root; do not share memory with the superproject.
+  // Submodules have their own root; do not share artifacts with the superproject.
   const superproject = git(resolved, [
     "rev-parse",
     "--show-superproject-working-tree",
