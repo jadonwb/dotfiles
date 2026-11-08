@@ -243,14 +243,9 @@ Panel {
     }
   }
 
-  // Ages are rendered from this rather than baked into the rows, so a tick
-  // refreshes the text without rebuilding the list under the cursor.
-  Timer {
-    interval: 15000
-    repeat: true
-    running: root.opened
-    onTriggered: root.nowMs = Date.now()
-  }
+  // Ages are rendered from this on open, once. No timer: the list is not a
+  // clock, and moving text is worse than a value that is as fresh as the last
+  // time the panel was summoned.
 
   // ------------------------------------------------------------- actions
 
@@ -298,6 +293,7 @@ Panel {
     if (key === "G") root.selectAbsolute(root.rows.length - 1)
     else if (key === "t" || key === "T") root.restore(root.rowAt(root.cursorIndex()), true)
     else if (key === "r" || key === "R") {
+      root.nowMs = Date.now()
       root.refreshClients()
       stateFile.reload()
     }
@@ -492,9 +488,11 @@ Panel {
             readonly property string appLabel: root.appLabel(modelData)
             readonly property string previewSource: root.previewSource(modelData.address)
             readonly property string subtitle: {
-              var parts = [modelData.origin, modelData.kind]
+              var parts = []
               var age = Minimized.ageText(modelData.minimizedAt, root.nowMs, strings)
               if (age !== "") parts.push(age)
+              parts.push(modelData.origin)
+              parts.push(modelData.kind)
               return parts.join("  ·  ")
             }
 
