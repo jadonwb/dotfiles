@@ -57,6 +57,7 @@
     }
   },
   "plugins": [
-    "opencode-mobile-notifications"
+    "opencode-mobile-notifications",
+    "./plugins/arrowlake-theme"
   ],
 }
