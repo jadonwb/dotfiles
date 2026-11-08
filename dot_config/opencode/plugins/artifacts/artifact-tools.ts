@@ -1,15 +1,13 @@
-// Capability-specific artifact tools. Mutations are create/set/patch/
-// finalize per kind and the kind is fixed by the tool:
-// - plan: plan_create, plan_field_set, plan_field_patch, plan_evidence_add,
-//   plan_evidence_remove, plan_finalize, plan_status, plan_load.
-// - evidence: evidence_create, evidence_overview_put, evidence_finding_put,
-//   evidence_finding_remove, evidence_finalize, evidence_load,
-//   evidence_summary.
-// - review: review_create, review_outcome_put, review_summary_put,
-//   review_finding_put, review_finding_remove, review_finalize, review_load,
-//   review_summary.
-// - report: report_create, report_content_put, report_content_remove,
-//   report_finalize, report_load, report_summary.
+// Capability-specific artifact tools. Mutations are create/update/finalize per
+// kind and the kind is fixed by the tool:
+// - memory: memory_init, memory_update, memory_load.
+// - plan: plan_create, plan_update, plan_finalize, plan_load.
+// - evidence: evidence_create, evidence_update, evidence_finding,
+//   evidence_finalize, evidence_load, evidence_summary.
+// - review: review_create, review_update, review_finding, review_finalize,
+//   review_load, review_summary.
+// - report: report_create, report_update, report_finalize, report_load,
+//   report_summary.
 //
 // Summary/status readers omit artifact bodies; full loaders include them.
 //
@@ -735,10 +733,10 @@ export function addArtifactTools(
   // -------------------------------------------------------------------------
 
   addTool({
-    name: "open",
+    name: "init",
     namespace: "memory",
     description:
-      "Get or create a memory document and return its bare artifact ID. scope=project is lasting project knowledge shared by every session; scope=session is this session's small checkpoint. Call early, then update at milestones.",
+      "Get or create a memory document and return its bare artifact ID. scope=project is lasting project knowledge shared by every session; scope=session is this session's small checkpoint. This does not read the body: use memory_load. content is used only when creating.",
     input: {
       type: "object",
       properties: {
@@ -805,10 +803,10 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "put",
+    name: "update",
     namespace: "memory",
     description:
-      "Replace an entire memory document body (project memory or checkpoint). Prefer append for new sections and patch for corrections. Returns the artifact ID.",
+      "Mutate project memory or the session checkpoint. mode=append adds a Markdown block at a milestone; mode=patch replaces one exact oldText with newText (empty newText deletes); mode=replace replaces the whole body when consolidating. Returns the artifact ID.",
     input: {
       type: "object",
       properties: {
@@ -816,96 +814,86 @@ export function addArtifactTools(
           type: "string",
           description: "Memory or checkpoint artifact ID.",
         },
-        content: {
+        mode: {
           type: "string",
-          description: "Complete Markdown body.",
-        },
-      },
-      required: ["artifactID", "content"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const location = await memoryLocationFor(deps, input.artifactID);
-      const put = await deps.store.memoryPut({
-        artifactID: input.artifactID,
-        location,
-        writerSessionID: writer,
-        content: input.content,
-      });
-      return { content: put.artifactID };
-    },
-  });
-
-  addTool({
-    name: "append",
-    namespace: "memory",
-    description:
-      "Append one Markdown block to project memory or the checkpoint, separated by a blank line. Use at each milestone as sections become known. Returns the artifact ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: {
-          type: "string",
-          description: "Memory or checkpoint artifact ID.",
+          enum: ["append", "patch", "replace"],
+          description:
+            "append adds content; patch replaces one exact oldText; replace replaces the whole body.",
         },
         content: {
           type: "string",
           description:
-            "Markdown block to append (typically a heading and bullets).",
-        },
-      },
-      required: ["artifactID", "content"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const location = await memoryLocationFor(deps, input.artifactID);
-      const appended = await deps.store.memoryAppend({
-        artifactID: input.artifactID,
-        location,
-        writerSessionID: writer,
-        content: input.content,
-      });
-      return { content: appended.artifactID };
-    },
-  });
-
-  addTool({
-    name: "patch",
-    namespace: "memory",
-    description:
-      "Replace one exact occurrence in project memory or the checkpoint (oldText must occur exactly once) or return patch_conflict. Use for updating state and removing stale items. Returns the artifact ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: {
-          type: "string",
-          description: "Memory or checkpoint artifact ID.",
+            "Markdown body for append or replace. Ignored for patch.",
         },
         oldText: {
           type: "string",
-          description: "Exact text to replace; must occur exactly once.",
+          description: "Exact text to replace; required for patch.",
         },
         newText: {
           type: "string",
-          description: "Replacement text; empty deletes the matched text.",
+          description:
+            "Replacement text for patch; empty deletes the matched text.",
         },
       },
-      required: ["artifactID", "oldText", "newText"],
+      required: ["artifactID", "mode"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
       const location = await memoryLocationFor(deps, input.artifactID);
-      const patched = await deps.store.memoryPatch({
-        artifactID: input.artifactID,
-        location,
-        writerSessionID: writer,
-        oldText: input.oldText,
-        newText: input.newText,
-      });
-      return { content: patched.artifactID };
+      if (input.mode === "append") {
+        if (typeof input.content !== "string" || input.content.length === 0) {
+          throw new StoreError(
+            "validation",
+            "append requires a non-empty content string",
+          );
+        }
+        const appended = await deps.store.memoryAppend({
+          artifactID: input.artifactID,
+          location,
+          writerSessionID: writer,
+          content: input.content,
+        });
+        return { content: appended.artifactID };
+      }
+      if (input.mode === "patch") {
+        if (
+          typeof input.oldText !== "string" ||
+          typeof input.newText !== "string"
+        ) {
+          throw new StoreError(
+            "validation",
+            "patch requires oldText and newText strings",
+          );
+        }
+        const patched = await deps.store.memoryPatch({
+          artifactID: input.artifactID,
+          location,
+          writerSessionID: writer,
+          oldText: input.oldText,
+          newText: input.newText,
+        });
+        return { content: patched.artifactID };
+      }
+      if (input.mode === "replace") {
+        if (typeof input.content !== "string") {
+          throw new StoreError(
+            "validation",
+            "replace requires a content string",
+          );
+        }
+        const put = await deps.store.memoryPut({
+          artifactID: input.artifactID,
+          location,
+          writerSessionID: writer,
+          content: input.content,
+        });
+        return { content: put.artifactID };
+      }
+      throw new StoreError(
+        "validation",
+        "mode must be append, patch, or replace",
+      );
     },
   });
 
@@ -937,7 +925,7 @@ export function addArtifactTools(
         if (!existing) {
           throw new StoreError(
             "not_found",
-            "No project memory exists yet; call memory_open first",
+            "No project memory exists yet; call memory_init first",
           );
         }
         artifactID = existing.id;
@@ -953,38 +941,6 @@ export function addArtifactTools(
           `Status: ${summary.status}`,
           `Title: ${summary.title}`,
           `Artifact: ${summary.id}`,
-          "",
-          summary.content,
-        ].join("\n"),
-      };
-    },
-  });
-
-  addTool({
-    name: "summary",
-    namespace: "memory",
-    description:
-      "Read memory or checkpoint metadata and body by ID without creating or changing anything.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: {
-          type: "string",
-          description: "Memory or checkpoint artifact ID.",
-        },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const summary = await deps.store.getMemorySummary({
-        artifactID: input.artifactID,
-        location: await memoryLocationFor(deps, input.artifactID),
-      });
-      return {
-        content: [
-          "ARTIFACT_SUMMARY",
-          ...summaryHeader(summary, "ARTIFACT_SUMMARY").slice(1),
           "",
           summary.content,
         ].join("\n"),
@@ -1090,7 +1046,7 @@ export function addArtifactTools(
     name: "create",
     namespace: "plan",
     description:
-      "Create a plan draft early, then fill it incrementally with field_set/field_patch. Returns its ID.",
+      "Create a plan draft with optional initial fields, then update it as scope changes. Returns its ID.",
     input: {
       type: "object",
       properties: {
@@ -1109,6 +1065,23 @@ export function addArtifactTools(
           minLength: 1,
           description: "Absolute working directory.",
         },
+        goalScope: {
+          type: "string",
+          description: "Optional initial Goal/Scope Markdown.",
+        },
+        intendedChanges: {
+          type: "string",
+          description:
+            "Optional initial Intended Changes and Behaviors Markdown.",
+        },
+        context: {
+          type: "string",
+          description: "Optional initial Context Markdown.",
+        },
+        checks: {
+          type: "string",
+          description: "Optional initial Checks Markdown.",
+        },
       },
       required: ["title", "description", "workingDirectory"],
       additionalProperties: false,
@@ -1125,136 +1098,90 @@ export function addArtifactTools(
         title: input.title,
         description: input.description,
         workingDirectory: input.workingDirectory,
+        initial: {
+          goalScope: input.goalScope,
+          intendedChanges: input.intendedChanges,
+          context: input.context,
+          checks: input.checks,
+        },
       });
       return { content: created.artifactID };
     },
   });
 
   addTool({
-    name: "field_set",
+    name: "update",
     namespace: "plan",
     description:
-      "Replace goalScope or checks wholesale. Empty content clears checks. Returns the plan ID.",
+      "Replace any subset of plan fields, optionally patch one exact occurrence in intendedChanges or context, and optionally replace the ordered evidence membership. Validates everything before one atomic write. Returns the plan ID.",
     input: {
       type: "object",
       properties: {
         artifactID: { type: "string", description: "Plan artifact ID." },
-        field: { type: "string", enum: [...PLAN_SET_FIELDS] },
-        content: {
+        goalScope: {
           type: "string",
-          description:
-            "Whole-field Markdown content; empty allowed only for checks.",
+          description: "Whole-field Goal/Scope Markdown.",
         },
-      },
-      required: ["artifactID", "field", "content"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const put = await deps.store.planFieldSet({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        field: input.field,
-        content: input.content,
-      });
-      return { content: put.artifactID };
-    },
-  });
-
-  addTool({
-    name: "field_patch",
-    namespace: "plan",
-    description:
-      "Replace one exact occurrence in intendedChanges or context; oldText must occur once (empty only when the field is empty). Returns patch_conflict otherwise.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Plan artifact ID." },
-        field: { type: "string", enum: [...PLAN_PATCH_FIELDS] },
-        oldText: {
+        intendedChanges: {
           type: "string",
-          description: "Exact current field content to replace.",
+          description: "Whole-field Intended Changes and Behaviors Markdown.",
         },
-        newText: { type: "string", description: "Replacement field content." },
-      },
-      required: ["artifactID", "field", "oldText", "newText"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const patched = await deps.store.planFieldPatch({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        field: input.field,
-        oldText: input.oldText,
-        newText: input.newText,
-      });
-      return { content: patched.artifactID };
-    },
-  });
-
-  addTool({
-    name: "evidence_add",
-    namespace: "plan",
-    description:
-      "Attach finalized evidence IDs in order. Validates all before one atomic write, snapshots descriptions, and skips duplicates.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Plan artifact ID." },
+        context: {
+          type: "string",
+          description: "Whole-field Context Markdown.",
+        },
+        checks: {
+          type: "string",
+          description: "Whole-field Checks Markdown; empty clears.",
+        },
         evidenceIDs: {
           type: "array",
           items: {
             type: "string",
             description: "Evidence artifact ID (art_…).",
           },
-          minItems: 1,
-          description: "Ordered evidence artifact IDs to attach (art_…).",
+          description:
+            "Ordered evidence membership; replaces the current list, and an empty array clears it.",
+        },
+        patch: {
+          type: "object",
+          properties: {
+            field: { type: "string", enum: [...PLAN_PATCH_FIELDS] },
+            oldText: {
+              type: "string",
+              description:
+                "Exact current text to replace; must occur exactly once.",
+            },
+            newText: {
+              type: "string",
+              description:
+                "Replacement text; empty deletes the matched text.",
+            },
+          },
+          required: ["field", "oldText", "newText"],
+          additionalProperties: false,
+          description:
+            "Optional targeted edit. Cannot address a field also set wholesale in the same call.",
         },
       },
-      required: ["artifactID", "evidenceIDs"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
-      const added = await deps.store.planEvidenceAddMany({
+      const fields: Record<string, string> = {};
+      for (const field of PLAN_SET_FIELDS) {
+        if (input[field] !== undefined) fields[field] = input[field];
+      }
+      const updated = await deps.store.planUpdate({
         artifactID: input.artifactID,
         location: deps.directory,
         writerSessionID: writer,
+        fields,
         evidenceIDs: input.evidenceIDs,
+        patch: input.patch,
       });
-      return { content: added.artifactID };
-    },
-  });
-
-  addTool({
-    name: "evidence_remove",
-    namespace: "plan",
-    description:
-      "Remove one evidence ID from the plan's membership. Returns its ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Plan artifact ID." },
-        evidenceID: {
-          type: "string",
-          description: "Evidence artifact ID to detach.",
-        },
-      },
-      required: ["artifactID", "evidenceID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const removed = await deps.store.planEvidenceRemove({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        evidenceID: input.evidenceID,
-      });
-      return { content: removed.artifactID };
+      return { content: updated.artifactID };
     },
   });
 
@@ -1279,39 +1206,6 @@ export function addArtifactTools(
         writerSessionID: writer,
       });
       return { content: bareFinalize(finalized) };
-    },
-  });
-
-  addTool({
-    name: "status",
-    namespace: "plan",
-    description: "Read a plan's metadata and readiness by ID; returns no body.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Plan artifact ID." },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const summary = await deps.store.getArtifactMetadata({
-        artifactID: input.artifactID,
-        location: deps.directory,
-      });
-      if (summary.kind !== "plan") {
-        throw new StoreError(
-          "invalid_kind",
-          `Plan status applies to plans only; ${input.artifactID} is a ${summary.kind}`,
-          { artifactID: input.artifactID, kind: summary.kind },
-        );
-      }
-      return {
-        content: [
-          "ARTIFACT_STATUS",
-          ...summaryHeader(summary, "ARTIFACT_STATUS").slice(1),
-        ].join("\n"),
-      };
     },
   });
 
@@ -1405,7 +1299,7 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "overview_put",
+    name: "update",
     namespace: "evidence",
     description:
       "Set the overview fields in one call: question, Summary, Limitations. Each provided field replaces the stored field; omitted fields stay untouched; pass question=null to clear it. At least one field is required. Returns its ID.",
@@ -1441,10 +1335,10 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "finding_put",
+    name: "finding",
     namespace: "evidence",
     description:
-      "Add (no findingID) or replace in place (findingID) one finding. Appending returns the generated finding ID.",
+      "Append a finding (no findingID), replace one in place (findingID with title/content), or remove one (findingID with remove=true). Returns the finding ID.",
     input: {
       type: "object",
       properties: {
@@ -1452,7 +1346,7 @@ export function addArtifactTools(
         findingID: {
           type: "string",
           description:
-            "Omit to append; supply an existing finding ID to replace that finding in place.",
+            "Omit to append; supply an existing finding ID to replace or remove that finding.",
         },
         title: {
           type: "string",
@@ -1464,12 +1358,44 @@ export function addArtifactTools(
           minLength: 1,
           description: "Self-contained Markdown finding content.",
         },
+        remove: {
+          type: "boolean",
+          description:
+            "Remove the finding addressed by findingID instead of writing it.",
+        },
       },
-      required: ["artifactID", "title", "content"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
+      if (input.remove === true) {
+        if (typeof input.findingID !== "string") {
+          throw new StoreError(
+            "validation",
+            "remove requires findingID",
+          );
+        }
+        if (input.title !== undefined || input.content !== undefined) {
+          throw new StoreError(
+            "validation",
+            "remove cannot be combined with title or content",
+          );
+        }
+        const removed = await deps.store.evidenceFindingRemove({
+          artifactID: input.artifactID,
+          location: deps.directory,
+          writerSessionID: writer,
+          findingID: input.findingID,
+        });
+        return { content: removed.findingID };
+      }
+      if (typeof input.title !== "string" || typeof input.content !== "string") {
+        throw new StoreError(
+          "validation",
+          "title and content are required unless remove=true",
+        );
+      }
       const put = await deps.store.evidenceFindingPut({
         artifactID: input.artifactID,
         location: deps.directory,
@@ -1479,35 +1405,6 @@ export function addArtifactTools(
         content: input.content,
       });
       return { content: put.findingID };
-    },
-  });
-
-  addTool({
-    name: "finding_remove",
-    namespace: "evidence",
-    description:
-      "Remove one finding by its stable finding ID. Returns that ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Evidence artifact ID." },
-        findingID: {
-          type: "string",
-          description: "Stable finding ID to remove.",
-        },
-      },
-      required: ["artifactID", "findingID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const removed = await deps.store.evidenceFindingRemove({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        findingID: input.findingID,
-      });
-      return { content: removed.findingID };
     },
   });
 
@@ -1663,10 +1560,10 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "outcome_put",
+    name: "update",
     namespace: "review",
     description:
-      "Set the machine-readable review outcome (Pass, Changes required, or Blocked). Returns its ID.",
+      "Set the machine-readable outcome and/or the human Summary in one call. Omitted fields stay untouched. Returns the review ID.",
     input: {
       type: "object",
       properties: {
@@ -1676,56 +1573,33 @@ export function addArtifactTools(
           enum: [...REVIEW_OUTCOMES],
           description: "Machine-readable review outcome.",
         },
+        summary: {
+          type: "string",
+          minLength: 1,
+          description: "Human Summary Markdown.",
+        },
       },
-      required: ["artifactID", "outcome"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
-      const put = await deps.store.reviewOutcomePut({
+      const updated = await deps.store.reviewUpdate({
         artifactID: input.artifactID,
         location: deps.directory,
         writerSessionID: writer,
         outcome: input.outcome,
+        summary: input.summary,
       });
-      return { content: put.artifactID };
+      return { content: updated.artifactID };
     },
   });
 
   addTool({
-    name: "summary_put",
-    namespace: "review",
-    description: "Set the human-readable Summary prose. Returns its ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Review artifact ID." },
-        content: {
-          type: "string",
-          minLength: 1,
-          description: "Summary Markdown.",
-        },
-      },
-      required: ["artifactID", "content"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const put = await deps.store.reviewSummaryPut({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        content: input.content,
-      });
-      return { content: put.artifactID };
-    },
-  });
-
-  addTool({
-    name: "finding_put",
+    name: "finding",
     namespace: "review",
     description:
-      "Add (no findingID) or replace in place (findingID) one structured finding. Appending returns the generated finding ID.",
+      "Append a finding (no findingID), replace one in place (findingID with the write fields), or remove one (findingID with remove=true). Returns the finding ID.",
     input: {
       type: "object",
       properties: {
@@ -1733,7 +1607,7 @@ export function addArtifactTools(
         findingID: {
           type: "string",
           description:
-            "Omit to append; supply an existing finding ID to replace that finding in place.",
+            "Omit to append; supply an existing finding ID to replace or remove that finding.",
         },
         title: {
           type: "string",
@@ -1759,12 +1633,55 @@ export function addArtifactTools(
           minLength: 1,
           description: "Required correction.",
         },
+        remove: {
+          type: "boolean",
+          description:
+            "Remove the finding addressed by findingID instead of writing it.",
+        },
       },
-      required: ["artifactID", "title", "severity", "correction"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
+      if (input.remove === true) {
+        if (typeof input.findingID !== "string") {
+          throw new StoreError(
+            "validation",
+            "remove requires findingID",
+          );
+        }
+        if (
+          input.title !== undefined ||
+          input.severity !== undefined ||
+          input.affected !== undefined ||
+          input.evidence !== undefined ||
+          input.risk !== undefined ||
+          input.correction !== undefined
+        ) {
+          throw new StoreError(
+            "validation",
+            "remove cannot be combined with review finding fields",
+          );
+        }
+        const removed = await deps.store.reviewFindingRemove({
+          artifactID: input.artifactID,
+          location: deps.directory,
+          writerSessionID: writer,
+          findingID: input.findingID,
+        });
+        return { content: removed.findingID };
+      }
+      if (
+        typeof input.title !== "string" ||
+        typeof input.severity !== "string" ||
+        typeof input.correction !== "string"
+      ) {
+        throw new StoreError(
+          "validation",
+          "title, severity, and correction are required unless remove=true",
+        );
+      }
       const put = await deps.store.reviewFindingPut({
         artifactID: input.artifactID,
         location: deps.directory,
@@ -1778,35 +1695,6 @@ export function addArtifactTools(
         correction: input.correction,
       });
       return { content: put.findingID };
-    },
-  });
-
-  addTool({
-    name: "finding_remove",
-    namespace: "review",
-    description:
-      "Remove one finding by its stable finding ID. Returns that ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Review artifact ID." },
-        findingID: {
-          type: "string",
-          description: "Stable finding ID to remove.",
-        },
-      },
-      required: ["artifactID", "findingID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const removed = await deps.store.reviewFindingRemove({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        findingID: input.findingID,
-      });
-      return { content: removed.findingID };
     },
   });
 
@@ -1978,60 +1866,38 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "content_put",
+    name: "update",
     namespace: "report",
     description:
-      "Replace one whole report section (summary, changed, checks, or unfinished) with content. Returns its ID.",
+      "Replace any subset of report sections (summary, changed, checks, unfinished). An empty string clears a section; omitted sections stay untouched. Returns the report ID.",
     input: {
       type: "object",
       properties: {
         artifactID: { type: "string", description: "Report artifact ID." },
-        section: { type: "string", enum: [...REPORT_SECTIONS] },
-        content: {
+        summary: { type: "string", description: "Summary Markdown." },
+        changed: { type: "string", description: "Changed section Markdown." },
+        checks: { type: "string", description: "Checks section Markdown." },
+        unfinished: {
           type: "string",
-          minLength: 1,
-          description: "Whole-section Markdown content.",
+          description: "Unfinished section Markdown.",
         },
       },
-      required: ["artifactID", "section", "content"],
+      required: ["artifactID"],
       additionalProperties: false,
     },
     async handler(input, toolContext) {
       const writer = await resolveWriter(deps, toolContext);
-      const put = await deps.store.reportContentPut({
+      const sections: Record<string, string> = {};
+      for (const section of REPORT_SECTIONS) {
+        if (input[section] !== undefined) sections[section] = input[section];
+      }
+      const updated = await deps.store.reportUpdate({
         artifactID: input.artifactID,
         location: deps.directory,
         writerSessionID: writer,
-        section: input.section,
-        content: input.content,
+        sections,
       });
-      return { content: put.artifactID };
-    },
-  });
-
-  addTool({
-    name: "content_remove",
-    namespace: "report",
-    description:
-      "Clear one whole report section (summary, changed, checks, or unfinished). Returns its ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Report artifact ID." },
-        section: { type: "string", enum: [...REPORT_SECTIONS] },
-      },
-      required: ["artifactID", "section"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const removed = await deps.store.reportContentRemove({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        section: input.section,
-      });
-      return { content: removed.artifactID };
+      return { content: updated.artifactID };
     },
   });
 

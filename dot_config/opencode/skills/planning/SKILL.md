@@ -62,24 +62,18 @@ state.
 
 ## Workflow
 
-1. `tools.memory["open"]({ scope: "project" })` when the work will produce
-   lasting project knowledge; `{ scope: "session" }` for a multi-phase task.
-2. `tools.plan["create"]({ title, description, workingDirectory })` — returns
-   the bare plan ID.
-3. `tools.plan["field_set"]({ artifactID, field: "goalScope", content })` — the
-   outcome in one or two sentences.
-4. `tools.plan["field_set"]({ artifactID, field: "intendedChanges", content })`
-   — intended outcomes and the major stages, not edits. Update it when scope
-   changes.
-5. `tools.plan["field_set"]({ artifactID, field: "context", content })` —
-   tradeoffs, constraints, and decisions with their reasons.
-6. Attach reusable evidence with
-   `tools.plan["evidence_add"]({ artifactID, evidenceIDs })` when research
-   already exists. Evidence must be finalized and published first.
-7. `tools.plan["field_set"]({ artifactID, field: "checks", content })` — success
-   criteria, stated so the user can verify them.
-8. `tools.plan["finalize"]({ artifactID })` — ready for review.
-9. If the user asked for planning: report the plan ID and ask for approval, then
+1. `tools.memory["init"]({ scope: "project" })` when the work will produce
+   lasting project knowledge; `{ scope: "session" }` for a multi-phase task. Use
+   `tools.memory["load"]` to read an existing document.
+2. `tools.plan["create"]({ title, description, workingDirectory, goalScope?,
+   intendedChanges?, context?, checks? })` — returns the bare plan ID. Put the
+   outcome and major stages in the create call when you already know them.
+3. `tools.plan["update"]({ artifactID, goalScope?, intendedChanges?, context?,
+   checks?, evidenceIDs?, patch? })` — replace any fields that change, attach
+   published evidence with `evidenceIDs`, or use `patch` for one exact
+   occurrence.
+4. `tools.plan["finalize"]({ artifactID })` — ready for review.
+5. If the user asked for planning: report the plan ID and ask for approval, then
    stop. Otherwise implement, updating the checkpoint as you go.
 
 ## Shape
@@ -117,8 +111,8 @@ For a durable handoff, create a report:
 
 1. `tools.report["create"]({ planArtifactID?, title?, description?, summary?, changed?, checks?, unfinished? })`
    — the plan link is optional.
-2. `tools.report["content_put"]({ artifactID, section, content })` for any
-   section that becomes known later.
+2. `tools.report["update"]({ artifactID, summary?, changed?, checks?, unfinished? })`
+   for any section that becomes known later; an empty string clears a section.
 3. `tools.report["finalize"]({ artifactID, summary?, changed?, checks?, unfinished? })`
    — set the last sections and publish in one call.
 

@@ -52,10 +52,10 @@ When the findings will be reused:
 
 1. `tools.evidence["create"]({ title, description, question?, summary?, limitations? })`
    — create early; pass what you already know. Returns the bare ID.
-2. `tools.evidence["finding_put"]({ artifactID, title, content })` — add each
+2. `tools.evidence["finding"]({ artifactID, title, content })` — add each
    confirmed finding as you learn it. Use the returned `fin_…` ID to replace it
    later; do not duplicate it.
-3. `tools.evidence["overview_put"]({ artifactID, question, summary, limitations })`
+3. `tools.evidence["update"]({ artifactID, question, summary, limitations })`
    — update the overview if it changes.
 4. `tools.evidence["finalize"]({ artifactID, summary?, limitations? })` —
    optionally set the final overview and publish.

@@ -238,7 +238,7 @@ test("createArtifact initializes flat records: plan prose/evidence, evidence ove
   );
 });
 
-test("plan whole-field sets replace goalScope/checks, clear readiness, and validate the field name", async (t) => {
+test("plan whole-field sets replace all four fields, clear readiness, and validate the field name", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
 
@@ -281,18 +281,38 @@ test("plan whole-field sets replace goalScope/checks, clear readiness, and valid
     "Run the suite.",
   );
 
+  await store.planFieldSet({
+    artifactID: plan.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    field: "intendedChanges",
+    content: "The intended change.",
+  });
+  assert.equal(
+    (await readRecord(root, plan.artifactID)).intendedChanges,
+    "The intended change.",
+  );
+  await store.planFieldSet({
+    artifactID: plan.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    field: "context",
+    content: "The context.",
+  });
+  assert.equal((await readRecord(root, plan.artifactID)).context, "The context.");
+
   await assert.rejects(
     store.planFieldSet({
       artifactID: plan.artifactID,
       location: LOCATION_A,
       writerSessionID: WRITER,
-      field: "intendedChanges",
+      field: "unknown",
       content: "x",
     }),
     (error) =>
       error instanceof StoreError &&
       error.code === "validation" &&
-      /goalScope, checks/.test(error.message),
+      /goalScope, intendedChanges, context, checks/.test(error.message),
   );
   await assert.rejects(
     store.planFieldSet({

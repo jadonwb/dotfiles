@@ -40,27 +40,32 @@ Two live Markdown documents (`content`), both always readable and editable:
 - `checkpoint` is the session's small objective/requirements/decisions/progress
   document. It stays owned by the session that created it.
 
-`memory_open` with `scope: "project"` (default) or `scope: "session"` returns
-the existing document or creates it; `memory_append` adds a section at each
-milestone; `memory_patch` replaces one exact occurrence; `memory_put` replaces
-the whole body. The plugin injects the checkpoint in full (head+tail bounded)
-and project memory as a section index into every agent-loop request (`context`
-hook). The built-in compaction prompt is left alone; the next request reloads
-the live documents. `artifact_search` searches the session directory plus shared
-project memory and finds either by text when the ID is unknown.
+`memory_init` with `scope: "project"` (default) or `scope: "session"` returns
+the existing document ID or creates it; it does not read the body. `memory_update`
+appends a section (`mode: "append"`), replaces one exact occurrence
+(`mode: "patch"`), or replaces the whole body (`mode: "replace"`). `memory_load`
+reads the body; omitting the ID resolves project memory. The plugin injects the
+checkpoint (section-aware bounded) and project memory as a section index plus a
+bounded `## Core` section into every agent-loop request from a primary agent
+(`context` hook). The built-in compaction prompt is left alone; the next request
+reloads the live documents. `artifact_search` searches the session directory plus
+shared project memory and finds either by text when the ID is unknown.
 
 ### plan
 
 A plan is an optional working document for multi-step or risky work. It has one
 `workingDirectory` plus four flat prose fields: `goalScope` (`# Goal / Scope`),
 `intendedChanges` (`## Intended Changes and Behaviors`), `context`
-(`## Context`), and `checks` (`## Checks`). `plan_field_patch` replaces one
-exact occurrence, so a single bullet or paragraph can change without restating
-the whole field. An evidence membership array snapshots `{id, description}` for
-attached evidence. `plan_finalize` requires non-empty Goal/Scope and Intended
-Changes; checks, context, and evidence stay optional. `plan_load` reads any
-plan, draft or reviewed. Editing a reviewed plan returns it to draft and clears
-the review marker.
+(`## Context`), and `checks` (`## Checks`). `plan_create` accepts initial field
+content. `plan_update` replaces any subset of fields atomically, replaces the
+ordered `evidenceIDs` membership, and optionally patches one exact occurrence in
+`intendedChanges` or `context`, so a single bullet or paragraph can change
+without restating the whole field. An evidence membership array snapshots
+`{id, description}` for attached evidence. `plan_finalize` requires non-empty
+Goal/Scope and Intended Changes; checks, context, and evidence stay optional.
+`plan_load` reads any plan and reports status and readiness; a separate status
+tool is not needed. Editing a reviewed plan returns it to draft and clears the
+review marker.
 
 ### evidence
 
@@ -113,44 +118,45 @@ owner/writer resolution, compact message builders). Tests live in
 ## Model-facing tools
 
 Capability tools are registered under the documented namespace/Code Mode
-contract. The model calls them as `tools.memory["open"]`,
-`tools.plan["create"]`, and so on; each effective name (`memory_open`,
+contract. The model calls them as `tools.memory["init"]`,
+`tools.plan["create"]`, and so on; each effective name (`memory_init`,
 `plan_create`, …) is also its permission string. Kind, namespace, and permission
 are fixed by the tool and never supplied by the model; a wrong-kind ID fails
 with `invalid_kind`.
 
 Authoring returns directly reusable machine values:
 
-- create (`memory_open`, `plan_create`, `evidence_create`, `review_create`,
+- create/init (`memory_init`, `plan_create`, `evidence_create`, `review_create`,
   `report_create`) returns the bare artifact ID (`art_…`). Create early; the
   optional initial fields let you record what you already know without waiting
   for the whole artifact to be finished.
-- append (`evidence_finding_put`, `review_finding_put`, no findingID) returns
-  the bare generated finding ID (`fin_…`).
-- setters/patches (`plan_field_set`, `plan_field_patch`,
-  `plan_evidence_add/remove`, `evidence_overview_put`,
-  `memory_put/append/patch`, `report_content_put/remove`, finding removes)
-  return the bare artifact or finding ID.
+- finding (`evidence_finding`, `review_finding`, no findingID) returns the bare
+  generated finding ID (`fin_…`); with `findingID` it replaces, and with
+  `remove: true` it removes.
+- updates (`memory_update`, `plan_update`, `evidence_update`, `review_update`,
+  `report_update`) return the bare artifact or finding ID. `plan_update` is one
+  atomic write covering fields, evidence membership, and an optional patch.
 - finalize returns `art_… published` for evidence/review/report and
   `art_… finalized` for plans.
 
 Read tools return compact text; full loaders include the body:
 
-- `memory_open` (`scope` project/session, optional initial `content`),
-  `memory_load` (full; omitting the ID resolves project memory),
-  `memory_summary` (metadata + body).
+- `memory_init` (get/create the ID, scope project/session, optional initial
+  `content`), `memory_load` (full; omitting the ID resolves project memory).
 - `artifact_search` — plain-text search across artifact bodies with an optional
-  kind filter, so memories and evidence are discoverable without IDs.
-- `plan_load` (any status), `plan_status`.
-- `evidence_create` (optional question/Summary/Limitations), `evidence_finalize`
-  (optional final overview fields), `evidence_load` (full), `evidence_summary`
-  (overview only).
-- `review_create` (optional outcome/Summary), `review_finalize` (optional final
-  outcome/Summary), `review_load` (full), `review_summary` (outcome + Summary
+  kind filter, so memories, evidence, plans, reviews, and reports are
+  discoverable without IDs.
+- `plan_load` (any status; includes readiness).
+- `evidence_create` (optional question/Summary/Limitations), `evidence_update`
+  (overview fields), `evidence_finalize` (optional final overview fields),
+  `evidence_load` (full), `evidence_summary` (overview only).
+- `review_create` (optional outcome/Summary), `review_update` (outcome and/or
+  Summary), `review_finalize` (optional final outcome/Summary), `review_load`
+  (full), `review_summary` (outcome + Summary only).
+- `report_create` (optional plan and initial sections), `report_update` (any
+  subset of sections; empty clears), `report_finalize` (optional final
+  sections), `report_load` (full), `report_summary` (linked plan + Summary
   only).
-- `report_create` (optional plan and initial sections), `report_finalize`
-  (optional final sections), `report_load` (full), `report_summary` (linked plan
-  - Summary only).
 
 Plans gate implementation only when the user asked for one. Otherwise the model
 may `plan_load` a draft and act on it, and the user's review is feedback rather
@@ -160,19 +166,21 @@ than a permission step.
 
 The setters are available for edits, but the shortest useful flow is:
 
-- **memory** — `memory_open` (project or session, optional initial content) →
-  `memory_append` at milestones → `memory_patch` for corrections and to
-  supersede stale entries.
+- **memory** — `memory_init` (project or session, optional initial content) →
+  `memory_update` mode `append` at milestones → mode `patch` for corrections and
+  to supersede stale entries.
 - **evidence** — `evidence_create` (optional question/Summary/Limitations) →
-  `evidence_finding_put` as facts are confirmed → `evidence_finalize` (optional
+  `evidence_finding` as facts are confirmed → `evidence_finalize` (optional
   final overview).
-- **review** — `review_create` (optional outcome/Summary) → `review_finding_put`
-  per finding → `review_finalize` (optional final outcome/Summary).
-- **plan** — `plan_create` → `plan_field_set` Goal/Scope → `plan_field_patch`
-  one unique bullet at a time → `plan_finalize`. When the user asked for a plan,
-  stop for approval after finalizing.
+- **review** — `review_create` (optional outcome/Summary) → `review_update` →
+  `review_finding` per finding → `review_finalize` (optional final
+  outcome/Summary).
+- **plan** — `plan_create` with Goal/Scope and Intended Changes → `plan_update`
+  for field changes, evidence membership, or one targeted patch →
+  `plan_finalize`. When the user asked for a plan, stop for approval after
+  finalizing.
 - **report** — `report_create` (optional plan and initial sections) →
-  `report_content_put` for later sections → `report_finalize` (optional final
+  `report_update` for later sections → `report_finalize` (optional final
   sections).
 
 A draft can be created as soon as its subject is known and filled while the work

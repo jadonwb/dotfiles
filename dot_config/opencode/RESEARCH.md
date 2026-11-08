@@ -569,3 +569,25 @@ real ones. Sessions were driven through the HTTP API and inspected with
 
 The registry is filesystem-backed and independent of the agent roles, so the
 same artifacts remain viewable in Neovim and readable by any future client.
+
+## Tool consolidation and memory distribution (2026-11-08)
+
+- The artifact tool surface dropped from 36 to 25 tools. Each namespace now has
+  one update verb: `memory_init/update/load`; `plan_create/update/finalize/load`;
+  `evidence_create/update/finding/finalize/load/summary`;
+  `review_create/update/finding/finalize/load/summary`;
+  `report_create/update/finalize/load/summary`; plus `artifact_search`.
+- `memory_update` takes an explicit `mode`: `append`, `patch`, or `replace`.
+  `memory_init` is get-or-create and returns the ID; `memory_load` reads. The
+  previous `open`/`append`/`patch`/`put`/`summary` split was ambiguous about
+  whether `open` read the body.
+- `plan_update` is one atomic store write covering whole fields, the ordered
+  `evidenceIDs` membership, and an optional exact patch. A plan no longer needs
+  one call per field, and the planning skill matches the implemented schema.
+- Memory injection checks the agent's `primary` mode via `ctx.agent.get`
+  instead of comparing the agent name to `system`. Project-memory indexes now
+  carry `updatedAt` and a bounded `## Core` section; checkpoint clipping keeps
+  priority sections (`Objective`, `Requirements`, `Decisions`, `Blockers`,
+  `Next Move`) instead of slicing the middle by character count.
+- `search` and `review` permissions start with a `* deny` gate, and `search`
+  denies `write`. The read-only contract is structural, not prompt-only.

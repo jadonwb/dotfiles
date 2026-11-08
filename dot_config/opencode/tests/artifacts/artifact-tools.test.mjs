@@ -32,55 +32,50 @@ const EXPECTED_TOOL_NAMES = [
   "artifact_search",
   "evidence_create",
   "evidence_finalize",
-  "evidence_finding_put",
-  "evidence_finding_remove",
+  "evidence_finding",
   "evidence_load",
-  "evidence_overview_put",
   "evidence_summary",
-  "memory_append",
+  "evidence_update",
+  "memory_init",
   "memory_load",
-  "memory_open",
-  "memory_patch",
-  "memory_put",
-  "memory_summary",
+  "memory_update",
   "plan_create",
-  "plan_load",
-  "plan_evidence_add",
-  "plan_evidence_remove",
-  "plan_field_patch",
-  "plan_field_set",
   "plan_finalize",
-  "plan_status",
-  "report_content_put",
-  "report_content_remove",
+  "plan_load",
+  "plan_update",
   "report_create",
   "report_finalize",
   "report_load",
   "report_summary",
+  "report_update",
   "review_create",
   "review_finalize",
-  "review_finding_put",
-  "review_finding_remove",
+  "review_finding",
   "review_load",
-  "review_outcome_put",
   "review_summary",
-  "review_summary_put",
+  "review_update",
 ];
 // Names that must never appear in the registered tool set (asserted below).
 const UNREGISTERED_NAMES = [
-  "plan_publish",
-  "plan_patch",
-  "plan_item_put",
-  "plan_item_remove",
-  "evidence_publish",
-  "evidence_patch",
-  "evidence_topic_put",
-  "evidence_topic_remove",
-  "evidence_read",
-  "review_publish",
-  "review_patch",
-  "review_verdict_put",
-  "review_read",
+  "memory_open",
+  "memory_put",
+  "memory_append",
+  "memory_patch",
+  "memory_summary",
+  "plan_field_set",
+  "plan_field_patch",
+  "plan_evidence_add",
+  "plan_evidence_remove",
+  "plan_status",
+  "evidence_overview_put",
+  "evidence_finding_put",
+  "evidence_finding_remove",
+  "review_outcome_put",
+  "review_summary_put",
+  "review_finding_put",
+  "review_finding_remove",
+  "report_content_put",
+  "report_content_remove",
 ];
 
 function sessionInfo(overrides = {}) {
@@ -286,7 +281,7 @@ test("registration declares plan/evidence/review/report namespaces and the exact
 // Plan tools: end-to-end chain with directly reusable bare IDs
 // ---------------------------------------------------------------------------
 
-test("plan tools: create→field_set→field_patch→evidence_add→finalize returns directly reusable machine values", async (t) => {
+test("plan tools: create→update→evidence membership→finalize returns directly reusable machine values", async (t) => {
   const { store } = await makeStore(t);
   const sessions = {
     [PRIMARY_SESSION]: sessionInfo(),
@@ -306,7 +301,7 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
   const tools = [];
   addArtifactTools(installEditor({ namespaces, tools }), deps);
 
-  // create returns the bare artifact ID — usable directly, no prose parsing.
+  // create accepts initial fields and returns the bare artifact ID.
   const planID = await execTool(
     tools,
     "plan_create",
@@ -314,6 +309,8 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
       title: "Shared plan",
       description: "A shared plan artifact.",
       workingDirectory: DIRECTORY,
+      goalScope: "Scope one.",
+      intendedChanges: "Change one.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
@@ -323,42 +320,72 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
     "create returns the bare artifact ID",
   );
 
-  // field_set / field_patch also return the bare artifact ID for reuse.
-  const setResult = await execTool(
+  // update replaces fields wholesale and returns the bare artifact ID.
+  const updateResult = await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "Scope one." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.equal(setResult, planID, "field_set returns the bare artifact ID");
-  const patchResult = await execTool(
-    tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "Change one.",
+      context: "Context one.",
+      checks: "Run the tests.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
-  assert.equal(patchResult, planID, "field_patch returns the bare artifact ID");
+  assert.equal(updateResult, planID, "plan_update returns the bare artifact ID");
+
+  // A targeted patch changes one exact occurrence.
+  const patchResult = await execTool(
+    tools,
+    "plan_update",
+    {
+      artifactID: planID,
+      patch: {
+        field: "intendedChanges",
+        oldText: "Change one.",
+        newText: "Change two.",
+      },
+    },
+    toolContext(PRIMARY_SESSION, "system"),
+  );
+  assert.equal(patchResult, planID, "plan patch returns the bare artifact ID");
 
   // Patch conflict surfaces as a declared error, not a silent merge.
   const conflicted = await execTool(
     tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "Stale base.",
-      newText: "X.",
+      patch: {
+        field: "intendedChanges",
+        oldText: "Stale base.",
+        newText: "X.",
+      },
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.match(conflicted, /^ARTIFACT_ERROR\npatch_conflict:/);
 
-  // Checks are optional: an otherwise complete plan can be finalized without them.
+  // Approving an unfinished draft is blocked at the store (readiness gate).
+  await assert.rejects(
+    store.approveArtifact({
+      artifactID: planID,
+      location: DIRECTORY,
+      requestID: "req_approve-plan-0001",
+    }),
+    (error) => error instanceof StoreError && error.code === "not_ready",
+  );
+
+  // Checks are optional and can be cleared with an empty string.
+  assert.equal(
+    await execTool(
+      tools,
+      "plan_update",
+      { artifactID: planID, checks: "" },
+      toolContext(PRIMARY_SESSION, "system"),
+    ),
+    planID,
+  );
+
   const ready = await execTool(
     tools,
     "plan_finalize",
@@ -366,22 +393,6 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.equal(ready, `${planID} finalized`);
-
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "Run the tests." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.equal(
-    await execTool(
-      tools,
-      "plan_field_set",
-      { artifactID: planID, field: "checks", content: "" },
-      toolContext(PRIMARY_SESSION, "system"),
-    ),
-    planID,
-  );
 
   // Publish evidence, attach it by artifact ID, and verify the snapshot list.
   const evidenceID = await execTool(
@@ -392,7 +403,7 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
   );
   await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, summary: "Summary." },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -404,68 +415,27 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
   );
   const addResult = await execTool(
     tools,
-    "plan_evidence_add",
+    "plan_update",
     { artifactID: planID, evidenceIDs: [evidenceID] },
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.equal(
     addResult,
     planID,
-    "plan_evidence_add returns the bare plan artifact ID",
-  );
-
-  // status is a readable compact read.
-  const status = await execTool(
-    tools,
-    "plan_status",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.match(status, /^ARTIFACT_STATUS\n/);
-  assert.match(status, /Status: draft/);
-  assert.match(status, /Kind: plan/);
-  assert.match(status, /Title: Shared plan/);
-  assert.match(status, /Author: System/);
-  assert.match(status, /Finalized: false/);
-  assert.doesNotMatch(
-    status,
-    /Owner: ses_/,
-    "model-facing output never leaks session identities",
-  );
-  assert.doesNotMatch(
-    status,
-    /Change one/,
-    "plan_status never inlines the body",
-  );
-
-  // Approval before finalize is blocked at the store (readiness gate).
-  await assert.rejects(
-    store.approveArtifact({
-      artifactID: planID,
-      location: DIRECTORY,
-      requestID: "req_approve-plan-0001",
-    }),
-    (error) => error instanceof StoreError && error.code === "not_ready",
-  );
-
-  // finalize returns the bare artifact ID/status contract.
-  const finalized = await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
+    "plan_update evidenceIDs returns the bare plan artifact ID",
   );
   assert.equal(
-    finalized,
+    await execTool(
+      tools,
+      "plan_finalize",
+      { artifactID: planID },
+      toolContext(PRIMARY_SESSION, "system"),
+    ),
     `${planID} finalized`,
-    "plan finalize returns the bare contract",
+    "evidence membership is a content edit, so the plan is finalized again",
   );
 
-  await store.approveArtifact({
-    artifactID: planID,
-    location: DIRECTORY,
-    requestID: "req_approve-plan-0001",
-  });
+  // plan_load is the compact read; it includes status/readiness and the body.
   const loaded = await execTool(
     tools,
     "plan_load",
@@ -473,14 +443,12 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.match(loaded, /^ARTIFACT_CONTENT\n/);
-  assert.match(loaded, /Status: approved/);
+  assert.match(loaded, /Status: draft/);
+  assert.match(loaded, /Finalized: true/);
   assert.match(loaded, /Kind: plan/);
+  assert.match(loaded, /Title: Shared plan/);
   assert.match(loaded, /Author: System/);
-  assert.match(
-    loaded,
-    new RegExp(`Evidence: ${evidenceID}`),
-    "evidence membership IDs are listed compactly",
-  );
+  assert.match(loaded, /Evidence: art_[a-f0-9]{8}/);
   assert.match(loaded, /# Goal \/ Scope/, "the generated document is inline");
   assert.match(
     loaded,
@@ -492,6 +460,19 @@ test("plan tools: create→field_set→field_patch→evidence_add→finalize ret
     /Owner: ses_/,
     "full loaders never render session identities",
   );
+
+  await store.approveArtifact({
+    artifactID: planID,
+    location: DIRECTORY,
+    requestID: "req_approve-plan-0001",
+  });
+  const approved = await execTool(
+    tools,
+    "plan_load",
+    { artifactID: planID },
+    toolContext(PRIMARY_SESSION, "system"),
+  );
+  assert.match(approved, /Status: approved/);
 
   // A nonexistent ID is a clean not_found from a loader.
   const missing = await execTool(
@@ -543,7 +524,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
 
   const overview = await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     {
       artifactID: evidenceID,
       question: "Which files?",
@@ -561,7 +542,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   // Appending a finding returns the bare generated finding ID — reusable directly.
   const findingID = await execTool(
     tools,
-    "evidence_finding_put",
+    "evidence_finding",
     { artifactID: evidenceID, title: "Exact paths", content: "store.mjs." },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -573,7 +554,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
 
   const replaced = await execTool(
     tools,
-    "evidence_finding_put",
+    "evidence_finding",
     {
       artifactID: evidenceID,
       findingID,
@@ -593,7 +574,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   for (const sessionID of [OTHER_SESSION, PRIMARY_SESSION]) {
     const rejected = await execTool(
       tools,
-      "evidence_overview_put",
+      "evidence_update",
       { artifactID: evidenceID, summary: "x" },
       toolContext(
         sessionID,
@@ -610,7 +591,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   // Resuming the same writer session retains write access.
   const resumed = await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, limitations: "Revised limits." },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -629,7 +610,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   });
   const wrongKind = await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: planInStore.artifactID, summary: "x" },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -703,14 +684,14 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   // Removing by the bare finding ID works.
   const removed = await execTool(
     tools,
-    "evidence_finding_remove",
-    { artifactID: evidenceID, findingID },
+    "evidence_finding",
+    { artifactID: evidenceID, findingID, remove: true },
     toolContext(SEARCH_SESSION, "search"),
   );
   assert.equal(
     removed,
     findingID,
-    "finding_remove returns the bare finding ID",
+    "evidence_finding remove returns the bare finding ID",
   );
   assert.match(
     await execTool(
@@ -758,22 +739,22 @@ test("review tools: outcome, summary, findings, finalize, load, summary; kinds s
 
   const outcome = await execTool(
     tools,
-    "review_outcome_put",
+    "review_update",
     { artifactID: reviewID, outcome: "Changes required" },
     toolContext(REVIEW_SESSION, "review"),
   );
-  assert.equal(outcome, reviewID, "outcome_put returns the bare artifact ID");
+  assert.equal(outcome, reviewID, "review update returns the bare artifact ID");
   const summary = await execTool(
     tools,
-    "review_summary_put",
-    { artifactID: reviewID, content: "One medium finding; no blockers." },
+    "review_update",
+    { artifactID: reviewID, summary: "One medium finding; no blockers." },
     toolContext(REVIEW_SESSION, "review"),
   );
-  assert.equal(summary, reviewID, "summary_put returns the bare artifact ID");
+  assert.equal(summary, reviewID, "review update sets the summary in place");
 
   const findingID = await execTool(
     tools,
-    "review_finding_put",
+    "review_finding",
     {
       artifactID: reviewID,
       title: "Scope leak",
@@ -787,7 +768,7 @@ test("review tools: outcome, summary, findings, finalize, load, summary; kinds s
 
   const replaced = await execTool(
     tools,
-    "review_finding_put",
+    "review_finding",
     {
       artifactID: reviewID,
       findingID,
@@ -904,30 +885,10 @@ async function toolsWithApprovedPlan(t, contextOverrides = {}) {
       title: "Linked plan",
       description: "A linked plan artifact.",
       workingDirectory: DIRECTORY,
+      goalScope: "Goal.",
+      intendedChanges: "Change.",
+      checks: "Check.",
     },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "Goal." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_patch",
-    {
-      artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "Change.",
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "Check." },
     toolContext(PRIMARY_SESSION, "system"),
   );
   await execTool(
@@ -984,31 +945,28 @@ test("report tools: create links a draft or reviewed plan, content sections, fin
 
   await execTool(
     tools,
-    "report_content_put",
+    "report_update",
     {
       artifactID: reportID,
-      section: "changed",
-      content: "store.mjs: flat plan model.",
+      changed: "store.mjs: flat plan model.",
     },
     toolContext(WORKER_SESSION, "worker"),
   );
   await execTool(
     tools,
-    "report_content_put",
+    "report_update",
     {
       artifactID: reportID,
-      section: "checks",
-      content: "store.test.mjs: pass.",
+      checks: "store.test.mjs: pass.",
     },
     toolContext(WORKER_SESSION, "worker"),
   );
   const unfinished = await execTool(
     tools,
-    "report_content_put",
+    "report_update",
     {
       artifactID: reportID,
-      section: "unfinished",
-      content: "Cutover deferred.",
+      unfinished: "Cutover deferred.",
     },
     toolContext(WORKER_SESSION, "worker"),
   );
@@ -1016,20 +974,20 @@ test("report tools: create links a draft or reviewed plan, content sections, fin
 
   const removed = await execTool(
     tools,
-    "report_content_remove",
-    { artifactID: reportID, section: "unfinished" },
+    "report_update",
+    { artifactID: reportID, unfinished: "" },
     toolContext(WORKER_SESSION, "worker"),
   );
   assert.equal(
     removed,
     reportID,
-    "report_content_remove returns the bare artifact ID",
+    "report_update with an empty section returns the bare artifact ID",
   );
 
   const badSection = await execTool(
     tools,
-    "report_content_put",
-    { artifactID: reportID, section: "goalScope", content: "x" },
+    "report_update",
+    { artifactID: reportID },
     toolContext(WORKER_SESSION, "worker"),
   );
   assert.match(badSection, /^ARTIFACT_ERROR/);
@@ -1038,8 +996,8 @@ test("report tools: create links a draft or reviewed plan, content sections, fin
   // Non-writer primary agent cannot mutate the worker's report.
   const forbidden = await execTool(
     tools,
-    "report_content_put",
-    { artifactID: reportID, section: "summary", content: "x" },
+    "report_update",
+    { artifactID: reportID, summary: "x" },
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.match(forbidden, /^ARTIFACT_ERROR/);
@@ -1057,23 +1015,19 @@ test("report tools: create links a draft or reviewed plan, content sections, fin
 
   const summaryResult = await execTool(
     tools,
-    "report_content_put",
-    { artifactID: reportID, section: "summary", content: "Implemented." },
+    "report_update",
+    { artifactID: reportID, summary: "Implemented." },
     toolContext(WORKER_SESSION, "worker"),
   );
   assert.equal(
     summaryResult,
     reportID,
-    "report_content_put returns the bare artifact ID",
+    "report_update returns the bare artifact ID",
   );
   await execTool(
     tools,
-    "report_content_put",
-    {
-      artifactID: reportID,
-      section: "unfinished",
-      content: "Cutover deferred.",
-    },
+    "report_update",
+    { artifactID: reportID, unfinished: "Cutover deferred." },
     toolContext(WORKER_SESSION, "worker"),
   );
   const finalized = await execTool(
@@ -1181,7 +1135,10 @@ test("read tools resolve no session: loaders work when getSession is unavailable
 // Plugin registration wiring (mocked ctx: nothing is sent anywhere)
 // ---------------------------------------------------------------------------
 
-async function setupPlugin(t, { sessions = {}, syntheticThrowFor = [] } = {}) {
+async function setupPlugin(
+  t,
+  { sessions = {}, syntheticThrowFor = [], agents = {} } = {},
+) {
   await makeTempStateRoot(t);
   const tools = [];
   const contracts = [];
@@ -1190,6 +1147,12 @@ async function setupPlugin(t, { sessions = {}, syntheticThrowFor = [] } = {}) {
   const hooks = [];
   const ctx = {
     location: { directory: DIRECTORY },
+    agent: {
+      get: async ({ agentID }) => {
+        if (!(agentID in agents)) throw new Error(`unknown agent ${agentID}`);
+        return agents[agentID];
+      },
+    },
     session: {
       get: async ({ sessionID }) => {
         if (!(sessionID in sessions))
@@ -1288,24 +1251,12 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
 
   await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "- Goal." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "Run tests." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "- Change.",
+      goalScope: "- Goal.",
+      intendedChanges: "- Change.",
+      checks: "Run tests.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
@@ -1506,24 +1457,12 @@ test("retried plan-approval delivery re-emits the same authoritative approval pa
   );
   await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "- Goal." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "Run tests." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "- Change.",
+      goalScope: "- Goal.",
+      intendedChanges: "- Change.",
+      checks: "Run tests.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
@@ -1593,7 +1532,7 @@ test("writer feedback routes to the stored writer session; reports list/mark-rea
   );
   await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, summary: "# Note\n" },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -1681,24 +1620,12 @@ test("writer feedback routes to the stored writer session; reports list/mark-rea
   );
   await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "G." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "C." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "I.",
+      goalScope: "G.",
+      intendedChanges: "I.",
+      checks: "C.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
@@ -1725,8 +1652,8 @@ test("writer feedback routes to the stored writer session; reports list/mark-rea
   );
   await execTool(
     tools,
-    "report_content_put",
-    { artifactID: reportID, section: "summary", content: "Done." },
+    "report_update",
+    { artifactID: reportID, summary: "Done." },
     toolContext(SEARCH_SESSION, "search"),
   );
   await execTool(
@@ -1815,7 +1742,7 @@ test("unavailable writer delivery fails visibly and stays recorded; it is never 
   );
   await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, summary: "# Note\n" },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -1885,24 +1812,12 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
   );
   await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "- Goal." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_set",
-    { artifactID: planID, field: "checks", content: "Run tests." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "- Change.",
+      goalScope: "- Goal.",
+      intendedChanges: "- Change.",
+      checks: "Run tests.",
     },
     toolContext(PRIMARY_SESSION, "system"),
   );
@@ -1925,8 +1840,8 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
   // the plan to draft so the user can review the new version.
   const editedPlan = await execTool(
     tools,
-    "plan_field_set",
-    { artifactID: planID, field: "goalScope", content: "Late edit." },
+    "plan_update",
+    { artifactID: planID, goalScope: "Late edit." },
     toolContext(PRIMARY_SESSION, "system"),
   );
   assert.equal(editedPlan, planID);
@@ -1956,7 +1871,7 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
   );
   await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, summary: "# Note\n" },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -1977,7 +1892,7 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
 
   const edited = await execTool(
     tools,
-    "evidence_overview_put",
+    "evidence_update",
     { artifactID: evidenceID, summary: "Revised." },
     toolContext(SEARCH_SESSION, "search"),
   );
@@ -2017,7 +1932,7 @@ test("plan approval is a review marker; edits return to draft; evidence edits af
   );
 });
 
-test("memory tools: open is idempotent, append and patch are incremental, load resolves the session", async (t) => {
+test("memory tools: init is idempotent, update append/patch are incremental, load resolves the session", async (t) => {
   const sessions = {
     [PRIMARY_SESSION]: sessionInfo(),
     [SEARCH_SESSION]: sessionInfo({
@@ -2032,35 +1947,44 @@ test("memory tools: open is idempotent, append and patch are incremental, load r
   ).handlers;
   const ctx = toolContext(PRIMARY_SESSION, "system");
 
-  const memoryID = await execTool(tools, "memory_open", {}, ctx);
+  const memoryID = await execTool(tools, "memory_init", {}, ctx);
   assert.match(
     memoryID,
     /^art_[a-f0-9]{8}$/,
-    "memory_open returns the bare artifact ID",
+    "memory_init returns the bare artifact ID",
   );
   assert.equal(
-    await execTool(tools, "memory_open", {}, ctx),
+    await execTool(tools, "memory_init", {}, ctx),
     memoryID,
-    "memory_open is idempotent for the project",
+    "memory_init is idempotent for the project",
   );
 
   await execTool(
     tools,
-    "memory_append",
-    { artifactID: memoryID, content: "## Objective\n\nShip the refactor." },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_append",
-    { artifactID: memoryID, content: "## Work State\n\nTesting." },
-    ctx,
-  );
-  await execTool(
-    tools,
-    "memory_patch",
+    "memory_update",
     {
       artifactID: memoryID,
+      mode: "append",
+      content: "## Objective\n\nShip the refactor.",
+    },
+    ctx,
+  );
+  await execTool(
+    tools,
+    "memory_update",
+    {
+      artifactID: memoryID,
+      mode: "append",
+      content: "## Work State\n\nTesting.",
+    },
+    ctx,
+  );
+  await execTool(
+    tools,
+    "memory_update",
+    {
+      artifactID: memoryID,
+      mode: "patch",
       oldText: "Testing.",
       newText: "Testing and documenting.",
     },
@@ -2107,19 +2031,20 @@ test("project memory and the session checkpoint are injected as background conte
   const { tools, hooks } = await setupPlugin(t, { sessions });
   const ctx = toolContext(PRIMARY_SESSION, "system");
 
-  const projectID = await execTool(tools, "memory_open", {}, ctx);
+  const projectID = await execTool(tools, "memory_init", {}, ctx);
   await execTool(
     tools,
-    "memory_append",
+    "memory_update",
     {
       artifactID: projectID,
+      mode: "append",
       content: "## Build quirk\n\nTurbo needs a clean cache.",
     },
     ctx,
   );
   const checkpointID = await execTool(
     tools,
-    "memory_open",
+    "memory_init",
     { scope: "session" },
     ctx,
   );
@@ -2130,8 +2055,12 @@ test("project memory and the session checkpoint are injected as background conte
   );
   await execTool(
     tools,
-    "memory_append",
-    { artifactID: checkpointID, content: "## Next Move\n\nRun the tests." },
+    "memory_update",
+    {
+      artifactID: checkpointID,
+      mode: "append",
+      content: "## Next Move\n\nRun the tests.",
+    },
     ctx,
   );
 
@@ -2165,6 +2094,59 @@ test("project memory and the session checkpoint are injected as background conte
     hooks.find((entry) => entry.name === "compaction"),
     undefined,
     "memory is not copied into the compaction transcript",
+  );
+});
+
+test("memory injection follows the primary mode, not the agent name", async (t) => {
+  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
+  const { tools, hooks } = await setupPlugin(t, {
+    sessions,
+    agents: {
+      system: { mode: "primary" },
+      plan: { mode: "primary" },
+      search: { mode: "subagent" },
+    },
+  });
+  const ctx = toolContext(PRIMARY_SESSION, "system");
+
+  const projectID = await execTool(tools, "memory_init", {}, ctx);
+  await execTool(
+    tools,
+    "memory_update",
+    {
+      artifactID: projectID,
+      mode: "append",
+      content: "## Core\n\nKeep this across primaries.",
+    },
+    ctx,
+  );
+
+  const contextHook = hooks.find((entry) => entry.name === "context");
+  const primaryEvent = {
+    sessionID: PRIMARY_SESSION,
+    agent: "plan",
+    system: [],
+    messages: [],
+  };
+  await contextHook.callback(primaryEvent);
+  assert.equal(
+    primaryEvent.system.length,
+    1,
+    "a non-system primary agent gets the memory block",
+  );
+  assert.match(primaryEvent.system[0].text, /Keep this across primaries\./);
+
+  const subagentEvent = {
+    sessionID: PRIMARY_SESSION,
+    agent: "search",
+    system: [],
+    messages: [],
+  };
+  await contextHook.callback(subagentEvent);
+  assert.equal(
+    subagentEvent.system.length,
+    0,
+    "a subagent does not inherit the primary's memory",
   );
 });
 
@@ -2274,7 +2256,7 @@ test("create and finalize accept initial content so a draft can be filled increm
 
   const memoryID = await execTool(
     tools,
-    "memory_open",
+    "memory_init",
     { content: "## Objective\n\nStart early." },
     ctx,
   );
@@ -2298,23 +2280,23 @@ test("create and finalize accept initial content so a draft can be filled increm
   );
   await execTool(
     tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "",
-      newText: "One.\nTwo.",
+      intendedChanges: "One.\nTwo.",
     },
     ctx,
   );
   await execTool(
     tools,
-    "plan_field_patch",
+    "plan_update",
     {
       artifactID: planID,
-      field: "intendedChanges",
-      oldText: "Two.",
-      newText: "Three.",
+      patch: {
+        field: "intendedChanges",
+        oldText: "Two.",
+        newText: "Three.",
+      },
     },
     ctx,
   );
@@ -2327,40 +2309,47 @@ test("create and finalize accept initial content so a draft can be filled increm
   assert.match(planLoaded, /One\. Three\./);
 });
 
-test("a long checkpoint keeps its newest tail, and large project memory is injected as an index", async (t) => {
+test("a long checkpoint keeps priority sections and its newest tail, and large project memory is injected as an index", async (t) => {
   const sessions = { [PRIMARY_SESSION]: sessionInfo() };
   const { tools, hooks } = await setupPlugin(t, { sessions });
   const ctx = toolContext(PRIMARY_SESSION, "system");
 
-  const projectID = await execTool(tools, "memory_open", {}, ctx);
-  const sections = Array.from(
-    { length: 30 },
-    (_, index) => `## Area ${index + 1}\n\n${"detail ".repeat(20)}`,
-  ).join("\n\n");
+  const projectID = await execTool(tools, "memory_init", {}, ctx);
+  const sections = [
+    "## Core",
+    "Always load this core decision.",
+    ...Array.from(
+      { length: 30 },
+      (_, index) => `## Area ${index + 1}\n\n${"detail ".repeat(20)}`,
+    ),
+  ].join("\n\n");
   await execTool(
     tools,
-    "memory_append",
-    { artifactID: projectID, content: sections },
+    "memory_update",
+    { artifactID: projectID, mode: "append", content: sections },
     ctx,
   );
 
   const checkpointID = await execTool(
     tools,
-    "memory_open",
+    "memory_init",
     { scope: "session" },
     ctx,
   );
   const longBody = [
     "## Objective",
     "Keep the newest progress.",
+    "## Requirements",
+    "- The deploy target is PROD-BETA and must survive compaction.",
+    "## Progress",
     ...Array.from({ length: 400 }, (_, index) => `- filler line ${index}`),
     "## Next Move",
     "Run the final verification.",
-  ].join("\n");
+  ].join("\n\n");
   await execTool(
     tools,
-    "memory_append",
-    { artifactID: checkpointID, content: longBody },
+    "memory_update",
+    { artifactID: checkpointID, mode: "append", content: longBody },
     ctx,
   );
 
@@ -2374,13 +2363,29 @@ test("a long checkpoint keeps its newest tail, and large project memory is injec
   await contextHook.callback(event);
   const text = event.system[0].text;
 
+  assert.match(text, /Updated: /, "the project index exposes its update time");
+  assert.match(
+    text,
+    /Core:\n## Core\n\nAlways load this core decision\./,
+    "the project index always inlines the Core section",
+  );
   assert.match(text, /characters omitted; load/, "the checkpoint is bounded");
   assert.match(
     text,
     /Run the final verification\./,
-    "the newest tail survives truncation",
+    "the newest section survives truncation",
   );
   assert.match(text, /## Next Move/, "the newest heading survives truncation");
+  assert.match(
+    text,
+    /## Requirements/,
+    "a priority section in the middle survives truncation",
+  );
+  assert.match(
+    text,
+    /PROD-BETA/,
+    "a requirement is not clipped out of the middle",
+  );
   assert.match(
     text,
     /## Area 30/,
@@ -2405,15 +2410,16 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
 
   const checkpointID = await execTool(
     tools,
-    "memory_open",
+    "memory_init",
     { scope: "session" },
     ctx,
   );
   await execTool(
     tools,
-    "memory_put",
+    "memory_update",
     {
       artifactID: checkpointID,
+      mode: "replace",
       content: [
         "## Objective",
         "Port the parser.",
@@ -2431,9 +2437,10 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   // A user correction: the superseded requirement is replaced, not duplicated.
   await execTool(
     tools,
-    "memory_patch",
+    "memory_update",
     {
       artifactID: checkpointID,
+      mode: "patch",
       oldText: "- Use the old API.",
       newText: "- Use the new API (user correction).",
     },
@@ -2441,9 +2448,10 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   );
   await execTool(
     tools,
-    "memory_patch",
+    "memory_update",
     {
       artifactID: checkpointID,
+      mode: "patch",
       oldText: "- Keep the streaming path unchanged.",
       newText: "- Superseded: the streaming path had to change.",
     },
@@ -2451,9 +2459,10 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   );
   await execTool(
     tools,
-    "memory_append",
+    "memory_update",
     {
       artifactID: checkpointID,
+      mode: "append",
       content:
         "## Rejected Approaches\n\n- Rewriting the parser: it broke streaming.",
     },
@@ -2461,9 +2470,10 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   );
   await execTool(
     tools,
-    "memory_append",
+    "memory_update",
     {
       artifactID: checkpointID,
+      mode: "append",
       content:
         "## Work State\n\n- Complete: parser port.\n- Unfinished: streaming tests.",
     },

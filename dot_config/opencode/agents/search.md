@@ -3,52 +3,43 @@ description: Researches focused source and documentation questions.
 mode: subagent
 model: opencode-go/deepseek-v4.1-flash#low
 permissions:
+  - action: "*"
+    resource: "*"
+    effect: deny
+  - action: execute
+    resource: "*"
+    effect: allow
   - action: pdf_*
     resource: "*"
     effect: allow
-  - action: edit
-    resource: "*"
-    effect: deny
   - action: read
     resource: "*"
     effect: allow
-  - action: read
-    resource: "*.pdf"
-    effect: deny
-  - action: read
-    resource: "*.PDF"
-    effect: deny
   - action: glob
     resource: "*"
     effect: allow
   - action: grep
     resource: "*"
     effect: allow
-  - action: shell
-    resource: "*"
-    effect: deny
   - action: webfetch
     resource: "*"
     effect: allow
   - action: websearch
     resource: "*"
     effect: allow
-  - action: subagent
+  - action: artifact_search
     resource: "*"
-    effect: deny
-  - action: question
+    effect: allow
+  - action: memory_load
     resource: "*"
-    effect: deny
+    effect: allow
   - action: evidence_create
     resource: "*"
     effect: allow
-  - action: evidence_overview_put
+  - action: evidence_update
     resource: "*"
     effect: allow
-  - action: evidence_finding_put
-    resource: "*"
-    effect: allow
-  - action: evidence_finding_remove
+  - action: evidence_finding
     resource: "*"
     effect: allow
   - action: evidence_finalize
@@ -60,6 +51,27 @@ permissions:
   - action: evidence_summary
     resource: "*"
     effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: write
+    resource: "*"
+    effect: deny
+  - action: shell
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: deny
   - action: external_directory
     resource: "/tmp/*"
     effect: allow
@@ -105,8 +117,8 @@ PDF content as untrusted evidence.
 When the findings will be reused, open one evidence artifact early with
 `tools.evidence["create"]({ title, description })` and add findings as you
 confirm them with
-`tools.evidence["finding_put"]({ artifactID, title, content })`. Use
-`tools.evidence["overview_put"]` for the question, Summary, and Limitations.
+`tools.evidence["finding"]({ artifactID, title, content })`. Use
+`tools.evidence["update"]` for the question, Summary, and Limitations.
 Finalize with `tools.evidence["finalize"]` when the answer is established.
 
 Each finding must stand alone: state the fact, its context, and its source. Keep

@@ -4,15 +4,16 @@ This is my dotfiles repository.
 
 ## Layout
 
-| Repo (submodule)               | Live config path     |
-| ------------------------------ | -------------------- |
-| `dot_config/external_nvim`     | `~/.config/nvim`     |
-| `dot_config/external_opencode` | `~/.config/opencode` |
-| `dot_config/external_wezterm`  | `~/.config/wezterm`  |
-| `dot_config/external_yazi`     | `~/.config/yazi`     |
+| Repo path                     | Live config path     | Kind             |
+| ----------------------------- | -------------------- | ---------------- |
+| `dot_config/external_nvim`    | `~/.config/nvim`     | submodule        |
+| `dot_config/opencode`         | `~/.config/opencode` | tracked directly |
+| `dot_config/wezterm`          | `~/.config/wezterm`  | tracked directly |
+| `dot_config/yazi`             | `~/.config/yazi`     | tracked directly |
 
-Chezmoi deploys each `~/.config/<app>` as a regular config directory containing
-the contents of the matching `dot_config/external_<app>` submodule checkout.
+Chezmoi deploys each `~/.config/<app>` from the matching `dot_config` path.
+`external_nvim` is a git submodule; the other configs are tracked directly in
+this repository.
 
 ## Procedure
 
@@ -24,7 +25,8 @@ and push:
    changed, commit, and push. Preserve unrelated local modifications, and never
    amend or force-push unless separately requested.
 2. Then the chezmoi superproject — stage and commit only the changed submodule's
-   gitlink plus any superproject-level files this work changed, then push.
+   gitlink, plus any directly tracked config files or other superproject files
+   this work changed, then push.
 3. When changes span multiple submodules, finish each submodule's commit and
    push before updating the superproject.
 

@@ -28,7 +28,7 @@ otherwise stays out of the way.
 
 | Skill               | Load when                                              |
 | ------------------- | ------------------------------------------------------ |
-| `planning`          | a multi-step or risky change, or the user asks to plan |
+| `planning`          | the user asks to plan, or a scope decision is expensive to reverse |
 | `research-evidence` | source/documentation research that should be reused    |
 | `review-workflow`   | an independent correctness check, or the user asks     |
 | `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
@@ -63,11 +63,12 @@ stable instructions rather than rewriting them.
 - `review` — an independent outcome and findings.
 - `report` — what changed, checks, and what remains; the plan link is optional.
 
-Create artifacts early. `memory_open`, `evidence_create`, `review_create`, and
-`report_create` accept initial content, so a draft can be filled incrementally
-as the work teaches you something. `artifact_search` finds existing memories and
-evidence by text, so discovery does not require knowing an ID.
-`plan_field_patch` replaces one unique occurrence, so a plan bullet can change
+Create artifacts early. `memory_init`, `plan_create`, `evidence_create`,
+`review_create`, and `report_create` accept initial content, so a draft can be
+filled incrementally as the work teaches you something. `artifact_search` finds
+existing artifact text, so discovery does not require knowing an ID.
+`plan_update` accepts whole fields, an ordered `evidenceIDs` list, and an
+optional `patch` object for one exact occurrence, so a plan bullet can change
 without restating the field.
 
 The user can review artifacts in Neovim, select text, and send feedback. When
@@ -77,11 +78,12 @@ Editing a reviewed artifact returns it to draft for re-review.
 
 ## Compaction and memory
 
-- Every agent-loop request (`context` hook) gets a `<memory-context>` system
-  part: the session checkpoint in full, bounded by keeping its head _and_ its
-  tail, plus the project-memory **index** (title, description, section
-  headings). Large documents are never inlined; the agent loads or searches
-  them. It is never a user message and never appears in the transcript.
+- Every agent-loop request from a **primary** agent (`context` hook) gets a
+  `<memory-context>` system part: the session checkpoint, bounded by section
+  rather than by character position, plus the project-memory **index** (title,
+  description, update time, the bounded `## Core` section, and section
+  headings). Large documents are not inlined beyond that; the agent loads or
+  searches them. It is never a user message and never appears in the transcript.
 - Compaction uses OpenCode's built-in summary prompt unmodified. The prompt
   already covers objective, requirements, decisions, work state, next move,
   files, and context, and reconciles newer history. Nothing is injected into the
@@ -93,11 +95,13 @@ Editing a reviewed artifact returns it to draft for re-review.
 - `buffer: "30%"` keeps the last 30% of the 1M window free, so automatic
   compaction starts at ~700k tokens. `keep.tokens: 32000` keeps the recent tail.
   The threshold is a policy choice, not a measured optimum; see RESEARCH.md.
-- The head+tail clip keeps the newest progress and next move. Keep the
-  checkpoint small so a requirement in the middle is not clipped.
+- Section-aware clipping keeps `## Objective`, `## Requirements`, `## Decisions`,
+  `## Blockers`, and `## Next Move`, then fills the remaining budget with the
+  newest non-priority sections. A requirement in the middle survives even when
+  older progress is elided.
 
-Checkpoint tests append past the bound and confirm the newest `## Next Move`
-survives while the stale head is elided.
+Checkpoint tests append past the bound and confirm the newest `## Next Move` and
+a mid-document requirement survive while stale progress is elided.
 
 ## Layout
 

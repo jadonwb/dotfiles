@@ -116,7 +116,7 @@ export const REVIEW_OUTCOMES = Object.freeze([
   "Blocked",
 ]);
 
-/** Report prose sections addressed by report_content_put/remove. */
+/** Report prose sections addressed by report_update. */
 export const REPORT_SECTIONS = Object.freeze([
   "summary",
   "changed",
@@ -124,8 +124,13 @@ export const REPORT_SECTIONS = Object.freeze([
   "unfinished",
 ]);
 
-/** Plan prose fields that are whole-field sets (Goal/Scope and Checks). */
-export const PLAN_SET_FIELDS = Object.freeze(["goalScope", "checks"]);
+/** Plan prose fields that accept whole-field replacement. */
+export const PLAN_SET_FIELDS = Object.freeze([
+  "goalScope",
+  "intendedChanges",
+  "context",
+  "checks",
+]);
 
 /** Plan prose fields that use exact oldText→newText patching. */
 export const PLAN_PATCH_FIELDS = Object.freeze(["intendedChanges", "context"]);
@@ -821,11 +826,14 @@ export function createStore(options = {}) {
     }
     if (kind === "plan") {
       record.workingDirectory = resolvePath(workingDirectory);
-      record.goalScope = "";
-      record.intendedChanges = "";
-      record.context = "";
+      for (const field of PLAN_SET_FIELDS) {
+        if (initial[field] !== undefined)
+          assertMemoryMarkdown(initial[field], `initial ${field}`, {
+            allowEmpty: true,
+          });
+        record[field] = typeof initial[field] === "string" ? initial[field] : "";
+      }
       record.evidence = [];
-      record.checks = "";
     }
     if (kind === "evidence") {
       if (
@@ -1023,7 +1031,7 @@ export function createStore(options = {}) {
     if (!PLAN_SET_FIELDS.includes(field)) {
       throw new StoreError(
         "validation",
-        "field must be one of goalScope, checks",
+        `field must be one of ${PLAN_SET_FIELDS.join(", ")}`,
         { field },
       );
     }
@@ -1244,6 +1252,201 @@ export function createStore(options = {}) {
         );
       }
       record.evidence.splice(position, 1);
+      return commitMutation(artifactID, record);
+    });
+  }
+
+  /**
+   * Combined plan mutation: replace any subset of prose fields, optionally
+   * patch one exact occurrence in Intended Changes or Context, and optionally
+   * replace the ordered evidence membership. All validation happens before a
+   * single locked commit, so a bad field or evidence member leaves the plan
+   * untouched.
+   */
+  async function planUpdate({
+    artifactID,
+    location,
+    writerSessionID,
+    fields = {},
+    evidenceIDs,
+    patch,
+  }) {
+    if (fields === null || typeof fields !== "object" || Array.isArray(fields)) {
+      throw new StoreError("validation", "fields must be an object");
+    }
+    const providedFields = Object.entries(fields).filter(
+      ([, value]) => value !== undefined,
+    );
+    const hasFields = providedFields.length > 0;
+    const hasEvidence = evidenceIDs !== undefined;
+    const hasPatch = patch !== undefined && patch !== null;
+    if (!hasFields && !hasEvidence && !hasPatch) {
+      throw new StoreError(
+        "validation",
+        "plan update requires at least one field, patch, or evidenceIDs",
+      );
+    }
+
+    for (const [field, content] of providedFields) {
+      if (!PLAN_SET_FIELDS.includes(field)) {
+        throw new StoreError(
+          "validation",
+          `field must be one of ${PLAN_SET_FIELDS.join(", ")}`,
+          { field },
+        );
+      }
+      if (!(field === "checks" && content === "")) {
+        assertProseField(content, `plan ${field}`);
+      }
+    }
+
+    let patchField;
+    if (hasPatch) {
+      if (typeof patch !== "object" || Array.isArray(patch)) {
+        throw new StoreError("validation", "patch must be an object");
+      }
+      patchField = patch.field;
+      if (!PLAN_PATCH_FIELDS.includes(patchField)) {
+        throw new StoreError(
+          "validation",
+          `patch.field must be one of ${PLAN_PATCH_FIELDS.join(", ")}`,
+          { field: patchField },
+        );
+      }
+      if (
+        typeof patch.oldText !== "string" ||
+        typeof patch.newText !== "string"
+      ) {
+        throw new StoreError(
+          "validation",
+          "patch.oldText and patch.newText must be strings",
+        );
+      }
+      if (
+        patch.oldText.length > MAX_MARKDOWN_LENGTH ||
+        patch.newText.length > MAX_MARKDOWN_LENGTH
+      ) {
+        throw new StoreError(
+          "validation",
+          `patch.oldText and patch.newText must be at most ${MAX_MARKDOWN_LENGTH} characters`,
+        );
+      }
+      // eslint-disable-next-line no-control-regex
+      if (
+        /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(patch.oldText) ||
+        /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(patch.newText)
+      ) {
+        throw new StoreError(
+          "validation",
+          "patch.oldText and patch.newText must not contain control characters",
+        );
+      }
+      if (
+        hasFields &&
+        Object.prototype.hasOwnProperty.call(fields, patchField)
+      ) {
+        throw new StoreError(
+          "validation",
+          "cannot replace and patch the same plan field in one call",
+          { field: patchField },
+        );
+      }
+    }
+
+    if (hasEvidence) {
+      if (!Array.isArray(evidenceIDs)) {
+        throw new StoreError(
+          "validation",
+          "evidenceIDs must be an array of evidence artifact IDs",
+        );
+      }
+      for (const evidenceID of evidenceIDs) {
+        assertArtifactID(evidenceID);
+      }
+    }
+
+    await ensureDirectories();
+    return withLock(artifactID, async () => {
+      const record = await prepareContentMutation({
+        artifactID,
+        location,
+        writerSessionID,
+        expectKind: "plan",
+      });
+
+      if (hasPatch) {
+        const current = record[patchField];
+        let position = -1;
+        if (patch.oldText.length === 0) {
+          if (current.length !== 0) {
+            throw new StoreError(
+              "patch_conflict",
+              `Patch refused for plan ${patchField}: empty oldText is only valid when the field is empty. Re-read the field, use a unique oldText, and retry. No write was made.`,
+              { artifactID, field: patchField },
+            );
+          }
+          position = 0;
+        } else {
+          const first = current.indexOf(patch.oldText);
+          if (
+            first === -1 ||
+            current.indexOf(patch.oldText, first + patch.oldText.length) !== -1
+          ) {
+            throw new StoreError(
+              "patch_conflict",
+              `Patch refused for plan ${patchField}: oldText must occur exactly once in the current content. Re-read the field, choose a unique base, and retry. No write was made.`,
+              { artifactID, field: patchField },
+            );
+          }
+          position = first;
+        }
+        record[patchField] =
+          current.slice(0, position) +
+          patch.newText +
+          current.slice(position + patch.oldText.length);
+      }
+
+      for (const [field, content] of providedFields) {
+        record[field] = content;
+      }
+
+      if (hasEvidence) {
+        const normalizedLocation = resolvePath(location);
+        const snapshots = [];
+        const validated = new Set();
+        for (const evidenceID of evidenceIDs) {
+          if (validated.has(evidenceID)) continue;
+          validated.add(evidenceID);
+          const evidenceRecord = await loadScoped(
+            evidenceID,
+            normalizedLocation,
+            { label: "evidence artifact" },
+          );
+          if (evidenceRecord.kind !== "evidence") {
+            throw new StoreError(
+              "invalid_kind",
+              `Plan evidence membership applies to evidence artifacts only; ${evidenceID} is a ${evidenceRecord.kind}`,
+              { artifactID: evidenceID, kind: evidenceRecord.kind },
+            );
+          }
+          if (
+            evidenceRecord.finalized !== true ||
+            evidenceRecord.status !== "published"
+          ) {
+            throw new StoreError(
+              "not_ready",
+              `Plan evidence membership requires a finalized, published evidence artifact; ${evidenceID} is ${evidenceRecord.status}`,
+              { artifactID: evidenceID, status: evidenceRecord.status },
+            );
+          }
+          snapshots.push({
+            id: evidenceID,
+            description: evidenceRecord.description,
+          });
+        }
+        record.evidence = snapshots;
+      }
+
       return commitMutation(artifactID, record);
     });
   }
@@ -1920,6 +2123,48 @@ export function createStore(options = {}) {
   }
 
   /**
+   * Set the machine-readable outcome and/or the human Summary in one locked
+   * commit. Omitted fields are untouched.
+   */
+  async function reviewUpdate({
+    artifactID,
+    location,
+    writerSessionID,
+    outcome,
+    summary,
+  }) {
+    const hasOutcome = outcome !== undefined;
+    const hasSummary = summary !== undefined;
+    if (!hasOutcome && !hasSummary) {
+      throw new StoreError(
+        "validation",
+        "review update requires outcome, summary, or both",
+      );
+    }
+    if (hasOutcome && !REVIEW_OUTCOMES.includes(outcome)) {
+      throw new StoreError(
+        "validation",
+        "outcome must be Pass, Changes required, or Blocked",
+        { outcome },
+      );
+    }
+    if (hasSummary) assertProseField(summary, "summary content");
+
+    await ensureDirectories();
+    return withLock(artifactID, async () => {
+      const record = await prepareContentMutation({
+        artifactID,
+        location,
+        writerSessionID,
+        expectKind: "review",
+      });
+      if (hasOutcome) record.outcome = outcome;
+      if (hasSummary) record.summary = summary;
+      return commitMutation(artifactID, record);
+    });
+  }
+
+  /**
    * Append (no findingID) or replace in place (findingID) one structured review
    * finding. Each finding carries severity, affected path/symbol, evidence,
    * risk, and correction; repeating fields stay addressable by stable ID.
@@ -2192,6 +2437,64 @@ export function createStore(options = {}) {
   }
 
   /**
+   * Replace any subset of report sections in one locked commit. An empty string
+   * clears that section. Omitted sections are untouched.
+   */
+  async function reportUpdate({
+    artifactID,
+    location,
+    writerSessionID,
+    sections,
+  }) {
+    if (
+      sections === null ||
+      typeof sections !== "object" ||
+      Array.isArray(sections)
+    ) {
+      throw new StoreError("validation", "sections must be an object");
+    }
+    const provided = Object.entries(sections).filter(
+      ([, value]) => value !== undefined,
+    );
+    if (provided.length === 0) {
+      throw new StoreError(
+        "validation",
+        "report update requires at least one section",
+      );
+    }
+    for (const [field, value] of provided) {
+      if (!REPORT_SECTIONS.includes(field)) {
+        throw new StoreError(
+          "validation",
+          `section must be one of ${REPORT_SECTIONS.join(", ")}`,
+          { section: field },
+        );
+      }
+      if (typeof value !== "string") {
+        throw new StoreError(
+          "validation",
+          `report ${field} must be a string`,
+        );
+      }
+      assertMemoryMarkdown(value, field, { allowEmpty: true });
+    }
+
+    await ensureDirectories();
+    return withLock(artifactID, async () => {
+      const record = await prepareContentMutation({
+        artifactID,
+        location,
+        writerSessionID,
+        expectKind: "report",
+      });
+      for (const [field, value] of provided) {
+        record[field] = value;
+      }
+      return commitMutation(artifactID, record);
+    });
+  }
+
+  /**
    * Finalize a report: requires the Summary and transitions the visible status
    * from draft to published, which is what lets the editor mark it read/dismiss
    * it and the primary agent and Review consume it.
@@ -2285,7 +2588,7 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Metadata-only lookup for plan_status: the summary shape
+   * Metadata-only lookup for compact readers: the summary shape
    * without rendering or reconciling the generated view and without returning
    * the body content.
    */
@@ -2859,6 +3162,7 @@ export function createStore(options = {}) {
     planFieldPatch,
     planEvidenceAddMany,
     planEvidenceRemove,
+    planUpdate,
     planFinalize,
     evidenceOverviewPut,
     evidenceFindingPut,
@@ -2866,11 +3170,13 @@ export function createStore(options = {}) {
     evidenceFinalize,
     reviewOutcomePut,
     reviewSummaryPut,
+    reviewUpdate,
     reviewFindingPut,
     reviewFindingRemove,
     reviewFinalize,
     reportContentPut,
     reportContentRemove,
+    reportUpdate,
     reportFinalize,
     listArtifacts,
     getArtifact,

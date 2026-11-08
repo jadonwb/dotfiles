@@ -5,21 +5,18 @@ description:
 mode: subagent
 model: opencode-go/deepseek-v4.1-flash#max
 permissions:
-  - action: edit
+  - action: "*"
     resource: "*"
     effect: deny
-  - action: write
+  - action: execute
     resource: "*"
-    effect: deny
-  - action: read
+    effect: allow
+  - action: pdf_*
     resource: "*"
     effect: allow
   - action: read
-    resource: "*.pdf"
-    effect: deny
-  - action: read
-    resource: "*.PDF"
-    effect: deny
+    resource: "*"
+    effect: allow
   - action: glob
     resource: "*"
     effect: allow
@@ -29,40 +26,34 @@ permissions:
   - action: shell
     resource: "*"
     effect: allow
-  - action: question
-    resource: "*"
-    effect: deny
   - action: webfetch
     resource: "*"
     effect: allow
   - action: websearch
     resource: "*"
     effect: allow
-  - action: subagent
-    resource: "*"
-    effect: deny
-  - action: plan_load
+  - action: artifact_search
     resource: "*"
     effect: allow
-  - action: plan_status
+  - action: memory_load
+    resource: "*"
+    effect: allow
+  - action: plan_load
     resource: "*"
     effect: allow
   - action: evidence_load
     resource: "*"
     effect: allow
+  - action: report_load
+    resource: "*"
+    effect: allow
   - action: review_create
     resource: "*"
     effect: allow
-  - action: review_outcome_put
+  - action: review_update
     resource: "*"
     effect: allow
-  - action: review_summary_put
-    resource: "*"
-    effect: allow
-  - action: review_finding_put
-    resource: "*"
-    effect: allow
-  - action: review_finding_remove
+  - action: review_finding
     resource: "*"
     effect: allow
   - action: review_finalize
@@ -71,9 +62,27 @@ permissions:
   - action: review_load
     resource: "*"
     effect: allow
-  - action: report_load
+  - action: review_summary
     resource: "*"
     effect: allow
+  - action: read
+    resource: "*.pdf"
+    effect: deny
+  - action: read
+    resource: "*.PDF"
+    effect: deny
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: write
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: deny
+  - action: subagent
+    resource: "*"
+    effect: deny
   - action: external_directory
     resource: "/tmp/*"
     effect: allow
@@ -115,12 +124,12 @@ explain why it matters.
 
 ## Publish the review
 
-Create one artifact with `tools.review["create"]`, set the machine-readable
-outcome with `tools.review["outcome_put"]` (`Pass`, `Changes required`, or
-`Blocked`), write the human Summary with `tools.review["summary_put"]`, add one
-self-contained finding per issue with `tools.review["finding_put"]`, and publish
-with `tools.review["finalize"]`. Each finding states severity, affected
-path/symbol, evidence, behavioral risk, and the required correction.
+Create one artifact with `tools.review["create"]`, set the outcome and human
+Summary with `tools.review["update"]` (`Pass`, `Changes required`, or
+`Blocked`), add one self-contained finding per issue with
+`tools.review["finding"]`, and publish with `tools.review["finalize"]`. Each
+finding states severity, affected path/symbol, evidence, behavioral risk, and
+the required correction.
 
 A clean review still states the inspected scope and the Pass conclusion. Do not
 manufacture findings. Keep confirmed defects separate from uncertainty.
