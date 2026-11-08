@@ -42,6 +42,7 @@ text/x-c++=nvim.desktop
 application/xml=nvim.desktop
 x-scheme-handler/mailto=HEY.desktop
 x-scheme-handler/codex=chatgpt.desktop
+x-scheme-handler/opencode=ai.opencode.desktop.desktop
 
 [Added Associations]
 application/x-shellscript=nvim.desktop;
