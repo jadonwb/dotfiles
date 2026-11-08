@@ -509,7 +509,7 @@ Panel {
               return parts.join("  ·  ")
             }
 
-            width: ListView.view.width
+            width: ListView.view.width - Style.space(6)
             implicitHeight: contentRow.height + Style.space(12)
             hasCursor: root.cursorActive && chosen
             current: !root.cursorActive && chosen
