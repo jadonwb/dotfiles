@@ -18,7 +18,7 @@ Plan when:
 - a decision is expensive to reverse and the user wants to review the scope
 - several sessions need a durable record of intent
 
-Otherwise, act. A short plan artifact for your own working memory is fine, but
+Otherwise, act. A short plan artifact as a reference is fine, but
 do not turn every change into one, and never let a plan delay a change the user
 asked for.
 
@@ -49,16 +49,18 @@ stage needs its own design pass, do that pass when you reach it.
 
 ## Keep one progress record
 
-For a multi-phase task, keep progress in one place: the plan, or a short note in
-the repository (`docs/`, `notes/`, or a file next to the work). Record:
+For a multi-phase task, keep progress in the plan when one exists; otherwise
+keep one short repository note (`docs/`, `notes/`, or a file next to the work).
+Record:
 
 - objective and current requirements
 - decisions made
 - what is done, active, and blocked
 - the next move
 
-The plan records scope and criteria and changes only when scope or criteria
-change. Keep one version of the same state.
+The plan's scope and criteria change only when scope or criteria change. Its
+progress section tracks done, active, blocked, and next. Keep one version of the
+same state.
 
 ## Workflow
 
@@ -74,7 +76,7 @@ change. Keep one version of the same state.
    occurrence.
 4. `tools.plan["finalize"]({ artifactID })` — ready for review.
 5. If the user asked for planning: report the plan ID and ask for approval, then
-   stop. Otherwise implement, updating the progress note as you go. When the
+   stop. Otherwise implement, updating the plan or note as you go. When the
    significant work is done, record the outcome with `plan_complete`.
 
 ## Shape
@@ -133,4 +135,4 @@ in evidence artifacts and the decision in the plan; state each finding once.
 - Implementing before the approval you were asked to wait for.
 - Turning the plan into a file-by-file task list before the work is understood.
 - Keeping progress in both the plan and a separate note.
-- Expanding scope silently instead of updating the plan.
+- Expanding scope while leaving the plan stale.

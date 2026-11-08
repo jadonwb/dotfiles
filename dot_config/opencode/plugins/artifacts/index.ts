@@ -13,7 +13,7 @@
 //
 // Artifacts are keyed by the project: plans, evidence, and reviews created in
 // one worktree are listed and loadable from every worktree of the same
-// checkout. The prompt stays stable: durable notes live in AGENTS.md,
+// checkout. The prompt stays stable: durable state lives in AGENTS.md,
 // repository docs, and the artifacts themselves.
 import { createStore } from "./store.mjs";
 import { addArtifactTools } from "./artifact-tools.ts";

@@ -30,7 +30,7 @@ type DeliveryState = {
   error: string | null;
 };
 
-/** Frontend RPC summary: frontend metadata plus owner-scoping, never the writer session identity. */
+/** Frontend RPC summary: frontend metadata plus the feedback-routing owner; the writer session identity stays internal. */
 function rpcSummaryOf(summary: ArtifactSummary) {
   const { writerSessionID: _writer, ...frontend } = summary;
   return frontend;

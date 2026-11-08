@@ -522,7 +522,8 @@ export type ArtifactToolDeps = {
   };
   /** Session working directory (plan workingDirectory defaults come from here). */
   directory: string;
-  /** Shared project root: all worktrees of a checkout store artifacts here. */
+  /** Registry location key shared by every worktree of a checkout. Artifact
+   * files live under `$XDG_STATE_HOME/opencode/artifacts/`. */
   projectDirectory: string;
   getSession: SessionGetter;
 };
@@ -592,7 +593,7 @@ export function addArtifactTools(
   editor.namespace({
     name: "artifact",
     description:
-      "Searches artifact text in this project to discover memories and evidence without IDs.",
+      "Searches plan, evidence, and review text in this project. Use it to find an artifact by text.",
   });
   editor.namespace({
     name: "plan",

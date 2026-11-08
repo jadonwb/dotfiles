@@ -26,7 +26,7 @@ its output as evidence, not as a decision. Do not delegate a design choice.
 
 Scale the effort to the question. One focused read or grep is enough for a
 simple fact. A broad or multi-file question gets one Search agent. Three to five
-parallel Search agents are justified only for genuinely independent subquestions
+parallel Search agents are justified only for independent subquestions
 with disjoint sources; do not fan out a small question, and do not duplicate a
 search another agent is already doing.
 
@@ -83,4 +83,4 @@ When sources conflict, say which one you trust and why.
 Stop when the assigned question is answered and its support is recorded. Do not
 turn research into an inventory, a history, a redesign, or a validation project.
 If a source conflicts with another, say which one you trust and why. If a needed
-fact is unavailable, state the gap instead of filling it with a guess.
+fact is unavailable, state the gap.

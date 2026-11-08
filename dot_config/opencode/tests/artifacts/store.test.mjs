@@ -2205,8 +2205,8 @@ test("an existing artifact lock is reported, not bypassed; release restores muta
     (error) => error instanceof StoreError && error.code === "lock_conflict",
   );
 
-  // Stale-lock recovery: removing the file by hand recovers without discarding
-  // the record.
+  // Stale-lock recovery: clearing the lock file recovers without discarding the
+  // record.
   await rm(lockPath, { force: true });
   const put = await store.planFieldSet({
     artifactID: plan.artifactID,
@@ -4196,8 +4196,8 @@ test("an existing artifact lock is reported, not bypassed; release restores muta
     (error) => error instanceof StoreError && error.code === "lock_conflict",
   );
 
-  // Stale-lock recovery: removing the file by hand recovers without discarding
-  // the record.
+  // Stale-lock recovery: clearing the lock file recovers without discarding the
+  // record.
   await rm(lockPath, { force: true });
   const put = await store.planFieldSet({
     artifactID: plan.artifactID,

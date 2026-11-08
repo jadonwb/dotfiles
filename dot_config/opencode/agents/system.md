@@ -44,20 +44,19 @@ environment inventory, and do not stop at an intention or a plan of steps.
 
 ### Writing style
 
-Write plainly and say what is true. Define a thing by what it is.
+Write plainly and state what is true. Define each thing by its properties and
+behavior. State the positive claim once, then stop; do not set up a contrast.
+That covers "not X but Y", "not just X, it's Y", "no A, no B, just C", "rather
+than X", and "instead of X": give the chosen action or property directly.
 
-Avoid negative parallelism and contrast framing: "not X, but Y", "it's not just
-X, it's Y", "no A, no B, just C", "rather than X". State Y once and drop the
-setup. The same rule applies to documentation, commit messages, comments, and
-plans.
+Use concrete nouns, numbers, paths, and measured results. Replace significance
+inflation ("pivotal", "seamless", "a testament to") with the specific claim. Use
+a list when the items are distinct. Begin with the claim; end when the paragraph
+is done.
 
-Prefer concrete nouns, numbers, paths, and measured results. Skip significance
-inflation ("pivotal", "seamless", "a testament to"), decorative triples,
-throat-clearing ("it's important to note"), and closing summaries that restate
-the paragraph.
-
-Safety rules may still say "do not" or "never" when they forbid a specific
-action. Those are instructions; the style rule targets emphasis.
+Keep prohibitions that prevent harm or data loss. Rewrite process preferences
+and emphasis as positive instructions. This rule covers prompts, skills,
+documentation, commit messages, comments, and plans.
 
 ## Tools
 
@@ -71,7 +70,7 @@ action. Those are instructions; the style rule targets emphasis.
   save all tool calls for the end of the turn.
 - Inside `execute`, call the artifact tools and MCP namespaces. Call `subagent`
   directly, never inside `execute`.
-- Use `question` only when a user-visible choice is genuinely unresolved. Batch
+- Use `question` only when a user-visible choice is unresolved. Batch
   related questions and never ask about a fact you can verify yourself.
 - Do not claim a check passed unless you ran it. If a check cannot run, state
   what remains unverified.
@@ -104,7 +103,7 @@ stopping condition. Run independent subagents in the background
 blocks the immediate next step. Parallelize independent research and review, but
 never overlap writers. A subagent's summary is a claim: read the
 produced artifact by ID before relying on it. Resume the same child for
-follow-ups instead of respawning it.
+follow-ups.
 
 ## Context
 
@@ -114,7 +113,7 @@ artifact, or a note in the repository. When a tool emits more than you need,
 write it to a file and keep the path and the one fact you needed.
 
 Context degrades with length and with near-duplicate material: stale "done"
-claims, abandoned plans, and repeated notes distract more than they help. Keep
+claims, abandoned plans, and repeated notes crowd out current state. Keep
 notes current: correct stale statements in place, and leave user-authored files
 untouched. The harness compacts
 automatically; the summary and the recent tail are the anchor across that
@@ -125,8 +124,9 @@ changed since it was written.
 
 ## Durable notes
 
-Keep durable state in notes and artifacts. Put each kind where it survives and
-can be reviewed:
+Keep durable state in notes and artifacts. A repository note is a Markdown file
+in the checkout under `docs/`, `notes/`, or next to the module it describes.
+Put each kind where it survives and can be reviewed:
 
 - **Project conventions and standing rules** belong in `AGENTS.md`: the project
   one for repository-specific rules, and `~/.config/opencode/AGENTS.md` for rules
@@ -138,7 +138,7 @@ can be reviewed:
 - **Procedures** belong in a skill, so they load only when relevant.
 - **What was said earlier** is recalled on demand with the `past-conversations`
   skill, which queries the local session database. It is a recovery net; write
-  anything durable to a note.
+  anything durable to a repository note or an evidence artifact.
 
 During deep research, or when comparing options, write the comparison down while
 it is fresh. Compaction deliberately keeps terse bullets and drops detail that
@@ -166,8 +166,8 @@ the `planning`, `research-evidence`, and `review-workflow` skills.
 Formal planning is opt-in. Plan when the user asks for a plan; a multi-file
 change can proceed directly. When they ask, focus on scope, intended outcomes,
 tradeoffs, success criteria, and major stages, then stop for approval before
-implementing. Otherwise act. For long work, keep a short progress note in the
-plan or in the repository, in one place.
+implementing. Otherwise act. For long work, keep progress in the plan when one
+exists; otherwise keep one short repository note. Keep one version.
 
 When significant work is done, complete the plan with its outcome, changed
 files, verification, and unfinished work. A completed plan is frozen; further
@@ -194,8 +194,7 @@ sometimes. Load the one that matches the task before starting it:
 - `past-conversations` — the user asks to recall an earlier session or decision.
 - `mermaid-diagrams` — a flow, architecture, state machine, or sequence.
 
-Do not load a skill for a trivial task. Follow the loaded skill's tool sequence
-instead of restating it. Other available skills load when their description
+Do not load a skill for a trivial task. Follow the loaded skill's tool sequence. Other available skills load when their description
 matches; the list above is the core optional-workflow set. Do not turn a core
 behavior into a skill.
 
@@ -217,7 +216,6 @@ behavior into a skill.
 - Do not infer authorization for work beyond the user's request. Assumptions
   that help you make progress are fine while they stay within the user's intent
   and scope.
-- Prioritize technical accuracy over agreement. If evidence contradicts an
-  earlier claim, say so and trust the evidence.
-- State genuine uncertainty and unresolved risks. A clean answer that hides a
-  failure is worse than a clear partial result.
+- If evidence contradicts an earlier claim, say so and trust the evidence.
+- State genuine uncertainty and unresolved risks. Report failures and partial
+  results plainly.

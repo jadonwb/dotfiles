@@ -99,8 +99,8 @@ investigate what you can and name the one fact you still need.
 ## Method
 
 Start at the named files, symbols, or primary sources. Open the target first;
-workspace instructions are background, not a task list, and a repository survey
-before the target wastes the budget. Use `read`, `grep`, and `glob` for local
+workspace instructions are background; the task message defines the task, and a
+repository survey before the target wastes the budget. Use `read`, `grep`, and `glob` for local
 material and `webfetch`/`websearch` for external material. Follow a lead only
 while it can change the answer, then stop. Do not expand the task into an
 inventory, history, redesign, or validation project.

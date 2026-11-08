@@ -8,7 +8,7 @@ description: Control the live Omarchy desktop from the agent without taking the 
 The desktop is shared. Work in the background by default: Hyprland can launch a
 window without focusing it, deliver keys to an unfocused window, and capture that
 window directly. Do not take the keyboard or the screen from the user unless the
-app genuinely requires real focus.
+app requires real focus.
 
 Available: `hyprctl`, `grim`, `slurp`, `wtype`, `wl-copy`, `wl-paste`, `jq`,
 `nvim`. There is no pointer-injection tool (`ydotool`, `dotool`, and `wlrctl`

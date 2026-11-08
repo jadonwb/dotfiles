@@ -1039,12 +1039,12 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
   assert.equal(
     artifact.writerSessionID,
     undefined,
-    "the writer session identity never leaves the wire contract",
+    "the writer session identity stays internal",
   );
   assert.equal(
     artifact.ownerSessionID,
     PRIMARY_SESSION,
-    "owner-scoping metadata stays for attached-session filtering",
+    "the owner session id stays on the wire for feedback routing",
   );
   assert.equal(artifact.revision, undefined);
   assert.equal(artifact.authorSessionID, undefined);

@@ -2,7 +2,7 @@
 
 A single-primary-agent setup with on-demand skills and durable artifacts. The
 goal is to keep the always-loaded prompt small, let the model work in one
-coherent context, and reserve subagents and skills for work that genuinely needs
+coherent context, and reserve subagents and skills for work that needs
 isolation.
 
 ## Agents
@@ -14,7 +14,7 @@ isolation.
   documentation or many files and only a compact answer should enter the main
   context, or when independent questions can run in parallel.
 - `review` — read-only independent correctness review. Used for large or risky
-  changes, or when the user asks. It has clean context, which is the point.
+  changes, or when the user asks. It has clean context.
 
 `plan`, `build`, `general`, and `explore` are disabled. The built-in
 `compaction`, `title`, and `summary` agents remain.
@@ -34,18 +34,16 @@ otherwise stays out of the way.
 | `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
 
 Past-conversation recall is a skill (`past-conversations`): it
-queries the local session database only when the user asks to remember
+queries the local session database only when the user asks to recall
 something. Other discovered skills
 (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …) load when
 their descriptions match.
 
-The split follows the current guidance: a system prompt defines permanent
-behavior and policy; a skill defines a repeatable procedure for a task that only
+A system prompt defines permanent behavior and policy; a skill defines a repeatable procedure for a task that only
 applies sometimes. Durable project knowledge belongs in `AGENTS.md` and in the
 repository.
 
-Skill authoring follows the current best practices: a specific what-and-when
-description with trigger terms, a body well under 500 lines, the workflow and
+A skill has a specific what-and-when description with trigger terms, a body well under 500 lines, the workflow and
 tool sequence with supporting detail only where it changes behavior. The always-loaded prompt stays stable
 so the provider can reuse its cached prefix; per-session state lives outside
 it.
@@ -72,7 +70,7 @@ exact occurrence, so a plan bullet can change without restating the field.
 
 The user can review artifacts in Neovim, select text, and send feedback. When
 the user asks for a plan, approval is the signal to start implementing. When
-they did not ask, approval is a review marker; implementation continues either way.
+they did not ask, approval is a review marker; implementation continues.
 Editing a reviewed artifact returns it to draft for re-review; a completed plan
 cannot be edited.
 
@@ -93,8 +91,8 @@ cannot be edited.
 - `skills/` — on-demand workflows.
 - `plugins/bridge/` — frontend RPC seam: `personal.bridge` handshake and the
   domain registry every RPC domain registers through.
-- `plugins/artifacts/` — artifact store and agent tools. No bridge or RPC
-  imports.
+- `plugins/artifacts/` — artifact store and agent tools. Only
+  `plugins/artifacts-rpc/` imports the bridge.
 - `plugins/artifacts-rpc/` — the editor-facing adapter: registers
   `personal.artifacts` through the bridge.
 - `tests/artifacts/` — artifact store and tool/RPC tests.
@@ -103,19 +101,16 @@ cannot be edited.
 
 ## Bridge
 
-Artifacts stay separate from the Neovim <-> OpenCode channel. The channel is its
-own layer, so it can grow into session control and editor UI commands on its
+The Neovim <-> OpenCode channel is its own layer, so it can grow into session control and editor UI commands on its
 own:
 
 - `personal.bridge.describe` returns `{ protocol, domains }` — the handshake a
   frontend uses before calling a domain. It is plumbing only; it carries no
   product behavior.
 - `plugins/bridge/registry.ts` exports `registerDomain` and `mintRequestID`. An
-  adapter plugin registers its contract through it instead of calling
-  `ctx.rpc.register` directly, so the handshake and the registration cannot
-  drift apart. The artifact tools stay independent of this module: storage and tools
-  live in `plugins/artifacts/`, and only the RPC adapter
-  (`plugins/artifacts-rpc/`) touches the bridge.
+  adapter plugin registers its contract through it, so the handshake and
+  registration stay in sync. Storage and tools live in `plugins/artifacts/`;
+  only the RPC adapter (`plugins/artifacts-rpc/`) imports the bridge.
 - The registry lives on `globalThis` under a symbol because each plugin is its
   own module instance; a module-scope map would be private per plugin.
 

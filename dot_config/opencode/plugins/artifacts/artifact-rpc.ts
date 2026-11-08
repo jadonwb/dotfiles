@@ -9,11 +9,10 @@
 // approvals only. `list` keeps a strict empty-object input: the client always
 // sends the normalized {"input":{}} object body.
 //
-// Metadata separation: the summary carries only frontend metadata (title,
-// description, primaryAuthor, status) plus owner-scoping metadata required for
-// the Neovim attached-session filter (ownerSessionID). writerSessionID is
-// internal routing/delivery data, stripped before the wire; the
-// per-artifact summary is produced by store.mjs and stripped in index.ts.
+// Metadata separation: the summary carries frontend metadata (title,
+// description, primaryAuthor, status) plus ownerSessionID for feedback routing.
+// writerSessionID stays internal routing/delivery data, stripped before the
+// wire; store.mjs produces the per-artifact summary and index.ts strips it.
 
 const artifactSummary = {
   type: "object",
@@ -42,7 +41,7 @@ const artifactSummary = {
     ownerSessionID: {
       type: "string",
       description:
-        "owner-scoping session used only for attached-session filtering",
+        "feedback-routing session identity",
     },
     finalized: {
       type: "boolean",
@@ -258,8 +257,8 @@ const Artifacts = {
         required: ["artifactID"],
         additionalProperties: false,
       },
-      // No `delivery` in the response: mark_read is evidence/review dismissal
-      // and records the read locally.
+      // No `delivery` in the response: mark_read records the evidence/review
+      // dismissal on the server (`status: read`).
       output: {
         type: "object",
         properties: {

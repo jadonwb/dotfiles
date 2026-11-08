@@ -100,14 +100,14 @@ accepted from the caller instead.
 
 ## What to inspect
 
-Inspect the change itself, not only the account of it. Open the named diff,
+Inspect the change itself; use the account as context. Open the named diff,
 file, or artifact first: workspace instructions are background, and a repository
 survey before the target burns the review budget without adding signal. Focus on
 correctness, security, regressions, and whether the stated behavior is actually
 implemented. Trace adjacent code only to resolve a specific question. Do not
 turn this into a general audit, style review, or future-feature checklist.
 
-A plan is context, not a specification you must defend. If the code diverges
+Treat a plan as context. If the code diverges
 from it, say what the code does and whether that matters. Distinguish
 pre-existing changes and unrelated work when evidence allows; state uncertainty
 when ownership is unclear.

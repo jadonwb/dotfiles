@@ -46,7 +46,7 @@
 // - record.json is authoritative and written last; the derived view is written
 //   first so an interrupted write is repairable by regeneration.
 // - Mutations serialize on an exclusive per-artifact lock file (reported as
-//   lock_conflict; remove a stale lock by hand).
+//   lock_conflict; do not bypass it; ask the user before removing a stale one).
 // - Pure Node (node:*) so `node --test` can exercise it without Bun.
 
 import { randomBytes } from "node:crypto";
@@ -566,8 +566,8 @@ export function createStore(options = {}) {
 
   /**
    * Serialize a mutation on an exclusive per-artifact lock. An existing lock
-   * is reported as lock_conflict; it is never bypassed. The lock is released
-   * in finally.
+   * is reported as lock_conflict; do not bypass it. The lock is released in
+   * finally.
    */
   async function withLock(artifactID, mutate) {
     const lock = lockPathOf(artifactID);
@@ -579,7 +579,7 @@ export function createStore(options = {}) {
         throw new StoreError(
           "lock_conflict",
           `Artifact ${artifactID} is locked by another mutation; no changes were made. ` +
-            `If the lock is stale (its holder crashed), remove ${lock} and retry; the record is intact.`,
+            `Report ${lock} to the user; do not remove it while a mutation may be running.`,
           { artifactID, lock },
         );
       }
@@ -627,9 +627,9 @@ export function createStore(options = {}) {
       primaryAuthor: record.primaryAuthor,
       status: record.status,
       path: currentPathOf(record.id),
-      // ownerSessionID stays consumer-visible for the Neovim attached-session
-      // filter; writerSessionID is internal routing/delivery data and is
-      // stripped from the RPC wire contract in index.ts.
+      // ownerSessionID stays consumer-visible for feedback routing;
+      // writerSessionID is internal routing/delivery data and is stripped from
+      // the RPC wire contract in index.ts.
       ownerSessionID: record.ownerSessionID,
       writerSessionID: record.writerSessionID,
       finalized: record.finalized === true,

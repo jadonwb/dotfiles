@@ -1,8 +1,7 @@
 # artifacts
 
 A standalone, filesystem-backed registry for durable artifacts and the agent
-tools that author them. It stays independent of the Neovim bridge: the RPC
-adapter lives in `../artifacts-rpc/`, which imports this package and registers
+tools that author them. The RPC adapter lives in `../artifacts-rpc/`, which imports this package and registers
 `personal.artifacts` through `../bridge/registry.ts`.
 
 Artifacts are structured records. `system` is the primary agent and implements
@@ -126,8 +125,8 @@ Read tools return compact text; full loaders include the body:
   (full), `review_summary` (outcome + Summary only).
 
 Plans gate implementation only when the user asked for one. Otherwise the model
-may `plan_load` a draft and act on it, and the user's review is feedback rather
-than a permission step.
+may `plan_load` a draft and act on it, and the user's review is feedback;
+implementation continues.
 
 ### Typical authoring flows
 
@@ -173,7 +172,7 @@ Fields that look redundant are deliberate:
 `personal.artifacts` (outputs use `artifacts`/`artifact`):
 
 - `list` — summaries with kind, title, description, primary author, status,
-  readiness, and owner-scoping metadata.
+  readiness, and feedback-routing metadata.
 - `get` — the latest generated view for one artifact ID.
 - `feedback` — question/selection against one artifact ID with an optional
   validated `recipient` (`"owner"` or `"writer"`, default `"owner"`).
@@ -187,7 +186,7 @@ Fields that look redundant are deliberate:
   ID.
 
 Metadata separation: the wire summary carries frontend metadata plus
-`ownerSessionID` for the Neovim attached-session filter. `writerSessionID` stays
+`ownerSessionID` for feedback routing. `writerSessionID` stays
 internal and is stripped from every RPC-bound summary/view.
 
 Errors are declared responses (`validation`, `not_found`, `invalid_kind`,
@@ -209,7 +208,8 @@ arbitrary thrown errors.
 
 A submission is persisted first, then durably admitted to the target session via
 `ctx.session.synthetic` with `delivery: "queue"` and `resume: true`. Delivery covers
-review/feedback; `mark_read` records the read locally. Approval text names the
+review/feedback; `mark_read` records the dismissal on the server (`status:
+read`). Approval text names the
 artifact ID and the record's authoritative
 `kind=plan status=approved finalized=true` payload so the primary agent can
 answer the review without a separate lookup. Delivery is at-least-once.
@@ -217,9 +217,9 @@ answer the review without a separate lookup. Delivery is at-least-once.
 ## Stale locks
 
 Mutations hold an exclusive per-artifact lock file (`artifacts/<id>/lock`). An
-existing lock is reported as `lock_conflict`. If a
-mutation crashed while holding the lock, remove `artifacts/<id>/lock` by hand
-and retry. The record stays.
+existing lock is reported as `lock_conflict`; do not bypass it. If a mutation
+crashed while holding the lock, ask the user to confirm the holder is gone
+before removing `artifacts/<id>/lock`.
 
 ## Tests
 
