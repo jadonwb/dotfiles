@@ -66,15 +66,17 @@ state.
    lasting project knowledge; `{ scope: "session" }` for a multi-phase task. Use
    `tools.memory["load"]` to read an existing document.
 2. `tools.plan["create"]({ title, description, workingDirectory, goalScope?,
-   intendedChanges?, context?, checks? })` — returns the bare plan ID. Put the
-   outcome and major stages in the create call when you already know them.
+   intendedChanges?, context?, checks?, previousPlanID? })` — returns the bare
+   plan ID. Put the outcome and major stages in the create call when you already
+   know them; link a completed predecessor with `previousPlanID`.
 3. `tools.plan["update"]({ artifactID, goalScope?, intendedChanges?, context?,
    checks?, evidenceIDs?, patch? })` — replace any fields that change, attach
    published evidence with `evidenceIDs`, or use `patch` for one exact
    occurrence.
 4. `tools.plan["finalize"]({ artifactID })` — ready for review.
 5. If the user asked for planning: report the plan ID and ask for approval, then
-   stop. Otherwise implement, updating the checkpoint as you go.
+   stop. Otherwise implement, updating the checkpoint as you go. When the
+   significant work is done, record the outcome with `plan_complete`.
 
 ## Shape
 
@@ -101,22 +103,24 @@ state.
 - Observable success criterion.
 ```
 
-## Review and reports
+## Completion and review
 
 `approve_plan` in Neovim records the user's review. When the user asked for a
 plan, approval is the signal to start. When they did not, approval is only a
 marker and never a precondition.
 
-For a durable handoff, create a report:
+When significant work is done, record the outcome in the plan:
 
-1. `tools.report["create"]({ planArtifactID?, title?, description?, summary?, changed?, checks?, unfinished? })`
-   — the plan link is optional.
-2. `tools.report["update"]({ artifactID, summary?, changed?, checks?, unfinished? })`
-   for any section that becomes known later; an empty string clears a section.
-3. `tools.report["finalize"]({ artifactID, summary?, changed?, checks?, unfinished? })`
-   — set the last sections and publish in one call.
+1. `tools.plan["complete"]({ artifactID, summary, changed?, verification?, unfinished? })`
+   — `summary` is required; `verification` is the checks actually run. The
+   plan is frozen after completion and preserves its approval marker.
+2. `tools.plan["load"]({ artifactID })` reads the completed record.
+3. A later change starts a new plan with `previousPlanID` pointing at the
+   completed plan. Do not reopen or edit the completed plan.
 
-A report is optional. Do not create one for every edit.
+Completion is an outcome record, not a permission gate. Do not complete a plan
+for every small edit; use it when the work is significant enough to review or
+revisit.
 
 ## Research-and-plan sessions
 

@@ -5,9 +5,9 @@
 //
 // The contract carries `events: {}`, which ctx.rpc.register requires for local
 // dir plugins. Lifecycle is kind-specific: approve_plan applies to plans only;
-// mark_read to evidence, reviews, and reports only; retry_plan_delivery
-// redelivers plan approvals only. `list` keeps a strict empty-object input: the
-// client always sends the normalized {"input":{}} object body.
+// mark_read to evidence and reviews only; retry_plan_delivery redelivers plan
+// approvals only. `list` keeps a strict empty-object input: the client always
+// sends the normalized {"input":{}} object body.
 //
 // Metadata separation: the summary carries only frontend metadata (title,
 // description, primaryAuthor, status) plus owner-scoping metadata required for
@@ -21,7 +21,7 @@ const artifactSummary = {
     id: { type: "string" },
     kind: {
       type: "string",
-      description: "memory, plan, evidence, review, or report",
+      description: "memory, plan, evidence, or review",
     },
     title: { type: "string" },
     description: { type: ["string", "null"] },
@@ -258,8 +258,8 @@ const Artifacts = {
         required: ["artifactID"],
         additionalProperties: false,
       },
-      // No `delivery` in the response: mark_read is evidence/review/report
-      // dismissal and never emits an owner notification.
+      // No `delivery` in the response: mark_read is evidence/review dismissal
+      // and never emits an owner notification.
       output: {
         type: "object",
         properties: {

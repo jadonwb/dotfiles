@@ -15,7 +15,10 @@
 //   snapshotted entries {id: art_..., description} keyed only by the evidence
 //   artifact ID. Goal/Scope and Checks are whole-field sets; Intended Changes
 //   and Context use exact oldText→newText replacement with a declared
-//   patch_conflict unless the old text occurs exactly once.
+//   patch_conflict unless the old text occurs exactly once. A completed plan
+//   adds completedAt plus reportSummary, reportChanged, reportVerification,
+//   and reportUnfinished, and becomes immutable. previousPlanID optionally
+//   links a follow-up plan to the completed plan it continues.
 // - evidence: main question/topic plus Summary and Limitations prose, and an
 //   ordered array of detailed findings {id, title, content}. Findings keep
 //   stable IDs for their author only; the IDs never enter the rendered view or
@@ -23,9 +26,7 @@
 // - review: machine-readable outcome ("Pass", "Changes required", or
 //   "Blocked"), human-readable Summary prose, and ordered findings {id, title,
 //   severity, affected, evidence, risk, correction}.
-// - report: linked planArtifactID plus Summary, Changed, Checks, and Unfinished
-//   prose (the report surface), finalized to published like evidence
-//   and reviews.
+
 //
 // Ownership: `ownerSessionID` is the primary-agent-facing identity (routing,
 // feedback, cleanup) and `writerSessionID` is the immutable sole mutation
@@ -36,11 +37,11 @@
 //
 // Readiness: every content mutation clears the `finalized` flag.
 // plan_finalize validates the flat prose fields and marks the plan ready for
-// review (status stays draft); evidence/review/report finalization validates
-// useful content and transitions the visible draft to `published`. Approval is
-// an optional review marker, not an implementation gate: an approved plan that
-// is edited returns to draft so it can be reviewed again. Memory is always
-// published and editable.
+// review (status stays draft); evidence/review finalization validates useful
+// content and transitions the visible draft to `published`. Approval is an
+// optional review marker, not an implementation gate: an approved plan that is
+// edited returns to draft so it can be reviewed again. plan_complete records
+// the outcome and freezes the plan. Memory is always published and editable.
 //
 // Design rules:
 // - All paths are derived internally from the store root plus generated IDs.
@@ -95,13 +96,11 @@ export const ARTIFACT_KINDS = Object.freeze([
   "plan",
   "evidence",
   "review",
-  "report",
 ]);
 // Lifecycle is kind-specific: memory (project) and checkpoint (session) are
 // always published live documents; plans use draft/approved (approval is a
-// review marker, not a gate); evidence, reviews, and reports use
-// draft/published/read — created as drafts, finalized to published, and
-// dismissed with read.
+// review marker, not a gate); evidence and reviews use draft/published/read —
+// created as drafts, finalized to published, and dismissed with read.
 export const ARTIFACT_STATUSES = Object.freeze([
   "draft",
   "published",
@@ -116,14 +115,6 @@ export const REVIEW_OUTCOMES = Object.freeze([
   "Blocked",
 ]);
 
-/** Report prose sections addressed by report_update. */
-export const REPORT_SECTIONS = Object.freeze([
-  "summary",
-  "changed",
-  "checks",
-  "unfinished",
-]);
-
 /** Plan prose fields that accept whole-field replacement. */
 export const PLAN_SET_FIELDS = Object.freeze([
   "goalScope",
@@ -134,6 +125,14 @@ export const PLAN_SET_FIELDS = Object.freeze([
 
 /** Plan prose fields that use exact oldText→newText patching. */
 export const PLAN_PATCH_FIELDS = Object.freeze(["intendedChanges", "context"]);
+
+/** Plan completion fields recorded by plan_complete. */
+export const PLAN_COMPLETION_FIELDS = Object.freeze([
+  "reportSummary",
+  "reportChanged",
+  "reportVerification",
+  "reportUnfinished",
+]);
 
 /** Flat fields that must contain text before a plan may be finalized. */
 export const REQUIRED_PLAN_FIELDS = Object.freeze([
@@ -382,6 +381,24 @@ function validateRecord(record, artifactID) {
       if (seen.has(entry.id)) return "duplicate plan evidence membership";
       seen.add(entry.id);
     }
+    if (
+      record.previousPlanID !== undefined &&
+      record.previousPlanID !== null &&
+      (typeof record.previousPlanID !== "string" ||
+        !ARTIFACT_ID_PATTERN.test(record.previousPlanID))
+    )
+      return "invalid plan previousPlanID";
+    if (
+      record.completedAt !== undefined &&
+      record.completedAt !== null &&
+      (typeof record.completedAt !== "string" ||
+        record.completedAt.length === 0)
+    )
+      return "invalid plan completedAt";
+    for (const field of PLAN_COMPLETION_FIELDS) {
+      if (record[field] !== undefined && typeof record[field] !== "string")
+        return `plan ${field} must be a string`;
+    }
   }
   if (record.kind === "evidence") {
     if (record.question !== null && typeof record.question !== "string")
@@ -425,19 +442,6 @@ function validateRecord(record, artifactID) {
         return "finding severity must be a non-empty string";
       if (finding.correction.length === 0)
         return "finding correction must be a non-empty string";
-    }
-  }
-  if (record.kind === "report") {
-    if (
-      record.planArtifactID !== null &&
-      (typeof record.planArtifactID !== "string" ||
-        !ARTIFACT_ID_PATTERN.test(record.planArtifactID))
-    ) {
-      return "invalid report planArtifactID";
-    }
-    for (const field of REPORT_SECTIONS) {
-      if (typeof record[field] !== "string")
-        return `report ${field} must be a string`;
     }
   }
   return null;
@@ -564,6 +568,9 @@ export function createStore(options = {}) {
         `Registry record for ${artifactID} is not valid JSON`,
       );
     }
+    // Report artifacts are legacy and inert: ignore them rather than failing
+    // the whole registry scan.
+    if (record && record.kind === "report") return null;
     const problem = validateRecord(record, artifactID);
     if (problem)
       throw new StoreError(
@@ -689,8 +696,7 @@ export function createStore(options = {}) {
    * mutation authority); primaryAuthor is immutable frontend metadata.
    * title/description/workingDirectory are immutable; content is assembled
    * with the kind-specific operations. Every artifact starts as a draft with
-   * `finalized: false`. Reports may additionally link to a plan, from
-   * which title/description are derived when not supplied.
+   * `finalized: false`.
    */
   async function createArtifact({
     kind,
@@ -701,7 +707,7 @@ export function createStore(options = {}) {
     title,
     description,
     workingDirectory,
-    planArtifactID,
+    previousPlanID,
     initial = {},
   }) {
     if (typeof kind !== "string" || !ARTIFACT_KINDS.includes(kind)) {
@@ -735,37 +741,26 @@ export function createStore(options = {}) {
           "workingDirectory must be an absolute directory path",
         );
       }
+      if (previousPlanID !== undefined && previousPlanID !== null) {
+        assertArtifactID(previousPlanID);
+        await ensureDirectories();
+        const previousPlan = await loadScoped(
+          previousPlanID,
+          normalizedLocation,
+          { label: "previous plan artifact" },
+        );
+        if (previousPlan.kind !== "plan") {
+          throw new StoreError(
+            "invalid_kind",
+            `previousPlanID must reference a plan; ${previousPlanID} is a ${previousPlan.kind}`,
+            { artifactID: previousPlanID, kind: previousPlan.kind },
+          );
+        }
+      }
     }
     let trimmedTitle = typeof title === "string" ? title.trim() : "";
     let trimmedDescription =
       typeof description === "string" ? description.trim() : "";
-    if (
-      kind === "report" &&
-      planArtifactID !== undefined &&
-      planArtifactID !== null
-    ) {
-      assertArtifactID(planArtifactID);
-      await ensureDirectories();
-      const planRecord = await loadScoped(planArtifactID, normalizedLocation, {
-        label: "plan artifact",
-      });
-      if (planRecord.kind !== "plan") {
-        throw new StoreError(
-          "invalid_kind",
-          `Reports link to plans only; ${planArtifactID} is a ${planRecord.kind}`,
-          {
-            artifactID: planArtifactID,
-            kind: planRecord.kind,
-          },
-        );
-      }
-      // A report records work done against a plan. The plan may be a draft, in
-      // review, or already reviewed; report creation is not an approval gate.
-      if (trimmedTitle.length === 0)
-        trimmedTitle = `Report: ${planRecord.title}`;
-      if (trimmedDescription.length === 0)
-        trimmedDescription = planRecord.description;
-    }
     if (trimmedTitle.length === 0)
       throw new StoreError("validation", "title must not be empty");
     if (trimmedDescription.length === 0)
@@ -834,6 +829,11 @@ export function createStore(options = {}) {
         record[field] = typeof initial[field] === "string" ? initial[field] : "";
       }
       record.evidence = [];
+      record.previousPlanID = previousPlanID ?? null;
+      record.completedAt = null;
+      for (const field of PLAN_COMPLETION_FIELDS) {
+        record[field] = "";
+      }
     }
     if (kind === "evidence") {
       if (
@@ -883,22 +883,6 @@ export function createStore(options = {}) {
         typeof initial.summary === "string" ? initial.summary : "";
       record.findings = [];
     }
-    if (kind === "report") {
-      for (const field of REPORT_SECTIONS) {
-        if (initial[field] !== undefined)
-          assertMemoryMarkdown(initial[field], `initial ${field}`, {
-            allowEmpty: true,
-          });
-      }
-      record.planArtifactID = planArtifactID ?? null;
-      record.summary =
-        typeof initial.summary === "string" ? initial.summary : "";
-      record.changed =
-        typeof initial.changed === "string" ? initial.changed : "";
-      record.checks = typeof initial.checks === "string" ? initial.checks : "";
-      record.unfinished =
-        typeof initial.unfinished === "string" ? initial.unfinished : "";
-    }
 
     // Commit order: the derived view first, the authoritative record last.
     await mkdir(artifactDirOf(artifactID), { recursive: true, mode: DIR_MODE });
@@ -927,7 +911,7 @@ export function createStore(options = {}) {
   /**
    * Load the record for a content mutation and apply the mutation invariants:
    * kind, writer authorization, approved-plan freeze, and the readiness rule
-   * that every content mutation clears `finalized` (evidence/reviews/reports
+   * that every content mutation clears `finalized` (evidence/reviews
    * also return to the visible draft state so they must be finalized again). No
    * files are written here; the caller commits by writing view then record.
    */
@@ -969,6 +953,15 @@ export function createStore(options = {}) {
       record.readAt = null;
       return record;
     }
+    // A completed plan is a frozen record of intent and outcome. Further
+    // changes belong in a new plan that can reference this one.
+    if (record.kind === "plan" && record.completedAt) {
+      throw new StoreError(
+        "forbidden",
+        "Plan is completed and frozen; start a new plan for further changes.",
+        { artifactID },
+      );
+    }
     // A reviewed plan that changes is a draft again, so the user can review the
     // new version. Approval is a marker, not a freeze.
     if (record.kind === "plan" && record.status === "approved") {
@@ -976,7 +969,7 @@ export function createStore(options = {}) {
       record.readAt = null;
       if (record.approval) record.approval = null;
     }
-    // Evidence/reviews/reports reset to the visible draft on edit.
+    // Evidence/reviews reset to the visible draft on edit.
     if (record.kind !== "plan") {
       record.status = "draft";
       record.readAt = null;
@@ -1447,6 +1440,71 @@ export function createStore(options = {}) {
         record.evidence = snapshots;
       }
 
+      return commitMutation(artifactID, record);
+    });
+  }
+
+  /**
+   * Record a plan's completion report and freeze the plan. The completion
+   * summary is required; changed, verification, and unfinished are optional.
+   * Completion preserves status, readiness, and approval; it only records the
+   * outcome. A completed plan rejects all later content mutations.
+   */
+  async function planComplete({
+    artifactID,
+    location,
+    writerSessionID,
+    summary,
+    changed,
+    verification,
+    unfinished,
+  }) {
+    assertArtifactID(artifactID);
+    assertNonEmptyString(
+      writerSessionID,
+      "writerSessionID",
+      MAX_SESSION_LENGTH,
+    );
+    assertProseField(summary, "report summary");
+    const optionalFields = { changed, verification, unfinished };
+    for (const [field, value] of Object.entries(optionalFields)) {
+      if (value !== undefined)
+        assertMemoryMarkdown(value, field, { allowEmpty: true });
+    }
+
+    await ensureDirectories();
+    return withLock(artifactID, async () => {
+      const record = await loadScoped(artifactID, normalizeLocation(location), {
+        label: "plan artifact",
+      });
+      if (record.kind !== "plan") {
+        throw new StoreError(
+          "invalid_kind",
+          `Plan completion applies to plans only; ${artifactID} is a ${record.kind}`,
+          { artifactID, kind: record.kind },
+        );
+      }
+      if (record.writerSessionID !== writerSessionID) {
+        throw new StoreError(
+          "forbidden",
+          `Plan completion is restricted to the writer session (${record.writerSessionID})`,
+          { artifactID, writerSessionID: record.writerSessionID },
+        );
+      }
+      if (record.completedAt) {
+        throw new StoreError(
+          "validation",
+          "Plan is already completed and frozen; start a new plan for further changes.",
+          { artifactID, completedAt: record.completedAt },
+        );
+      }
+      record.completedAt = nowISO();
+      record.reportSummary = summary;
+      record.reportChanged = typeof changed === "string" ? changed : "";
+      record.reportVerification =
+        typeof verification === "string" ? verification : "";
+      record.reportUnfinished =
+        typeof unfinished === "string" ? unfinished : "";
       return commitMutation(artifactID, record);
     });
   }
@@ -2378,185 +2436,6 @@ export function createStore(options = {}) {
     });
   }
 
-  /** Replace one whole report prose section (summary, changed, checks, unfinished). */
-  async function reportContentPut({
-    artifactID,
-    location,
-    writerSessionID,
-    section,
-    content,
-  }) {
-    if (!REPORT_SECTIONS.includes(section)) {
-      throw new StoreError(
-        "validation",
-        "section must be one of summary, changed, checks, unfinished",
-        { section },
-      );
-    }
-    assertProseField(content, "content");
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await prepareContentMutation({
-        artifactID,
-        location,
-        writerSessionID,
-        expectKind: "report",
-      });
-      record[section] = content;
-      return commitMutation(artifactID, record);
-    });
-  }
-
-  /** Clear one whole report prose section back to empty. */
-  async function reportContentRemove({
-    artifactID,
-    location,
-    writerSessionID,
-    section,
-  }) {
-    if (!REPORT_SECTIONS.includes(section)) {
-      throw new StoreError(
-        "validation",
-        "section must be one of summary, changed, checks, unfinished",
-        { section },
-      );
-    }
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await prepareContentMutation({
-        artifactID,
-        location,
-        writerSessionID,
-        expectKind: "report",
-      });
-      record[section] = "";
-      return commitMutation(artifactID, record);
-    });
-  }
-
-  /**
-   * Replace any subset of report sections in one locked commit. An empty string
-   * clears that section. Omitted sections are untouched.
-   */
-  async function reportUpdate({
-    artifactID,
-    location,
-    writerSessionID,
-    sections,
-  }) {
-    if (
-      sections === null ||
-      typeof sections !== "object" ||
-      Array.isArray(sections)
-    ) {
-      throw new StoreError("validation", "sections must be an object");
-    }
-    const provided = Object.entries(sections).filter(
-      ([, value]) => value !== undefined,
-    );
-    if (provided.length === 0) {
-      throw new StoreError(
-        "validation",
-        "report update requires at least one section",
-      );
-    }
-    for (const [field, value] of provided) {
-      if (!REPORT_SECTIONS.includes(field)) {
-        throw new StoreError(
-          "validation",
-          `section must be one of ${REPORT_SECTIONS.join(", ")}`,
-          { section: field },
-        );
-      }
-      if (typeof value !== "string") {
-        throw new StoreError(
-          "validation",
-          `report ${field} must be a string`,
-        );
-      }
-      assertMemoryMarkdown(value, field, { allowEmpty: true });
-    }
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await prepareContentMutation({
-        artifactID,
-        location,
-        writerSessionID,
-        expectKind: "report",
-      });
-      for (const [field, value] of provided) {
-        record[field] = value;
-      }
-      return commitMutation(artifactID, record);
-    });
-  }
-
-  /**
-   * Finalize a report: requires the Summary and transitions the visible status
-   * from draft to published, which is what lets the editor mark it read/dismiss
-   * it and the primary agent and Review consume it.
-   */
-  async function reportFinalize({
-    artifactID,
-    location,
-    writerSessionID,
-    summary,
-    changed,
-    checks,
-    unfinished,
-  }) {
-    assertArtifactID(artifactID);
-    const normalizedLocation = normalizeLocation(location);
-    assertNonEmptyString(
-      writerSessionID,
-      "writerSessionID",
-      MAX_SESSION_LENGTH,
-    );
-    const providedSections = { summary, changed, checks, unfinished };
-    for (const [field, value] of Object.entries(providedSections)) {
-      if (value !== undefined)
-        assertMemoryMarkdown(value, field, { allowEmpty: true });
-    }
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await loadScoped(artifactID, normalizedLocation, {
-        label: "report artifact",
-      });
-      if (record.kind !== "report") {
-        throw new StoreError(
-          "invalid_kind",
-          `Report finalization applies to reports only; ${artifactID} is a ${record.kind}`,
-          { artifactID, kind: record.kind },
-        );
-      }
-      if (record.writerSessionID !== writerSessionID) {
-        throw new StoreError(
-          "forbidden",
-          `Report finalization is restricted to the writer session (${record.writerSessionID})`,
-          { artifactID, writerSessionID: record.writerSessionID },
-        );
-      }
-      for (const [field, value] of Object.entries(providedSections)) {
-        if (value !== undefined) record[field] = value;
-      }
-      if (typeof record.summary !== "string" || record.summary.length === 0) {
-        throw new StoreError(
-          "validation",
-          "Report finalization requires a Summary",
-          { artifactID },
-        );
-      }
-      record.finalized = true;
-      record.status = "published";
-      record.readAt = null;
-      return commitMutation(artifactID, record);
-    });
-  }
-
   /** Every visible artifact for the location; record metadata only. */
   async function listArtifacts({ location }) {
     const normalizedLocation = normalizeLocation(location);
@@ -2616,7 +2495,11 @@ export function createStore(options = {}) {
       label: "artifact",
     });
     if (record.kind === "plan") {
-      return { evidence: record.evidence.map((entry) => entry.id) };
+      return {
+        evidence: record.evidence.map((entry) => entry.id),
+        previousPlanID: record.previousPlanID ?? null,
+        completedAt: record.completedAt ?? null,
+      };
     }
     if (record.kind === "evidence") {
       return {
@@ -2635,7 +2518,7 @@ export function createStore(options = {}) {
         })),
       };
     }
-    return { planArtifactID: record.planArtifactID };
+    return {};
   }
 
   /**
@@ -2667,7 +2550,7 @@ export function createStore(options = {}) {
   /**
    * Evidence loader for the primary agent and Review: full content inline, exclusively for
    * kind=evidence (any status; state-neutral — evidence_load never marks read
-   * and never mutates the record). Plan/review/report IDs are rejected with
+   * and never mutates the record). Plan/review IDs are rejected with
    * invalid_kind, so the loader can never be used to read plan
    * bodies or bodies of another kind.
    */
@@ -2708,32 +2591,6 @@ export function createStore(options = {}) {
       throw new StoreError(
         "invalid_kind",
         `Review loading applies to reviews only; ${artifactID} is a ${record.kind}`,
-        {
-          artifactID,
-          kind: record.kind,
-        },
-      );
-    }
-    const content = await readCurrentView(artifactID, record);
-    return artifactViewOf(record, content);
-  }
-
-  /**
-   * Report loader for Review: full content inline, read-only and kind-locked to
-   * report. Review receives only the Report ID and uses report_load to recover
-   * the linked plan (via planArtifactID) and its evidence.
-   */
-  async function getReport({ artifactID, location }) {
-    assertArtifactID(artifactID);
-    const normalizedLocation = normalizeLocation(location);
-    await ensureDirectories();
-    const record = await loadScoped(artifactID, normalizedLocation, {
-      label: "report artifact",
-    });
-    if (record.kind !== "report") {
-      throw new StoreError(
-        "invalid_kind",
-        `Report loading applies to reports only; ${artifactID} is a ${record.kind}`,
         {
           artifactID,
           kind: record.kind,
@@ -2798,35 +2655,6 @@ export function createStore(options = {}) {
     return {
       ...artifactSummaryOf(record),
       outcome: record.outcome,
-      summary: record.summary,
-    };
-  }
-
-  /**
-   * primary agent summary read for report: compact metadata plus status and the
-   * linked plan + Summary, with NO Changed/Checks/Unfinished detail. The full
-   * report stays available to Review via getReport.
-   */
-  async function getReportSummary({ artifactID, location }) {
-    assertArtifactID(artifactID);
-    const normalizedLocation = normalizeLocation(location);
-    await ensureDirectories();
-    const record = await loadScoped(artifactID, normalizedLocation, {
-      label: "report artifact",
-    });
-    if (record.kind !== "report") {
-      throw new StoreError(
-        "invalid_kind",
-        `Report summaries apply to reports only; ${artifactID} is a ${record.kind}`,
-        {
-          artifactID,
-          kind: record.kind,
-        },
-      );
-    }
-    return {
-      ...artifactSummaryOf(record),
-      planArtifactID: record.planArtifactID,
       summary: record.summary,
     };
   }
@@ -2955,7 +2783,7 @@ export function createStore(options = {}) {
    * Approval core. PLAN-ONLY: approval is an optional review marker, not an
    * implementation gate. An edited plan returns to draft for re-review. Only a finalized plan can be marked reviewed: incomplete
    * drafts are rejected with not_ready before the gate can be reached.
-   * Evidence, reviews, and reports are marked read via markArtifactRead, never
+   * Evidence and reviews are marked read via markArtifactRead, never
    * approved. An existing approval is the recorded decision and is never
    * replaced; a repeated approval returns it.
    */
@@ -2970,7 +2798,7 @@ export function createStore(options = {}) {
       if (record.kind !== "plan") {
         throw new StoreError(
           "invalid_kind",
-          `Approval applies to plans only; ${artifactID} is a ${record.kind}. Evidence, reviews, and reports use mark-read.`,
+          `Approval applies to plans only; ${artifactID} is a ${record.kind}. Evidence and reviews use mark-read.`,
           { artifactID, kind: record.kind },
         );
       }
@@ -3013,7 +2841,7 @@ export function createStore(options = {}) {
 
   /**
    * Mark-read core. EVIDENCE/REVIEW/REPORT/MEMORY (never plans): the editor's
-   * dismissal of a finalized evidence, review, or report artifact. There is NO
+   * dismissal of a finalized evidence or review artifact. There is NO
    * approval record and NO delivery bookkeeping; the record carries only a
    * `readAt` marker and the status becomes `read`. A repeated mark-read with a
    * different request ID deduplicates like approval; a content mutation returns
@@ -3027,10 +2855,10 @@ export function createStore(options = {}) {
     await ensureDirectories();
     return withLock(artifactID, async () => {
       const record = await loadScoped(artifactID, normalizedLocation);
-      if (record.kind === "plan") {
+      if (record.kind !== "evidence" && record.kind !== "review") {
         throw new StoreError(
           "invalid_kind",
-          `Mark-read applies to evidence, reviews, reports, and memory; ${artifactID} is a plan. Plans use approve_plan.`,
+          `Mark-read applies to evidence and reviews only; ${artifactID} is a ${record.kind}.`,
           { artifactID, kind: record.kind },
         );
       }
@@ -3163,6 +2991,7 @@ export function createStore(options = {}) {
     planEvidenceAddMany,
     planEvidenceRemove,
     planUpdate,
+    planComplete,
     planFinalize,
     evidenceOverviewPut,
     evidenceFindingPut,
@@ -3174,10 +3003,6 @@ export function createStore(options = {}) {
     reviewFindingPut,
     reviewFindingRemove,
     reviewFinalize,
-    reportContentPut,
-    reportContentRemove,
-    reportUpdate,
-    reportFinalize,
     listArtifacts,
     getArtifact,
     getArtifactMetadata,
@@ -3185,10 +3010,8 @@ export function createStore(options = {}) {
     getPlan,
     getEvidence,
     getReview,
-    getReport,
     getEvidenceSummary,
     getReviewSummary,
-    getReportSummary,
     addArtifactFeedback,
     approveArtifact,
     markArtifactRead,

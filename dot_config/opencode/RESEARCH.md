@@ -412,8 +412,8 @@ in that experiment has since been removed.
   stays cacheable, and the memory never appears in the transcript. Each memory
   rewrite invalidates the cache from that point onward, so memory is updated at
   milestones rather than every turn.
-- The artifact registry keeps plans/evidence/reviews/reports as protected,
-  durable references; subagents return artifact IDs, not long copied output.
+- The artifact registry keeps plans/evidence/reviews as protected, durable
+  references; subagents return artifact IDs, not long copied output.
 - The `research-evidence` skill now scales effort to the question, starts broad
   then narrows, and labels source tier and confidence.
 - The `planning` skill uses sketch → structure → detail passes for large work
@@ -563,7 +563,6 @@ real ones. Sessions were driven through the HTTP API and inspected with
   review, not permission to implement.
 - `evidence` holds reusable research with self-contained findings.
 - `review` holds an independent outcome and findings.
-- `report` records what changed and what remains.
 - User feedback can target a selected excerpt or line range; review is a marker
   plus a synthetic notification, never a gate.
 
@@ -572,11 +571,12 @@ same artifacts remain viewable in Neovim and readable by any future client.
 
 ## Tool consolidation and memory distribution (2026-11-08)
 
-- The artifact tool surface dropped from 36 to 25 tools. Each namespace now has
-  one update verb: `memory_init/update/load`; `plan_create/update/finalize/load`;
+- The artifact tool surface dropped from 36 to 21 tools. Each namespace now has
+  one update verb: `memory_init/update/load`;
+  `plan_create/update/complete/finalize/load`;
   `evidence_create/update/finding/finalize/load/summary`;
-  `review_create/update/finding/finalize/load/summary`;
-  `report_create/update/finalize/load/summary`; plus `artifact_search`.
+  `review_create/update/finding/finalize/load/summary`; plus
+  `artifact_search`.
 - `memory_update` takes an explicit `mode`: `append`, `patch`, or `replace`.
   `memory_init` is get-or-create and returns the ID; `memory_load` reads. The
   previous `open`/`append`/`patch`/`put`/`summary` split was ambiguous about
@@ -584,6 +584,10 @@ same artifacts remain viewable in Neovim and readable by any future client.
 - `plan_update` is one atomic store write covering whole fields, the ordered
   `evidenceIDs` membership, and an optional exact patch. A plan no longer needs
   one call per field, and the planning skill matches the implemented schema.
+- `plan_complete` records the outcome summary, changed files, verification, and
+  unfinished work in the plan, then freezes it. Completion preserves status,
+  readiness, and approval but rejects later content mutations. A follow-up plan
+  can point at the completed plan with `previousPlanID`.
 - Memory injection checks the agent's `primary` mode via `ctx.agent.get`
   instead of comparing the agent name to `system`. Project-memory indexes now
   carry `updatedAt` and a bounded `## Core` section; checkpoint clipping keeps

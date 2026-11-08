@@ -58,23 +58,25 @@ stable instructions rather than rewriting them.
   sessions, subdirectories, and linked worktrees of that checkout.
 - `checkpoint` — the session's small objective/progress document.
 - `plan` — an optional working document; an approval gate only when the user
-  asked for a plan.
+  asked for a plan. A completed plan records its outcome, changed files,
+  verification, and unfinished work, then freezes. Later work starts a new plan
+  with `previousPlanID`.
 - `evidence` — reusable research with self-contained findings.
 - `review` — an independent outcome and findings.
-- `report` — what changed, checks, and what remains; the plan link is optional.
 
-Create artifacts early. `memory_init`, `plan_create`, `evidence_create`,
-`review_create`, and `report_create` accept initial content, so a draft can be
-filled incrementally as the work teaches you something. `artifact_search` finds
-existing artifact text, so discovery does not require knowing an ID.
-`plan_update` accepts whole fields, an ordered `evidenceIDs` list, and an
-optional `patch` object for one exact occurrence, so a plan bullet can change
-without restating the field.
+Create artifacts early. `memory_init`, `plan_create`, `evidence_create`, and
+`review_create` accept initial content, so a draft can be filled incrementally
+as the work teaches you something. `artifact_search` finds existing artifact
+text, so discovery does not require knowing an ID. `plan_update` accepts whole
+fields, an ordered `evidenceIDs` list, and an optional `patch` object for one
+exact occurrence, so a plan bullet can change without restating the field.
+`plan_complete` records the outcome and freezes the plan.
 
 The user can review artifacts in Neovim, select text, and send feedback. When
 the user asks for a plan, approval is the signal to start implementing. When
 they did not ask, approval is only a review marker and never a precondition.
-Editing a reviewed artifact returns it to draft for re-review.
+Editing a reviewed artifact returns it to draft for re-review; a completed plan
+cannot be edited.
 
 ## Compaction and memory
 

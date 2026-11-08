@@ -12,13 +12,13 @@
 // - memory: "# Session Memory" followed by the stored Markdown body.
 // - plan: "# Goal / Scope", "## Intended Changes and Behaviors", "## Context",
 //   a nested "### Evidence" list snapshotting each referenced evidence
-//   artifact's short description next to its artifact ID, then "## Checks".
+//   artifact's short description next to its artifact ID, then "## Checks";
+//   a completed plan appends "## Report" with Summary, Changed, Verification,
+//   and Unfinished subsections.
 // - evidence: "# Evidence", the main question/topic, "## Summary",
 //   "## Limitations", then one named finding section per detailed finding.
 // - review: "# Review", the machine-readable "## Outcome", the human-readable
 //   "## Summary", then one named finding section per finding.
-// - report: "# Report" with "## Summary", "## Changed", "## Checks", and
-//   "## Unfinished" sections.
 //
 // Machine finding IDs never appear in the Markdown; they are returned by the
 // tools and listed compactly by the full load tools only (never by summary
@@ -127,6 +127,11 @@ function pushHeading(lines, heading, content) {
   lines.push(`## ${heading}`, "", content, "");
 }
 
+function pushSubheading(lines, heading, content) {
+  if (typeof content !== "string" || content.length === 0) return;
+  lines.push(`### ${heading}`, "", content, "");
+}
+
 /**
  * Deterministic memory/checkpoint body: the stored Markdown verbatim. The
  * content carries its own headings, so the view must not wrap it in a second
@@ -148,6 +153,12 @@ export function planBodyOf(record) {
   ) {
     lines.push(`Working directory: ${record.workingDirectory}`, "");
   }
+  if (
+    typeof record.previousPlanID === "string" &&
+    record.previousPlanID.length > 0
+  ) {
+    lines.push(`Previous plan: ${record.previousPlanID}`, "");
+  }
   pushHeading(lines, "Intended Changes and Behaviors", record.intendedChanges);
   pushHeading(lines, "Context", record.context);
   const evidence = record.evidence || [];
@@ -162,6 +173,13 @@ export function planBodyOf(record) {
     }
   }
   pushHeading(lines, "Checks", record.checks);
+  if (record.completedAt) {
+    lines.push("## Report", "", `Completed: ${record.completedAt}`, "");
+    pushSubheading(lines, "Summary", record.reportSummary);
+    pushSubheading(lines, "Changed", record.reportChanged);
+    pushSubheading(lines, "Verification", record.reportVerification);
+    pushSubheading(lines, "Unfinished", record.reportUnfinished);
+  }
   return lines.join("\n");
 }
 
@@ -203,22 +221,6 @@ export function reviewBodyOf(record) {
   return lines.join("\n");
 }
 
-/** Deterministic report body: linked plan, Summary, Changed, Checks, Unfinished. */
-export function reportBodyOf(record) {
-  const lines = ["# Report", ""];
-  if (
-    typeof record.planArtifactID === "string" &&
-    record.planArtifactID.length > 0
-  ) {
-    lines.push(`Plan: ${record.planArtifactID}`, "");
-  }
-  pushHeading(lines, "Summary", record.summary);
-  pushHeading(lines, "Changed", record.changed);
-  pushHeading(lines, "Checks", record.checks);
-  pushHeading(lines, "Unfinished", record.unfinished);
-  return lines.join("\n");
-}
-
 /** Compose the body for whichever kind this record is. */
 export function bodyOf(record) {
   if (record.kind === "memory" || record.kind === "checkpoint")
@@ -226,5 +228,5 @@ export function bodyOf(record) {
   if (record.kind === "plan") return planBodyOf(record);
   if (record.kind === "evidence") return evidenceBodyOf(record);
   if (record.kind === "review") return reviewBodyOf(record);
-  return reportBodyOf(record);
+  throw new Error(`unsupported artifact kind: ${record.kind}`);
 }

@@ -173,8 +173,7 @@ export default {
 
     await registerDomain(ctx, {
       contract: Artifacts,
-      description:
-        "Durable session memory, plans, evidence, reviews, and reports.",
+      description: "Durable session memory, plans, evidence, and reviews.",
       handlers: {
         list: async (_input, context) => {
           try {
@@ -316,8 +315,8 @@ export default {
           } catch (error) {
             rpcError(context, error);
           }
-          // Evidence/review/report dismissal only; no deliver, no delivery
-          // bookkeeping — the user's read decision never emits a notification.
+          // Evidence/review dismissal only; no deliver, no delivery bookkeeping
+          // — the user's read decision never emits a notification.
           return {
             requestID: submission.requestID,
             kind: "read",

@@ -1,13 +1,11 @@
 // Capability-specific artifact tools. Mutations are create/update/finalize per
 // kind and the kind is fixed by the tool:
 // - memory: memory_init, memory_update, memory_load.
-// - plan: plan_create, plan_update, plan_finalize, plan_load.
+// - plan: plan_create, plan_update, plan_complete, plan_finalize, plan_load.
 // - evidence: evidence_create, evidence_update, evidence_finding,
 //   evidence_finalize, evidence_load, evidence_summary.
 // - review: review_create, review_update, review_finding, review_finalize,
 //   review_load, review_summary.
-// - report: report_create, report_update, report_finalize, report_load,
-//   report_summary.
 //
 // Summary/status readers omit artifact bodies; full loaders include them.
 //
@@ -20,8 +18,8 @@
 // - primaryAuthor is immutable frontend metadata derived from the creating
 //   agent's name/label; owner/writer/session IDs stay internal routing data.
 //
-// Finalize semantics: evidence/review/report finalization publishes the draft;
-// plan finalization makes the draft ready for review. Every mutation clears
+// Finalize semantics: evidence/review finalization publishes the draft; plan
+// finalization makes the draft ready for review. Every mutation clears
 // finalization until the writer finalizes again.
 
 import { resolve as resolvePath } from "node:path";
@@ -29,7 +27,6 @@ import { resolve as resolvePath } from "node:path";
 import {
   PLAN_PATCH_FIELDS,
   PLAN_SET_FIELDS,
-  REPORT_SECTIONS,
   REVIEW_OUTCOMES,
   StoreError,
 } from "./store.mjs";
@@ -37,6 +34,16 @@ import {
 const ERROR_PREFIX = "ARTIFACT_ERROR";
 
 const MAX_ANCESTRY_HOPS = 16;
+
+// Only kinds with a model-facing loader belong here. Search must never return
+// an ID the model has no tool to load.
+const SEARCHABLE_KINDS = Object.freeze([
+  "memory",
+  "checkpoint",
+  "plan",
+  "evidence",
+  "review",
+]);
 
 // The primary agent that owns a tree of worker sessions. Artifacts authored by
 // a worker resolve to this owner so user feedback and session memory route back
@@ -322,7 +329,8 @@ export type ArtifactStructure = {
   evidence?: string[];
   findings?: { id: string; title: string }[];
   outcome?: string | null;
-  planArtifactID?: string | null;
+  previousPlanID?: string | null;
+  completedAt?: string | null;
 };
 
 export type ArtifactToolDeps = {
@@ -336,7 +344,7 @@ export type ArtifactToolDeps = {
       title: string;
       description: string;
       workingDirectory?: string;
-      planArtifactID?: string | null;
+      previousPlanID?: string | null;
       initial?: Record<string, unknown>;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     memoryPut(input: {
@@ -385,6 +393,23 @@ export type ArtifactToolDeps = {
       writerSessionID: string;
       evidenceID: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
+    planUpdate(input: {
+      artifactID: string;
+      location: string;
+      writerSessionID: string;
+      fields: Record<string, string>;
+      evidenceIDs?: string[];
+      patch?: { field: string; oldText: string; newText: string };
+    }): Promise<{ artifactID: string } & ArtifactSummary>;
+    planComplete(input: {
+      artifactID: string;
+      location: string;
+      writerSessionID: string;
+      summary: string;
+      changed?: string;
+      verification?: string;
+      unfinished?: string;
+    }): Promise<{ artifactID: string } & ArtifactSummary>;
     planFinalize(input: {
       artifactID: string;
       location: string;
@@ -432,6 +457,13 @@ export type ArtifactToolDeps = {
       writerSessionID: string;
       content: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
+    reviewUpdate(input: {
+      artifactID: string;
+      location: string;
+      writerSessionID: string;
+      outcome?: string;
+      summary?: string;
+    }): Promise<{ artifactID: string } & ArtifactSummary>;
     reviewFindingPut(input: {
       artifactID: string;
       location: string;
@@ -456,28 +488,6 @@ export type ArtifactToolDeps = {
       writerSessionID: string;
       outcome?: string;
       summary?: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    reportContentPut(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      section: string;
-      content: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    reportContentRemove(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      section: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    reportFinalize(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
-      summary?: string;
-      changed?: string;
-      checks?: string;
-      unfinished?: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     getArtifact(input: {
       artifactID: string;
@@ -533,10 +543,6 @@ export type ArtifactToolDeps = {
       artifactID: string;
       location: string;
     }): Promise<ArtifactView>;
-    getReport(input: {
-      artifactID: string;
-      location: string;
-    }): Promise<ArtifactView>;
     getEvidenceSummary(input: {
       artifactID: string;
       location: string;
@@ -551,12 +557,6 @@ export type ArtifactToolDeps = {
       artifactID: string;
       location: string;
     }): Promise<ArtifactSummary & { outcome: string | null; summary: string }>;
-    getReportSummary(input: {
-      artifactID: string;
-      location: string;
-    }): Promise<
-      ArtifactSummary & { planArtifactID: string | null; summary: string }
-    >;
   };
   /** Session/registry location (plans, evidence, checkpoints). */
   directory: string;
@@ -622,9 +622,22 @@ function structureLines(
   summary: ArtifactSummary,
   structure: ArtifactStructure,
 ): string[] {
-  if (summary.kind === "plan" && structure.evidence) {
-    if (structure.evidence.length === 0) return ["Evidence: none"];
-    return [`Evidence: ${structure.evidence.join(", ")}`];
+  if (summary.kind === "plan") {
+    const lines: string[] = [];
+    if (structure.previousPlanID) {
+      lines.push(`Previous plan: ${structure.previousPlanID}`);
+    }
+    if (structure.completedAt) {
+      lines.push(`Completed: ${structure.completedAt}`);
+    }
+    if (structure.evidence) {
+      lines.push(
+        structure.evidence.length === 0
+          ? "Evidence: none"
+          : `Evidence: ${structure.evidence.join(", ")}`,
+      );
+    }
+    return lines;
   }
   if (summary.kind === "evidence" && structure.findings) {
     if (structure.findings.length === 0) return ["Findings: none"];
@@ -640,9 +653,6 @@ function structureLines(
       );
     }
     return lines;
-  }
-  if (summary.kind === "report" && structure.planArtifactID) {
-    return [`Plan: ${structure.planArtifactID}`];
   }
   return [];
 }
@@ -676,10 +686,6 @@ export function addArtifactTools(
   editor.namespace({
     name: "review",
     description: "Creates, modifies, finalizes, and reads review artifacts.",
-  });
-  editor.namespace({
-    name: "report",
-    description: "Creates, modifies, finalizes, and reads report artifacts.",
   });
 
   type ToolDef = {
@@ -952,7 +958,7 @@ export function addArtifactTools(
     name: "search",
     namespace: "artifact",
     description:
-      "Search artifact text in this session's directory and shared project memory (memory, checkpoints, evidence, plans, reviews, reports) and return matching IDs with line snippets. Use to discover relevant memories and evidence without knowing IDs.",
+      "Search artifact text in this session's directory and shared project memory (memory, checkpoints, evidence, plans, reviews) and return matching IDs with line snippets. Use to discover relevant memories and evidence without knowing IDs.",
     input: {
       type: "object",
       properties: {
@@ -965,7 +971,7 @@ export function addArtifactTools(
           type: "array",
           items: { type: "string" },
           description:
-            "Optional kind filter: memory, checkpoint, plan, evidence, review, report.",
+            "Optional kind filter: memory, checkpoint, plan, evidence, review.",
         },
         limit: {
           type: "number",
@@ -977,20 +983,20 @@ export function addArtifactTools(
     },
     async handler(input) {
       const limit = Math.min(Number(input.limit) || 10, 25);
-      const allKinds =
+      const requestedKinds =
         Array.isArray(input.kinds) && input.kinds.length > 0
-          ? input.kinds
-          : null;
+          ? input.kinds.filter((kind) => SEARCHABLE_KINDS.includes(kind))
+          : [];
+      const allKinds =
+        requestedKinds.length > 0 ? requestedKinds : [...SEARCHABLE_KINDS];
       // Session artifacts are stored at the session directory and project
       // memory at the project root. Query each at its own scope so every hit
       // is loadable without a location mismatch.
       const scopes: Array<{ location: string; kinds?: string[] }> = [
-        { location: deps.directory, kinds: allKinds ?? undefined },
+        { location: deps.directory, kinds: allKinds },
       ];
       if (deps.projectDirectory !== deps.directory) {
-        const memoryKinds = allKinds
-          ? allKinds.filter((kind) => kind === "memory")
-          : ["memory"];
+        const memoryKinds = allKinds.filter((kind) => kind === "memory");
         if (memoryKinds.length > 0) {
           scopes.push({
             location: deps.projectDirectory,
@@ -1082,6 +1088,11 @@ export function addArtifactTools(
           type: "string",
           description: "Optional initial Checks Markdown.",
         },
+        previousPlanID: {
+          type: "string",
+          description:
+            "Optional completed plan ID this plan continues or supersedes.",
+        },
       },
       required: ["title", "description", "workingDirectory"],
       additionalProperties: false,
@@ -1098,6 +1109,7 @@ export function addArtifactTools(
         title: input.title,
         description: input.description,
         workingDirectory: input.workingDirectory,
+        previousPlanID: input.previousPlanID,
         initial: {
           goalScope: input.goalScope,
           intendedChanges: input.intendedChanges,
@@ -1182,6 +1194,51 @@ export function addArtifactTools(
         patch: input.patch,
       });
       return { content: updated.artifactID };
+    },
+  });
+
+  addTool({
+    name: "complete",
+    namespace: "plan",
+    description:
+      "Record the plan's completion report and freeze the plan. Requires an outcome summary; changed, verification, and unfinished are optional. The plan keeps its status and approval. Returns `art_… completed`.",
+    input: {
+      type: "object",
+      properties: {
+        artifactID: { type: "string", description: "Plan artifact ID." },
+        summary: {
+          type: "string",
+          minLength: 1,
+          description: "Outcome summary for the completed work.",
+        },
+        changed: {
+          type: "string",
+          description: "What actually changed.",
+        },
+        verification: {
+          type: "string",
+          description: "Checks actually run.",
+        },
+        unfinished: {
+          type: "string",
+          description: "Remaining work, or 'None'.",
+        },
+      },
+      required: ["artifactID", "summary"],
+      additionalProperties: false,
+    },
+    async handler(input, toolContext) {
+      const writer = await resolveWriter(deps, toolContext);
+      const completed = await deps.store.planComplete({
+        artifactID: input.artifactID,
+        location: deps.directory,
+        writerSessionID: writer,
+        summary: input.summary,
+        changed: input.changed,
+        verification: input.verification,
+        unfinished: input.unfinished,
+      });
+      return { content: `${completed.artifactID} completed` };
     },
   });
 
@@ -1794,212 +1851,4 @@ export function addArtifactTools(
     },
   });
 
-  // -------------------------------------------------------------------------
-  // Report tools (namespace "report")
-  // -------------------------------------------------------------------------
-
-  addTool({
-    name: "create",
-    namespace: "report",
-    description:
-      "Create a report draft, optionally linked to a plan and optionally with initial sections; then add sections as the work completes and finalize. Returns its ID.",
-    input: {
-      type: "object",
-      properties: {
-        planArtifactID: {
-          type: "string",
-          description: "Optional plan artifact ID (draft or reviewed).",
-        },
-        title: {
-          type: "string",
-          description:
-            "Optional report title (required when no plan is supplied; defaults to Report: <plan title>).",
-        },
-        description: {
-          type: "string",
-          description:
-            "Optional report description (required when no plan is supplied; defaults to the plan description).",
-        },
-        summary: { type: "string", description: "Optional initial Summary." },
-        changed: {
-          type: "string",
-          description: "Optional initial Changed section.",
-        },
-        checks: {
-          type: "string",
-          description: "Optional initial Checks section.",
-        },
-        unfinished: {
-          type: "string",
-          description: "Optional initial Unfinished section.",
-        },
-      },
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      if (!input.planArtifactID && (!input.title || !input.description)) {
-        throw new StoreError(
-          "validation",
-          "a report without a plan requires a title and description",
-        );
-      }
-      const provenance = await resolveProvenance(deps, toolContext);
-      const writer = await resolveWriter(deps, toolContext);
-      const created = await deps.store.createArtifact({
-        kind: "report",
-        ownerSessionID: provenance.ownerSessionID,
-        writerSessionID: writer,
-        primaryAuthor: primaryAuthorOf(toolContext.agent),
-        location: deps.directory,
-        title: input.title,
-        description: input.description,
-        planArtifactID: input.planArtifactID,
-        initial: {
-          summary: input.summary,
-          changed: input.changed,
-          checks: input.checks,
-          unfinished: input.unfinished,
-        },
-      });
-      return { content: created.artifactID };
-    },
-  });
-
-  addTool({
-    name: "update",
-    namespace: "report",
-    description:
-      "Replace any subset of report sections (summary, changed, checks, unfinished). An empty string clears a section; omitted sections stay untouched. Returns the report ID.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Report artifact ID." },
-        summary: { type: "string", description: "Summary Markdown." },
-        changed: { type: "string", description: "Changed section Markdown." },
-        checks: { type: "string", description: "Checks section Markdown." },
-        unfinished: {
-          type: "string",
-          description: "Unfinished section Markdown.",
-        },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const sections: Record<string, string> = {};
-      for (const section of REPORT_SECTIONS) {
-        if (input[section] !== undefined) sections[section] = input[section];
-      }
-      const updated = await deps.store.reportUpdate({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        sections,
-      });
-      return { content: updated.artifactID };
-    },
-  });
-
-  addTool({
-    name: "finalize",
-    namespace: "report",
-    description:
-      "Finalize a report: optionally set any section in the same call, then publish. Requires the Summary; Changed/Checks/Unfinished stay optional. Returns `art_… published`.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Report artifact ID." },
-        summary: { type: "string", description: "Optional final Summary." },
-        changed: {
-          type: "string",
-          description: "Optional final Changed section.",
-        },
-        checks: {
-          type: "string",
-          description: "Optional final Checks section.",
-        },
-        unfinished: {
-          type: "string",
-          description: "Optional final Unfinished section.",
-        },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const finalized = await deps.store.reportFinalize({
-        artifactID: input.artifactID,
-        location: deps.directory,
-        writerSessionID: writer,
-        summary: input.summary,
-        changed: input.changed,
-        checks: input.checks,
-        unfinished: input.unfinished,
-      });
-      return { content: bareFinalize(finalized) };
-    },
-  });
-
-  addTool({
-    name: "load",
-    namespace: "report",
-    description:
-      "Load a report artifact by ID with its full Markdown content inline.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Report artifact ID." },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const view = await deps.store.getReport({
-        artifactID: input.artifactID,
-        location: deps.directory,
-      });
-      const structure = await deps.store.getArtifactStructure({
-        artifactID: input.artifactID,
-        location: deps.directory,
-      });
-      return {
-        content: [
-          ...summaryHeader(view, "ARTIFACT_CONTENT"),
-          ...structureLines(view, structure),
-          "",
-          view.content,
-        ].join("\n"),
-      };
-    },
-  });
-
-  addTool({
-    name: "summary",
-    namespace: "report",
-    description:
-      "Read report metadata, linked plan, and Summary. Excludes detailed sections.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Report artifact ID." },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const summary = await deps.store.getReportSummary({
-        artifactID: input.artifactID,
-        location: deps.directory,
-      });
-      const lines = [
-        "ARTIFACT_SUMMARY",
-        ...summaryHeader(summary, "ARTIFACT_SUMMARY").slice(1),
-      ];
-      if (summary.planArtifactID) lines.push(`Plan: ${summary.planArtifactID}`);
-      if (summary.summary.length > 0) lines.push(`Summary: ${summary.summary}`);
-      return { content: lines.join("\n") };
-    },
-  });
 }

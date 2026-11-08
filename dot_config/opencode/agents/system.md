@@ -146,18 +146,20 @@ by text. You do not need an artifact ID to discover one.
 
 ## Artifacts
 
-Artifacts are durable notes viewable in Neovim: plans, evidence, reviews, and
-reports. Create one early when it will help, then fill it in as you learn;
-finalize is a readiness/publish boundary, and it gates implementation only when
-the user asked for a plan. Plans, evidence, reviews, and reports are optional;
-their workflows live in the `planning`, `research-evidence`, and
-`review-workflow` skills.
+Artifacts are durable notes viewable in Neovim: plans, evidence, and reviews.
+Create one early when it will help, then fill it in as you learn; finalize is a
+readiness/publish boundary, and it gates implementation only when the user asked
+for a plan. Plans, evidence, and reviews are optional; their workflows live in
+the `planning`, `research-evidence`, and `review-workflow` skills.
 
 Formal planning is opt-in. Plan when the user asks for a plan, not merely
 because a change spans files. When they ask, focus on scope, intended outcomes,
 tradeoffs, success criteria, and major stages, then stop for approval before
 implementing. Otherwise act, and keep progress in the checkpoint rather than
-maintaining a second status log in a plan.
+maintaining a second status log in a plan. When significant work is done,
+complete the plan with its outcome, changed files, verification, and unfinished
+work. A completed plan is frozen; further changes start a new plan that may
+reference the completed one.
 
 The user can select text in Neovim and send feedback on an artifact: read that
 artifact by ID, answer the specific point, and update it instead of restarting

@@ -8,9 +8,9 @@ adapter lives in `../artifacts-rpc/`, which imports this package and registers
 Artifacts are working memory. `system` is the primary agent and implements
 changes directly; a plan gates implementation only when the user asked for one,
 and can otherwise be drafted, filled in, and revised without blocking the work.
-Evidence, reviews, and reports are optional durable records. Project memory and
-the session checkpoint are the two live documents that are injected back into
-the agent context.
+Evidence and reviews are optional durable records. Project memory and the
+session checkpoint are the two live documents that are injected back into the
+agent context.
 
 ## Artifact kinds
 
@@ -18,17 +18,18 @@ Every artifact is one structured record plus one generated read-only view,
 addressed by ID only:
 
 - `id` — the `art_…` identifier.
-- `kind` — `memory` (project), `checkpoint` (session), `plan`, `evidence`,
-  `review`, or `report`.
+- `kind` — `memory` (project), `checkpoint` (session), `plan`, `evidence`, or
+  `review`.
 - `title` / `description` / `primaryAuthor` — short human-facing labels,
   immutable once created.
 - `status` — `draft`, `published`, `approved`, or `read`; memory and the
   checkpoint are always `published`. Plans use `draft` until finalized, then may
-  be marked `approved` as a review marker. Evidence, reviews, and reports are
-  finalized to `published` and dismissed to `read`.
+  be marked `approved` as a review marker; a completed plan also carries
+  `completedAt`. Evidence and reviews are finalized to `published` and dismissed
+  to `read`.
 - `finalized` — readiness. Content mutations clear it; `plan_finalize` makes a
-  plan ready for review, and evidence/review/report finalization publishes the
-  draft. Memory and the checkpoint stay finalized.
+  plan ready for review, and evidence/review finalization publishes the draft.
+  Memory and the checkpoint stay finalized.
 
 ### memory and checkpoint
 
@@ -63,9 +64,12 @@ ordered `evidenceIDs` membership, and optionally patches one exact occurrence in
 without restating the whole field. An evidence membership array snapshots
 `{id, description}` for attached evidence. `plan_finalize` requires non-empty
 Goal/Scope and Intended Changes; checks, context, and evidence stay optional.
-`plan_load` reads any plan and reports status and readiness; a separate status
-tool is not needed. Editing a reviewed plan returns it to draft and clears the
-review marker.
+`plan_load` reads any plan and reports status, readiness, and completion; a
+separate status tool is not needed. Editing a reviewed plan returns it to draft
+and clears the review marker. `plan_complete` records the outcome summary,
+changed files, verification, and unfinished work, then freezes the plan; later
+content mutations fail and a new plan should reference the completed one with
+`previousPlanID`.
 
 ### evidence
 
@@ -78,12 +82,6 @@ findings. Findings have stable author-only IDs and self-contained content.
 A machine-readable `outcome` (`Pass`, `Changes required`, or `Blocked`), a human
 `summary`, and ordered findings with severity, affected path/symbol, evidence,
 risk, and correction. `review_finalize` requires the outcome and Summary.
-
-### report
-
-An optional linked `planArtifactID` (draft or reviewed), plus `summary`,
-`changed`, `checks`, and `unfinished`. `report_finalize` requires the Summary; a
-report without a plan is valid.
 
 ## Paths
 
@@ -126,37 +124,35 @@ with `invalid_kind`.
 
 Authoring returns directly reusable machine values:
 
-- create/init (`memory_init`, `plan_create`, `evidence_create`, `review_create`,
-  `report_create`) returns the bare artifact ID (`art_…`). Create early; the
-  optional initial fields let you record what you already know without waiting
-  for the whole artifact to be finished.
+- create/init (`memory_init`, `plan_create`, `evidence_create`, `review_create`)
+  returns the bare artifact ID (`art_…`). Create early; the optional initial
+  fields let you record what you already know without waiting for the whole
+  artifact to be finished.
 - finding (`evidence_finding`, `review_finding`, no findingID) returns the bare
   generated finding ID (`fin_…`); with `findingID` it replaces, and with
   `remove: true` it removes.
-- updates (`memory_update`, `plan_update`, `evidence_update`, `review_update`,
-  `report_update`) return the bare artifact or finding ID. `plan_update` is one
-  atomic write covering fields, evidence membership, and an optional patch.
-- finalize returns `art_… published` for evidence/review/report and
-  `art_… finalized` for plans.
+- updates (`memory_update`, `plan_update`, `evidence_update`, `review_update`)
+  return the bare artifact or finding ID. `plan_update` is one atomic write
+  covering fields, evidence membership, and an optional patch.
+- `plan_complete` records the outcome and freezes the plan; it returns
+  `art_… completed`.
+- finalize returns `art_… published` for evidence/review and `art_… finalized`
+  for plans.
 
 Read tools return compact text; full loaders include the body:
 
 - `memory_init` (get/create the ID, scope project/session, optional initial
   `content`), `memory_load` (full; omitting the ID resolves project memory).
 - `artifact_search` — plain-text search across artifact bodies with an optional
-  kind filter, so memories, evidence, plans, reviews, and reports are
-  discoverable without IDs.
-- `plan_load` (any status; includes readiness).
+  kind filter, so memories, evidence, plans, and reviews are discoverable
+  without IDs.
+- `plan_load` (any status; includes readiness, completion, and previous plan).
 - `evidence_create` (optional question/Summary/Limitations), `evidence_update`
   (overview fields), `evidence_finalize` (optional final overview fields),
   `evidence_load` (full), `evidence_summary` (overview only).
 - `review_create` (optional outcome/Summary), `review_update` (outcome and/or
   Summary), `review_finalize` (optional final outcome/Summary), `review_load`
   (full), `review_summary` (outcome + Summary only).
-- `report_create` (optional plan and initial sections), `report_update` (any
-  subset of sections; empty clears), `report_finalize` (optional final
-  sections), `report_load` (full), `report_summary` (linked plan + Summary
-  only).
 
 Plans gate implementation only when the user asked for one. Otherwise the model
 may `plan_load` a draft and act on it, and the user's review is feedback rather
@@ -177,11 +173,10 @@ The setters are available for edits, but the shortest useful flow is:
   outcome/Summary).
 - **plan** — `plan_create` with Goal/Scope and Intended Changes → `plan_update`
   for field changes, evidence membership, or one targeted patch →
-  `plan_finalize`. When the user asked for a plan, stop for approval after
-  finalizing.
-- **report** — `report_create` (optional plan and initial sections) →
-  `report_update` for later sections → `report_finalize` (optional final
-  sections).
+  `plan_finalize`; when the user asked for a plan, stop for approval after
+  finalizing → `plan_complete` with the outcome, changed files, verification,
+  and unfinished work. The completed plan is frozen; a follow-up plan passes
+  `previousPlanID`.
 
 A draft can be created as soon as its subject is known and filled while the work
 continues; a finalize call is a readiness/publish boundary, not a permission
@@ -193,14 +188,15 @@ Fields that look redundant are deliberate:
 
 - `status` and `finalized` answer different questions: lifecycle
   (`draft`/`published`/`approved`/`read`) and readiness. A plan can be finalized
-  and still draft; evidence/review/report finalization publishes.
+  and still draft; evidence/review finalization publishes.
 - `ownerSessionID` routes feedback; `writerSessionID` is the sole mutation
   authority. They differ when a worker authors an artifact.
 - `primaryAuthor` is an immutable frontend label, never a session identity.
 - Plan evidence stores an immutable description snapshot so the plan stays
   readable after the evidence artifact changes or is cleaned up.
-- `report.planArtifactID` is optional. A report can stand alone; the old
-  required link was the one genuinely redundant constraint and was removed.
+- `completedAt` is the plan freeze marker, separate from `status` and
+  `finalized`. A completed plan preserves its approval marker but rejects later
+  content mutations.
 
 ## RPC contract
 
@@ -215,7 +211,7 @@ Fields that look redundant are deliberate:
   otherwise), sets `status: approved` as a review marker. Editing the plan
   clears the marker and returns it to draft. It does not authorize or block any
   implementation.
-- `mark_read` — evidence/review/report only, sets `status: read` with no owner
+- `mark_read` — evidence/review only, sets `status: read` with no owner
   notification and no delivery bookkeeping. Memory and checkpoints are live and
   have no read state.
 - `retry_plan_delivery` — redeliver a recorded plan-review submission by request
@@ -275,14 +271,14 @@ mise exec -- node --experimental-strip-types --test \
 `~/.config/nvim/lua/editor/features/opencode-artifacts.lua`
 (`NVOpenCodeArtifacts`) targets the RPC (`personal.artifacts`) and opens each
 artifact's generated `current.md` read-only. The picker exposes
-`:OpenCodePlans`, `:OpenCodeEvidence`, `:OpenCodeReviews`, `:OpenCodeReports`,
-`:OpenCodeArtifacts` on `<leader>ap/ae/ar/aq/aa` (the All view excludes memory
-and checkpoints: they are live session state, not reviewable artifacts), with
-`<M-a>` to include resolved rows and `<M-r>` to retry a recorded-but-undelivered
-plan review. Artifact buffers carry `OpenCodeArtifactFeedback`,
-`OpenCodeArtifactRetryDelivery`, and context-sensitively
-`OpenCodeArtifactApprove` (finalized draft plans) or `OpenCodeArtifactMarkRead`
-(published evidence/reviews/reports), both on `<leader>ay` (plus `<leader>af`).
+`:OpenCodePlans`, `:OpenCodeEvidence`, `:OpenCodeReviews`, `:OpenCodeMemory`,
+and `:OpenCodeArtifacts` on `<leader>ap/ae/ar/am/aa`; All excludes memory and
+checkpoints, while Memory is their explicit view. `<M-a>` includes resolved rows and
+`<M-r>` to retry a recorded-but-undelivered plan review. Artifact buffers carry
+`OpenCodeArtifactFeedback`, `OpenCodeArtifactRetryDelivery`, and
+context-sensitively `OpenCodeArtifactApprove` (finalized draft plans) or
+`OpenCodeArtifactMarkRead` (published evidence/reviews), both on `<leader>ay`
+(plus `<leader>af`).
 
 Requests go through `opencode api` with argv lists and JSON-encoded bodies;
 user-selected Markdown is never interpolated into shell commands.

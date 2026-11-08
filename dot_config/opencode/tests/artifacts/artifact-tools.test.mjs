@@ -39,15 +39,11 @@ const EXPECTED_TOOL_NAMES = [
   "memory_init",
   "memory_load",
   "memory_update",
+  "plan_complete",
   "plan_create",
   "plan_finalize",
   "plan_load",
   "plan_update",
-  "report_create",
-  "report_finalize",
-  "report_load",
-  "report_summary",
-  "report_update",
   "review_create",
   "review_finalize",
   "review_finding",
@@ -55,29 +51,6 @@ const EXPECTED_TOOL_NAMES = [
   "review_summary",
   "review_update",
 ];
-// Names that must never appear in the registered tool set (asserted below).
-const UNREGISTERED_NAMES = [
-  "memory_open",
-  "memory_put",
-  "memory_append",
-  "memory_patch",
-  "memory_summary",
-  "plan_field_set",
-  "plan_field_patch",
-  "plan_evidence_add",
-  "plan_evidence_remove",
-  "plan_status",
-  "evidence_overview_put",
-  "evidence_finding_put",
-  "evidence_finding_remove",
-  "review_outcome_put",
-  "review_summary_put",
-  "review_finding_put",
-  "review_finding_remove",
-  "report_content_put",
-  "report_content_remove",
-];
-
 function sessionInfo(overrides = {}) {
   return {
     id: PRIMARY_SESSION,
@@ -229,7 +202,7 @@ test("primaryAuthor is a frontend label derived from the agent, never a session 
 // Registration shape
 // ---------------------------------------------------------------------------
 
-test("registration declares plan/evidence/review/report namespaces and the exact effective tool names", async (t) => {
+test("registration declares plan/evidence/review namespaces and the exact effective tool names", async (t) => {
   const { store } = await makeStore(t);
   const namespaces = [];
   const tools = [];
@@ -242,7 +215,7 @@ test("registration declares plan/evidence/review/report namespaces and the exact
 
   assert.deepEqual(
     namespaces.map((namespace) => namespace.name).sort(),
-    ["artifact", "evidence", "memory", "plan", "report", "review"],
+    ["artifact", "evidence", "memory", "plan", "review"],
     "the Code Mode namespaces are declared",
   );
   const permissions = tools.map((tool) => tool.options.permission).sort();
@@ -266,13 +239,6 @@ test("registration declares plan/evidence/review/report namespaces and the exact
     assert.ok(
       namespaces.some((namespace) => namespace.name === tool.options.namespace),
       "namespace is declared",
-    );
-  }
-  for (const removed of UNREGISTERED_NAMES) {
-    assert.equal(
-      tools.some((tool) => tool.options.permission === removed),
-      false,
-      `${removed} is never registered`,
     );
   }
 });
@@ -485,6 +451,91 @@ test("plan tools: create→update→evidence membership→finalize returns direc
   assert.match(missing, /not_found/);
 });
 
+test("plan completion freezes the plan and a new plan can reference it", async (t) => {
+  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
+  const { tools } = await setupPlugin(t, { sessions });
+  const ctx = toolContext(PRIMARY_SESSION, "system");
+
+  const planID = await execTool(
+    tools,
+    "plan_create",
+    {
+      title: "First plan",
+      description: "First plan.",
+      workingDirectory: DIRECTORY,
+      goalScope: "Goal.",
+      intendedChanges: "Change.",
+    },
+    ctx,
+  );
+  await execTool(tools, "plan_finalize", { artifactID: planID }, ctx);
+  const completed = await execTool(
+    tools,
+    "plan_complete",
+    {
+      artifactID: planID,
+      summary: "Done.",
+      changed: "One file.",
+      verification: "Tests pass.",
+      unfinished: "None.",
+    },
+    ctx,
+  );
+  assert.equal(completed, `${planID} completed`);
+
+  const loaded = await execTool(
+    tools,
+    "plan_load",
+    { artifactID: planID },
+    ctx,
+  );
+  assert.match(loaded, /Completed: /);
+  assert.match(loaded, /## Report/);
+  assert.match(loaded, /### Verification/);
+  assert.match(loaded, /Tests pass\./);
+
+  // The completion record freezes all later content mutations.
+  const frozen = await execTool(
+    tools,
+    "plan_update",
+    { artifactID: planID, goalScope: "New goal." },
+    ctx,
+  );
+  assert.match(frozen, /^ARTIFACT_ERROR\nforbidden:/);
+  assert.match(frozen, /completed and frozen/);
+
+  const twice = await execTool(
+    tools,
+    "plan_complete",
+    { artifactID: planID, summary: "Again." },
+    ctx,
+  );
+  assert.match(twice, /^ARTIFACT_ERROR/);
+  assert.match(twice, /already completed/);
+
+  // A follow-up plan can point at the completed plan without reopening it.
+  const nextID = await execTool(
+    tools,
+    "plan_create",
+    {
+      title: "Second plan",
+      description: "Follow-up plan.",
+      workingDirectory: DIRECTORY,
+      previousPlanID: planID,
+      goalScope: "Next goal.",
+      intendedChanges: "Next change.",
+    },
+    ctx,
+  );
+  const nextLoaded = await execTool(
+    tools,
+    "plan_load",
+    { artifactID: nextID },
+    ctx,
+  );
+  assert.match(nextLoaded, new RegExp(`Previous plan: ${planID}`));
+});
+
 // ---------------------------------------------------------------------------
 // Evidence tools
 // ---------------------------------------------------------------------------
@@ -618,7 +669,7 @@ test("evidence tools: writer-only mutation, resume access, overview/findings, su
   assert.match(
     wrongKind,
     /invalid_kind/,
-    "evidence_overview_put is evidence-only",
+    "evidence_update is evidence-only",
   );
 
   const finalized = await execTool(
@@ -732,7 +783,7 @@ test("review tools: outcome, summary, findings, finalize, load, summary; kinds s
   const reviewID = await execTool(
     tools,
     "review_create",
-    { title: "Review report", description: "Review artifact." },
+    { title: "Review result", description: "Review artifact." },
     toolContext(REVIEW_SESSION, "review"),
   );
   assert.match(reviewID, /^art_[a-f0-9]{8}$/);
@@ -841,252 +892,6 @@ test("review tools: outcome, summary, findings, finalize, load, summary; kinds s
   );
   assert.match(wrongKind, /^ARTIFACT_ERROR/);
   assert.match(wrongKind, /not_found/);
-});
-
-// ---------------------------------------------------------------------------
-// Report tools
-// ---------------------------------------------------------------------------
-
-async function toolsWithApprovedPlan(t, contextOverrides = {}) {
-  const { store } = await makeStore(t);
-  const sessions = {
-    [PRIMARY_SESSION]: sessionInfo(),
-    [WORKER_SESSION]: sessionInfo({
-      id: WORKER_SESSION,
-      agent: "worker",
-      parentID: PRIMARY_SESSION,
-    }),
-    [SEARCH_SESSION]: sessionInfo({
-      id: SEARCH_SESSION,
-      agent: "search",
-      parentID: PRIMARY_SESSION,
-    }),
-    [REVIEW_SESSION]: sessionInfo({
-      id: REVIEW_SESSION,
-      agent: "review",
-      parentID: PRIMARY_SESSION,
-    }),
-    ...contextOverrides,
-  };
-  const deps = {
-    store,
-    directory: DIRECTORY,
-    projectDirectory: DIRECTORY,
-    getSession: async ({ sessionID }) => sessions[sessionID],
-  };
-  const namespaces = [];
-  const tools = [];
-  addArtifactTools(installEditor({ namespaces, tools }), deps);
-
-  const planID = await execTool(
-    tools,
-    "plan_create",
-    {
-      title: "Linked plan",
-      description: "A linked plan artifact.",
-      workingDirectory: DIRECTORY,
-      goalScope: "Goal.",
-      intendedChanges: "Change.",
-      checks: "Check.",
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await store.approveArtifact({
-    artifactID: planID,
-    location: DIRECTORY,
-    requestID: "req_approve-report-plan",
-  });
-  return { store, tools, planID, sessions, deps };
-}
-
-test("report tools: create links a draft or reviewed plan, content sections, finalize, load, summary", async (t) => {
-  const { store, tools, planID } = await toolsWithApprovedPlan(t);
-
-  // A draft plan may back a report: reports record work, not an approval gate.
-  const draftPlan = await execTool(
-    tools,
-    "plan_create",
-    {
-      title: "Draft plan",
-      description: "Not approved yet.",
-      workingDirectory: DIRECTORY,
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  const draftReport = await execTool(
-    tools,
-    "report_create",
-    { planArtifactID: draftPlan },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.match(
-    draftReport,
-    /^art_[a-f0-9]{8}$/,
-    "report_create accepts a draft plan",
-  );
-
-  const reportID = await execTool(
-    tools,
-    "report_create",
-    { planArtifactID: planID },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.match(
-    reportID,
-    /^art_[a-f0-9]{8}$/,
-    "report_create returns the bare artifact ID",
-  );
-
-  await execTool(
-    tools,
-    "report_update",
-    {
-      artifactID: reportID,
-      changed: "store.mjs: flat plan model.",
-    },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  await execTool(
-    tools,
-    "report_update",
-    {
-      artifactID: reportID,
-      checks: "store.test.mjs: pass.",
-    },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  const unfinished = await execTool(
-    tools,
-    "report_update",
-    {
-      artifactID: reportID,
-      unfinished: "Cutover deferred.",
-    },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.equal(unfinished, reportID);
-
-  const removed = await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID, unfinished: "" },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.equal(
-    removed,
-    reportID,
-    "report_update with an empty section returns the bare artifact ID",
-  );
-
-  const badSection = await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.match(badSection, /^ARTIFACT_ERROR/);
-  assert.match(badSection, /validation/);
-
-  // Non-writer primary agent cannot mutate the worker's report.
-  const forbidden = await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID, summary: "x" },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.match(forbidden, /^ARTIFACT_ERROR/);
-  assert.match(forbidden, /forbidden/);
-
-  // Finalization requires the Summary; the report has only Changed/Checks so far.
-  const failed = await execTool(
-    tools,
-    "report_finalize",
-    { artifactID: reportID },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.match(failed, /^ARTIFACT_ERROR/);
-  assert.match(failed, /validation/);
-
-  const summaryResult = await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID, summary: "Implemented." },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.equal(
-    summaryResult,
-    reportID,
-    "report_update returns the bare artifact ID",
-  );
-  await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID, unfinished: "Cutover deferred." },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  const finalized = await execTool(
-    tools,
-    "report_finalize",
-    { artifactID: reportID },
-    toolContext(WORKER_SESSION, "worker"),
-  );
-  assert.equal(
-    finalized,
-    `${reportID} published`,
-    "report finalize returns the bare contract",
-  );
-
-  // Review load: full content including Changed/Checks/Unfinished and the linked plan.
-  const loaded = await execTool(
-    tools,
-    "report_load",
-    { artifactID: reportID },
-    toolContext(REVIEW_SESSION, "review"),
-  );
-  assert.match(loaded, /^ARTIFACT_CONTENT\n/);
-  assert.match(
-    loaded,
-    new RegExp(`Plan: ${planID}`),
-    "report_load lists the linked plan artifact ID",
-  );
-  assert.match(loaded, /# Report/);
-  assert.match(loaded, /## Summary/);
-  assert.match(loaded, /## Changed/);
-  assert.match(loaded, /store\.mjs: flat plan model\./);
-  assert.match(loaded, /## Checks/);
-  assert.match(loaded, /## Unfinished/);
-  assert.match(loaded, /Cutover deferred\./);
-
-  // Primary summary: metadata, linked plan, Summary only — no Changed/Checks/Unfinished.
-  const summary = await execTool(
-    tools,
-    "report_summary",
-    { artifactID: reportID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.match(summary, /^ARTIFACT_SUMMARY\n/);
-  assert.match(summary, /Status: published/);
-  assert.match(summary, new RegExp(`Plan: ${planID}`));
-  assert.match(summary, /Summary: Implemented\./);
-  assert.doesNotMatch(
-    summary,
-    /store\.mjs|store\.test\.mjs|Cutover/,
-    "report_summary hides Changed/Checks/Unfinished detail",
-  );
-
-  // Reports are non-plan: mark-read RPC dismissal works via store directly.
-  const read = await store.markArtifactRead({
-    artifactID: reportID,
-    location: DIRECTORY,
-    requestID: "req_read-report-0001",
-  });
-  assert.equal(read.artifact.status, "read");
 });
 
 // ---------------------------------------------------------------------------
@@ -1206,7 +1011,6 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
     "evidence",
     "memory",
     "plan",
-    "report",
     "review",
   ]);
 
@@ -1508,7 +1312,7 @@ test("retried plan-approval delivery re-emits the same authoritative approval pa
   );
 });
 
-test("writer feedback routes to the stored writer session; reports list/mark-read; approval stays plan-only", async (t) => {
+test("writer feedback routes to the stored writer session; approval stays plan-only", async (t) => {
   const sessions = {
     [SEARCH_SESSION]: sessionInfo({
       id: SEARCH_SESSION,
@@ -1607,114 +1411,6 @@ test("writer feedback routes to the stored writer session; reports list/mark-rea
     (error) => error.code === "invalid_kind",
   );
 
-  // Reports flow through list/get/mark_read as non-plan artifacts.
-  const planID = await execTool(
-    tools,
-    "plan_create",
-    {
-      title: "Link me",
-      description: "Plan description.",
-      workingDirectory: DIRECTORY,
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_update",
-    {
-      artifactID: planID,
-      goalScope: "G.",
-      intendedChanges: "I.",
-      checks: "C.",
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await rpc.approve_plan(
-    { artifactID: planID, requestID: "req_approve-plan-2" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-
-  const reportID = await execTool(
-    tools,
-    "report_create",
-    { planArtifactID: planID },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  await execTool(
-    tools,
-    "report_update",
-    { artifactID: reportID, summary: "Done." },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  await execTool(
-    tools,
-    "report_finalize",
-    { artifactID: reportID },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-
-  const list2 = await rpc.list(
-    {},
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  const reportSummary = list2.artifacts.find((entry) => entry.id === reportID);
-  assert.ok(reportSummary, "reports appear in list");
-  assert.equal(reportSummary.kind, "report");
-  assert.equal(reportSummary.primaryAuthor, "Search");
-  assert.equal(
-    reportSummary.ownerSessionID,
-    PRIMARY_SESSION,
-    "report owner resolves to the primary-agent ancestry",
-  );
-
-  const reportGet = await rpc.get(
-    { artifactID: reportID },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(reportGet.artifact.kind, "report");
-  assert.equal(
-    reportGet.artifact.writerSessionID,
-    undefined,
-    "get strips the report writer identity",
-  );
-  assert.equal(reportGet.artifact.status, "published");
-
-  const reportRead = await rpc.mark_read(
-    { artifactID: reportID, requestID: "req_read-report-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(
-    reportRead.artifact.status,
-    "read",
-    "reports dismiss with mark_read",
-  );
-  assert.equal(
-    syntheticCalls.length,
-    2,
-    "report mark_read never notifies (feedback + plan approval are the only deliveries)",
-  );
 });
 
 test("unavailable writer delivery fails visibly and stays recorded; it is never rerouted", async (t) => {
@@ -2217,42 +1913,6 @@ test("create and finalize accept initial content so a draft can be filled increm
   );
   assert.match(reviewLoaded, /Changes required/);
   assert.match(reviewLoaded, /Final review\./);
-
-  const reportID = await execTool(
-    tools,
-    "report_create",
-    {
-      title: "Standalone report",
-      description: "No plan needed.",
-      summary: "Initial report.",
-    },
-    ctx,
-  );
-  const reportFinal = await execTool(
-    tools,
-    "report_finalize",
-    {
-      artifactID: reportID,
-      summary: "Final report.",
-      changed: "Two files.",
-      checks: "Tests pass.",
-    },
-    ctx,
-  );
-  assert.equal(reportFinal, `${reportID} published`);
-  const reportLoaded = await execTool(
-    tools,
-    "report_load",
-    { artifactID: reportID },
-    ctx,
-  );
-  assert.match(reportLoaded, /Final report\./);
-  assert.match(reportLoaded, /Two files\./);
-  assert.doesNotMatch(
-    reportLoaded,
-    /Plan: art_/,
-    "a standalone report has no plan link",
-  );
 
   const memoryID = await execTool(
     tools,

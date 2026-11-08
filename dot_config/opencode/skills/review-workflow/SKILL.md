@@ -28,7 +28,7 @@ Use the `review` subagent in the background with a self-contained prompt:
 Concern: <the specific correctness question>.
 Working directory: <absolute path>.
 Scope: <files or behavior the change touches>.
-Artifacts: <plan/report/evidence IDs, if any>.
+Artifacts: <plan/evidence IDs, if any>.
 Already checked: <checks the author ran; do not repeat unless code changed>.
 Do not write files; run read-only checks if needed.
 ```
@@ -65,7 +65,7 @@ to act.
 
 - **Pass** — record the result and continue.
 - **Changes required** — apply the correction in scope, rerun the focused check,
-  and update the report or plan. If the correction expands scope, stop and put
+  and update the plan or checkpoint. If the correction expands scope, stop and put
   the decision to the user.
 - **Blocked** — obtain the missing fact or tell the user what is missing.
 

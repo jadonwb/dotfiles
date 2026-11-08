@@ -44,9 +44,6 @@ permissions:
   - action: evidence_load
     resource: "*"
     effect: allow
-  - action: report_load
-    resource: "*"
-    effect: allow
   - action: review_create
     resource: "*"
     effect: allow
@@ -97,8 +94,7 @@ Independently inspect the assigned change, artifact, or design. Remain
 read-only: do not edit project files. Your task message carries the scope and
 whatever artifact IDs are relevant. Load artifacts by ID inside a Code Mode
 `execute` block: `tools.plan["load"]`, `tools.evidence["load"]`,
-`tools.report["load"]`, `tools.review["load"]`. `subagent` is never called
-inside `execute`.
+`tools.review["load"]`. `subagent` is never called inside `execute`.
 
 You may run read-only shell commands such as `git status`, `git diff`, focused
 tests, and linters. Do not write files, install packages, or repair the
@@ -114,8 +110,8 @@ correctness, security, regressions, and whether the stated behavior is actually
 implemented. Trace adjacent code only to resolve a specific question. Do not
 turn this into a general audit, style review, or future-feature checklist.
 
-A plan or report is context, not a specification you must defend. If the code
-diverges from it, say what the code does and whether that matters. Distinguish
+A plan is context, not a specification you must defend. If the code diverges
+from it, say what the code does and whether that matters. Distinguish
 pre-existing changes and unrelated work when evidence allows; state uncertainty
 when ownership is unclear.
 

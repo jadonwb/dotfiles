@@ -112,7 +112,7 @@ async function createApprovedPlan(store) {
   await store.approveArtifact({
     artifactID: plan.artifactID,
     location: LOCATION_A,
-    requestID: "req_approved-for-report",
+    requestID: "req_approved-for-plan",
   });
   return plan;
 }
@@ -122,7 +122,7 @@ test("default root is under the opencode state directory", () => {
   assert.ok(root.endsWith(join("opencode", "plan-bridge")));
 });
 
-test("createArtifact initializes flat records: plan prose/evidence, evidence overview/findings, review outcome/summary/findings, report link", async (t) => {
+test("createArtifact initializes flat records: plan prose/evidence, evidence overview/findings, review outcome/summary/findings", async (t) => {
   const { store, root } = await makeStore(t);
 
   const plan = await createPlan(store);
@@ -186,56 +186,6 @@ test("createArtifact initializes flat records: plan prose/evidence, evidence ove
   assert.equal(reviewRecord.summary, "");
   assert.deepEqual(reviewRecord.findings, []);
 
-  // Reports link to an approved plan and derive title/description from it.
-  const planToReport = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: planToReport.artifactID,
-  });
-  assert.equal(report.kind, "report");
-  assert.equal(
-    report.title,
-    `Report: ${planToReport.title}`,
-    "report title derives from the plan",
-  );
-  assert.equal(
-    report.description,
-    "A structured plan artifact.",
-    "report description derives from the plan",
-  );
-  const reportRecord = await readRecord(root, report.artifactID);
-  assert.equal(reportRecord.planArtifactID, planToReport.artifactID);
-  assert.equal(reportRecord.summary, "");
-  assert.equal(reportRecord.changed, "");
-  assert.equal(reportRecord.checks, "");
-  assert.equal(reportRecord.unfinished, "");
-
-  // Reports may link a draft or reviewed plan; non-plans are still invalid.
-  const draftPlan = await createPlan(store, { title: "Draft plan" });
-  const draftReport = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: draftPlan.artifactID,
-  });
-  assert.equal(draftReport.kind, "report", "a report can link a draft plan");
-  await assert.rejects(
-    store.createArtifact({
-      kind: "report",
-      ownerSessionID: OWNER,
-      writerSessionID: WRITER,
-      primaryAuthor: "Worker",
-      location: LOCATION_A,
-      planArtifactID: evidence.artifactID,
-    }),
-    (error) => error instanceof StoreError && error.code === "invalid_kind",
-  );
 });
 
 test("plan whole-field sets replace all four fields, clear readiness, and validate the field name", async (t) => {
@@ -1240,169 +1190,6 @@ test("review outcome/summary/findings: singleton outcome and summary, repeatable
   );
 });
 
-test("report lifecycle: content sections, finalize requires Summary, published mark-read, linkage preserved", async (t) => {
-  const { store, root } = await makeStore(t);
-  const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-
-  await assert.rejects(
-    store.reportFinalize({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: WRITER,
-    }),
-    (error) =>
-      error instanceof StoreError &&
-      error.code === "validation" &&
-      /Summary/.test(error.message),
-  );
-
-  const put = await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "changed",
-    content: "store.mjs: replaced the plan item model.",
-  });
-  assert.equal(put.status, "draft");
-  assert.equal(put.finalized, false);
-
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Implemented the approved plan.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "store.test.mjs: all tests pass.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-    content: "Runtime cutover deferred to the user.",
-  });
-  let record = await readRecord(root, report.artifactID);
-  assert.equal(record.changed, "store.mjs: replaced the plan item model.");
-  assert.equal(record.unfinished, "Runtime cutover deferred to the user.");
-
-  // Whole-section replace and clear.
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "changed",
-    content: "Revised changed text.",
-  });
-  assert.equal(
-    (await readRecord(root, report.artifactID)).changed,
-    "Revised changed text.",
-  );
-  await store.reportContentRemove({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(record.unfinished, "");
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-    content: "Runtime cutover deferred to the user.",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(
-    record.planArtifactID,
-    plan.artifactID,
-    "linkage to the approved plan is preserved",
-  );
-
-  await assert.rejects(
-    store.reportContentPut({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: WRITER,
-      section: "goalScope",
-      content: "x",
-    }),
-    (error) => error instanceof StoreError && error.code === "validation",
-  );
-  await assert.rejects(
-    store.reportContentPut({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: OTHER_WRITER,
-      section: "summary",
-      content: "x",
-    }),
-    (error) => error instanceof StoreError && error.code === "forbidden",
-  );
-
-  const published = await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  assert.equal(published.status, "published");
-  assert.equal(published.finalized, true);
-
-  // Rendering: "# Report" with Summary/Changed/Checks/Unfinished.
-  const view = await store.getArtifact({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.equal(view.content, await readFile(view.path, "utf8"));
-  assert.ok(view.content.includes("# Report"));
-  assert.ok(
-    view.content.includes(`Plan: ${plan.artifactID}`),
-    "report body names its linked plan",
-  );
-  assert.ok(view.content.includes("## Summary"));
-  assert.ok(view.content.includes("Implemented the approved plan."));
-  assert.ok(view.content.includes("## Changed"));
-  assert.ok(view.content.includes("Revised changed text."));
-  assert.ok(view.content.includes("## Checks"));
-  assert.ok(view.content.includes("## Unfinished"));
-
-  // Mark-read works for reports (non-plan dismissal) and edits return to draft.
-  await store.markArtifactRead({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    requestID: "req_read-report-0001",
-  });
-  assert.equal((await readRecord(root, report.artifactID)).status, "read");
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "Revised checks.",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(
-    record.status,
-    "draft",
-    "editing a read report returns it to the draft",
-  );
-  assert.equal(record.finalized, false);
-});
-
 test("approval marks a finalized plan reviewed without freezing later edits", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
@@ -1522,7 +1309,7 @@ test("approval marks a finalized plan reviewed without freezing later edits", as
   assert.equal(again.artifact.status, "approved");
 });
 
-test("mark-read applies to evidence/review/report; plans reject it, approval rejects non-plans", async (t) => {
+test("mark-read applies to evidence/review; plans reject it, approval rejects non-plans", async (t) => {
   const { store, root } = await makeStore(t);
   const evidence = await createEvidence(store);
   await store.evidenceOverviewPut({
@@ -1557,41 +1344,10 @@ test("mark-read applies to evidence/review/report; plans reject it, approval rej
   });
 
   const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Done.",
-  });
-  await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  const memory = await store.createArtifact({
-    kind: "memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Session memory",
-    description: "Durable session state.",
-  });
 
   for (const [kind, artifactID] of [
     ["evidence", evidence.artifactID],
     ["review", review.artifactID],
-    ["report", report.artifactID],
-    ["memory", memory.artifactID],
   ]) {
     const read = await store.markArtifactRead({
       artifactID,
@@ -1623,17 +1379,6 @@ test("mark-read applies to evidence/review/report; plans reject it, approval rej
     assert.equal(again.deduplicated, true);
     assert.equal(again.requestID, `req_read-${kind}-0001`);
   }
-
-  // Memory edits keep it published and clear the read marker.
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Objective\n\nContinue.",
-  });
-  const memoryRecord = await readRecord(root, memory.artifactID);
-  assert.equal(memoryRecord.status, "published");
-  assert.equal(memoryRecord.readAt, null);
 
   await assert.rejects(
     store.markArtifactRead({
@@ -1838,63 +1583,12 @@ test("summary readers expose only overview fields â€” never detailed findings â€
   assert.ok(reviewFull.content.includes("Blocker"));
 
   const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Implementation summary.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "Checks detail.",
-  });
-  await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  const reportSummary = await store.getReportSummary({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.equal(reportSummary.planArtifactID, plan.artifactID);
-  assert.equal(reportSummary.summary, "Implementation summary.");
-  assert.equal(
-    reportSummary.changed,
-    undefined,
-    "report summary readers hide Changed/Checks/Unfinished",
-  );
-  const reportFull = await store.getReport({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.ok(reportFull.content.includes("Checks detail."));
-  assert.equal(
-    reportFull.status,
-    "published",
-    "report loading never marks read",
-  );
-
   // Summary readers and full loaders are kind-locked.
   for (const getter of [
     "getEvidenceSummary",
     "getReviewSummary",
-    "getReportSummary",
     "getEvidence",
     "getReview",
-    "getReport",
   ]) {
     await assert.rejects(
       store[getter]({ artifactID: plan.artifactID, location: LOCATION_A }),
@@ -3625,169 +3319,6 @@ test("review outcome/summary/findings: singleton outcome and summary, repeatable
   );
 });
 
-test("report lifecycle: content sections, finalize requires Summary, published mark-read, linkage preserved", async (t) => {
-  const { store, root } = await makeStore(t);
-  const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-
-  await assert.rejects(
-    store.reportFinalize({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: WRITER,
-    }),
-    (error) =>
-      error instanceof StoreError &&
-      error.code === "validation" &&
-      /Summary/.test(error.message),
-  );
-
-  const put = await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "changed",
-    content: "store.mjs: replaced the plan item model.",
-  });
-  assert.equal(put.status, "draft");
-  assert.equal(put.finalized, false);
-
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Implemented the approved plan.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "store.test.mjs: all tests pass.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-    content: "Runtime cutover deferred to the user.",
-  });
-  let record = await readRecord(root, report.artifactID);
-  assert.equal(record.changed, "store.mjs: replaced the plan item model.");
-  assert.equal(record.unfinished, "Runtime cutover deferred to the user.");
-
-  // Whole-section replace and clear.
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "changed",
-    content: "Revised changed text.",
-  });
-  assert.equal(
-    (await readRecord(root, report.artifactID)).changed,
-    "Revised changed text.",
-  );
-  await store.reportContentRemove({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(record.unfinished, "");
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "unfinished",
-    content: "Runtime cutover deferred to the user.",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(
-    record.planArtifactID,
-    plan.artifactID,
-    "linkage to the approved plan is preserved",
-  );
-
-  await assert.rejects(
-    store.reportContentPut({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: WRITER,
-      section: "goalScope",
-      content: "x",
-    }),
-    (error) => error instanceof StoreError && error.code === "validation",
-  );
-  await assert.rejects(
-    store.reportContentPut({
-      artifactID: report.artifactID,
-      location: LOCATION_A,
-      writerSessionID: OTHER_WRITER,
-      section: "summary",
-      content: "x",
-    }),
-    (error) => error instanceof StoreError && error.code === "forbidden",
-  );
-
-  const published = await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  assert.equal(published.status, "published");
-  assert.equal(published.finalized, true);
-
-  // Rendering: "# Report" with Summary/Changed/Checks/Unfinished.
-  const view = await store.getArtifact({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.equal(view.content, await readFile(view.path, "utf8"));
-  assert.ok(view.content.includes("# Report"));
-  assert.ok(
-    view.content.includes(`Plan: ${plan.artifactID}`),
-    "report body names its linked plan",
-  );
-  assert.ok(view.content.includes("## Summary"));
-  assert.ok(view.content.includes("Implemented the approved plan."));
-  assert.ok(view.content.includes("## Changed"));
-  assert.ok(view.content.includes("Revised changed text."));
-  assert.ok(view.content.includes("## Checks"));
-  assert.ok(view.content.includes("## Unfinished"));
-
-  // Mark-read works for reports (non-plan dismissal) and edits return to draft.
-  await store.markArtifactRead({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    requestID: "req_read-report-0001",
-  });
-  assert.equal((await readRecord(root, report.artifactID)).status, "read");
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "Revised checks.",
-  });
-  record = await readRecord(root, report.artifactID);
-  assert.equal(
-    record.status,
-    "draft",
-    "editing a read report returns it to the draft",
-  );
-  assert.equal(record.finalized, false);
-});
-
 test("approval marks a finalized plan reviewed without freezing later edits", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
@@ -3907,7 +3438,7 @@ test("approval marks a finalized plan reviewed without freezing later edits", as
   assert.equal(again.artifact.status, "approved");
 });
 
-test("mark-read applies to evidence/review/report; plans reject it, approval rejects non-plans", async (t) => {
+test("mark-read applies to evidence/review; plans reject it, approval rejects non-plans", async (t) => {
   const { store, root } = await makeStore(t);
   const evidence = await createEvidence(store);
   await store.evidenceOverviewPut({
@@ -3942,41 +3473,10 @@ test("mark-read applies to evidence/review/report; plans reject it, approval rej
   });
 
   const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Done.",
-  });
-  await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  const memory = await store.createArtifact({
-    kind: "memory",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "System",
-    location: LOCATION_A,
-    title: "Session memory",
-    description: "Durable session state.",
-  });
 
   for (const [kind, artifactID] of [
     ["evidence", evidence.artifactID],
     ["review", review.artifactID],
-    ["report", report.artifactID],
-    ["memory", memory.artifactID],
   ]) {
     const read = await store.markArtifactRead({
       artifactID,
@@ -4008,17 +3508,6 @@ test("mark-read applies to evidence/review/report; plans reject it, approval rej
     assert.equal(again.deduplicated, true);
     assert.equal(again.requestID, `req_read-${kind}-0001`);
   }
-
-  // Memory edits keep it published and clear the read marker.
-  await store.memoryAppend({
-    artifactID: memory.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    content: "## Objective\n\nContinue.",
-  });
-  const memoryRecord = await readRecord(root, memory.artifactID);
-  assert.equal(memoryRecord.status, "published");
-  assert.equal(memoryRecord.readAt, null);
 
   await assert.rejects(
     store.markArtifactRead({
@@ -4223,63 +3712,12 @@ test("summary readers expose only overview fields â€” never detailed findings â€
   assert.ok(reviewFull.content.includes("Blocker"));
 
   const plan = await createApprovedPlan(store);
-  const report = await store.createArtifact({
-    kind: "report",
-    ownerSessionID: OWNER,
-    writerSessionID: WRITER,
-    primaryAuthor: "Worker",
-    location: LOCATION_A,
-    planArtifactID: plan.artifactID,
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "summary",
-    content: "Implementation summary.",
-  });
-  await store.reportContentPut({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-    section: "checks",
-    content: "Checks detail.",
-  });
-  await store.reportFinalize({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-    writerSessionID: WRITER,
-  });
-  const reportSummary = await store.getReportSummary({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.equal(reportSummary.planArtifactID, plan.artifactID);
-  assert.equal(reportSummary.summary, "Implementation summary.");
-  assert.equal(
-    reportSummary.changed,
-    undefined,
-    "report summary readers hide Changed/Checks/Unfinished",
-  );
-  const reportFull = await store.getReport({
-    artifactID: report.artifactID,
-    location: LOCATION_A,
-  });
-  assert.ok(reportFull.content.includes("Checks detail."));
-  assert.equal(
-    reportFull.status,
-    "published",
-    "report loading never marks read",
-  );
-
   // Summary readers and full loaders are kind-locked.
   for (const getter of [
     "getEvidenceSummary",
     "getReviewSummary",
-    "getReportSummary",
     "getEvidence",
     "getReview",
-    "getReport",
   ]) {
     await assert.rejects(
       store[getter]({ artifactID: plan.artifactID, location: LOCATION_A }),
@@ -5051,7 +4489,7 @@ test("artifact search finds project memory and evidence by text, with a kind fil
   );
 });
 
-test("checkpoint content is rendered verbatim and searchable, not treated as a report", async (t) => {
+test("checkpoint content is rendered verbatim and searchable", async (t) => {
   const { store, root } = await makeStore(t);
   const checkpoint = await store.createArtifact({
     kind: "checkpoint",
@@ -5069,11 +4507,6 @@ test("checkpoint content is rendered verbatim and searchable, not treated as a r
     location: LOCATION_A,
   });
   assert.match(view.content, /## Objective\n\nFinish the split\./);
-  assert.doesNotMatch(
-    view.content,
-    /# Report/,
-    "a checkpoint must not render as a report",
-  );
 
   const onDisk = await readFile(
     join(root, "artifacts", checkpoint.artifactID, "current.md"),
