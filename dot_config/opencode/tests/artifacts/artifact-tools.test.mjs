@@ -1692,6 +1692,25 @@ test("memory tools: init is idempotent, update append/patch are incremental, loa
   assert.match(loaded, /## Objective/);
   assert.match(loaded, /Ship the refactor\./);
   assert.match(loaded, /Testing and documenting\./);
+  const sectionLine = loaded.match(/^Sections: (.+)$/m);
+  assert.ok(sectionLine, "the full load lists section titles");
+  assert.match(sectionLine[1], /(?:^|, )Objective(?:,|$)/);
+  assert.match(sectionLine[1], /(?:^|, )Work State(?:,|$)/);
+
+  const section = await execTool(
+    tools,
+    "memory_load",
+    { artifactID: memoryID, section: "Objective" },
+    ctx,
+  );
+  assert.match(section, /^ARTIFACT_SECTION/);
+  assert.match(section, /Section: Objective/);
+  assert.match(section, /Ship the refactor\./);
+  assert.doesNotMatch(
+    section,
+    /Testing and documenting\./,
+    "a section load excludes the other sections",
+  );
 
   const list = await rpc.list(
     {},
@@ -1722,7 +1741,7 @@ test("memory tools: init is idempotent, update append/patch are incremental, loa
   assert.match(wrongKind, /invalid_kind/);
 });
 
-test("project memory and the session checkpoint are injected as background context", async (t) => {
+test("project memory is injected as background context and the session memory is appended to the compaction summary", async (t) => {
   const sessions = { [PRIMARY_SESSION]: sessionInfo() };
   const { tools, hooks } = await setupPlugin(t, { sessions });
   const ctx = toolContext(PRIMARY_SESSION, "system");
@@ -1738,22 +1757,22 @@ test("project memory and the session checkpoint are injected as background conte
     },
     ctx,
   );
-  const checkpointID = await execTool(
+  const sessionMemoryID = await execTool(
     tools,
     "memory_init",
     { scope: "session" },
     ctx,
   );
   assert.notEqual(
-    checkpointID,
+    sessionMemoryID,
     projectID,
-    "the checkpoint is a second document",
+    "the session memory is a second document",
   );
   await execTool(
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "append",
       content: "## Next Move\n\nRun the tests.",
     },
@@ -1762,34 +1781,72 @@ test("project memory and the session checkpoint are injected as background conte
 
   const contextHook = hooks.find((entry) => entry.name === "context");
   assert.ok(contextHook, "the context hook is registered");
-  const event = {
+  assert.equal(
+    hooks.find((entry) => entry.name === "compaction"),
+    undefined,
+    "the context hook does not carry the session memory",
+  );
+
+  const contextEvent = {
     sessionID: PRIMARY_SESSION,
     agent: "system",
     system: [],
     messages: [],
   };
-  await contextHook.callback(event);
-  assert.equal(event.system.length, 1, "memory is injected as a system part");
-  assert.equal(event.messages.length, 0, "no synthetic user message is added");
-  const text = event.system[0].text;
-  assert.match(text, /<memory-context>/);
-  assert.match(text, new RegExp(`<project-memory artifact="${projectID}">`));
-  assert.match(text, /Turbo needs a clean cache/);
-  assert.match(
-    text,
-    new RegExp(`<session-checkpoint artifact="${checkpointID}">`),
+  await contextHook.callback(contextEvent);
+  assert.equal(contextEvent.system.length, 1, "project memory is injected");
+  assert.equal(
+    contextEvent.messages.length,
+    0,
+    "no synthetic user message is added",
   );
-  assert.match(text, /Run the tests\./);
+  const contextText = contextEvent.system[0].text;
+  assert.match(contextText, /<memory-context>/);
   assert.match(
-    text,
+    contextText,
+    new RegExp(`<project-memory artifact="${projectID}">`),
+  );
+  assert.match(contextText, /Turbo needs a clean cache/);
+  assert.doesNotMatch(
+    contextText,
+    /# Session Memory/,
+    "the session memory is never part of the normal context",
+  );
+  assert.match(
+    contextText,
     /newest user instruction and freshly verified tool results override/i,
     "memory is background, not authority",
   );
 
-  assert.equal(
-    hooks.find((entry) => entry.name === "compaction"),
-    undefined,
-    "memory is not copied into the compaction transcript",
+  const responseHook = hooks.find((entry) => entry.name === "http.response");
+  assert.ok(responseHook, "the compaction response hook is registered");
+  const sse = [
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
+    "",
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
+    "",
+    "data: [DONE]",
+    "",
+  ].join("\n");
+  const event = {
+    kind: "compaction",
+    sessionID: PRIMARY_SESSION,
+    response: new Response(sse, {
+      headers: { "content-type": "text/event-stream" },
+    }),
+  };
+  await responseHook.callback(event);
+  const summary = await event.response.text();
+  assert.match(summary, /## Objective/);
+  assert.match(summary, /# Session Memory/);
+  assert.match(summary, new RegExp(`Artifact: ${sessionMemoryID}`));
+  assert.match(summary, /Run the tests\./);
+  const sessionMemoryIndex = summary.indexOf("# Session Memory");
+  const finishIndex = summary.indexOf('"finish_reason":"stop"');
+  assert.ok(sessionMemoryIndex >= 0 && finishIndex >= 0);
+  assert.ok(
+    sessionMemoryIndex < finishIndex,
+    "the session memory is inserted before the finish event",
   );
 });
 
@@ -1969,7 +2026,7 @@ test("create and finalize accept initial content so a draft can be filled increm
   assert.match(planLoaded, /One\. Three\./);
 });
 
-test("a long checkpoint keeps priority sections and its newest tail, and large project memory is injected as an index", async (t) => {
+test("large project memory is injected as an index and the full session memory is appended to the compaction summary", async (t) => {
   const sessions = { [PRIMARY_SESSION]: sessionInfo() };
   const { tools, hooks } = await setupPlugin(t, { sessions });
   const ctx = toolContext(PRIMARY_SESSION, "system");
@@ -1990,7 +2047,7 @@ test("a long checkpoint keeps priority sections and its newest tail, and large p
     ctx,
   );
 
-  const checkpointID = await execTool(
+  const sessionMemoryID = await execTool(
     tools,
     "memory_init",
     { scope: "session" },
@@ -2009,66 +2066,81 @@ test("a long checkpoint keeps priority sections and its newest tail, and large p
   await execTool(
     tools,
     "memory_update",
-    { artifactID: checkpointID, mode: "append", content: longBody },
+    { artifactID: sessionMemoryID, mode: "append", content: longBody },
     ctx,
   );
 
   const contextHook = hooks.find((entry) => entry.name === "context");
-  const event = {
+  const contextEvent = {
     sessionID: PRIMARY_SESSION,
     agent: "system",
     system: [],
     messages: [],
   };
-  await contextHook.callback(event);
-  const text = event.system[0].text;
+  await contextHook.callback(contextEvent);
+  const text = contextEvent.system[0].text;
 
-  assert.match(text, /Updated: /, "the project index exposes its update time");
   assert.match(
     text,
-    /Core:\n## Core\n\nAlways load this core decision\./,
-    "the project index always inlines the Core section",
-  );
-  assert.match(text, /characters omitted; load/, "the checkpoint is bounded");
-  assert.match(
-    text,
-    /Run the final verification\./,
-    "the newest section survives truncation",
-  );
-  assert.match(text, /## Next Move/, "the newest heading survives truncation");
-  assert.match(
-    text,
-    /## Requirements/,
-    "a priority section in the middle survives truncation",
+    /^Project memory$/m,
+    "the project-memory index has a plain heading",
   );
   assert.match(
     text,
-    /PROD-BETA/,
-    "a requirement is not clipped out of the middle",
+    /Core:\nAlways load this core decision\./,
+    "the project index always inlines the Core content",
   );
   assert.match(
     text,
-    /## Area 30/,
-    "project memory is injected as section headings",
+    /- Area 30: /,
+    "project memory is injected as section titles",
   );
   assert.match(
     text,
-    /Load art_[a-f0-9]{8} for the full text/,
+    /Load a section by title with memory_load\(section\)/,
     "the project memory body is loaded on demand",
   );
   assert.doesNotMatch(
     text,
-    /detail detail detail detail detail detail/,
+    /(?:detail ){16,}/,
     "the project memory body is not inlined when large",
   );
+  assert.doesNotMatch(
+    text,
+    /PROD-BETA/,
+    "the session memory is not in the normal context",
+  );
+
+  const responseHook = hooks.find((entry) => entry.name === "http.response");
+  const sse = [
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
+    "",
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
+    "",
+    "data: [DONE]",
+    "",
+  ].join("\n");
+  const responseEvent = {
+    kind: "compaction",
+    sessionID: PRIMARY_SESSION,
+    response: new Response(sse, {
+      headers: { "content-type": "text/event-stream" },
+    }),
+  };
+  await responseHook.callback(responseEvent);
+  const summary = await responseEvent.response.text();
+  assert.match(summary, /PROD-BETA/);
+  assert.match(summary, /filler line 399/);
+  assert.match(summary, /Run the final verification\./);
+  assert.match(summary, /# Session Memory/);
 });
 
-test("successive checkpoint revisions keep corrections, rejected approaches, and unfinished work", async (t) => {
+test("successive session memory revisions keep corrections, rejected approaches, and unfinished work", async (t) => {
   const sessions = { [PRIMARY_SESSION]: sessionInfo() };
   const { tools, hooks } = await setupPlugin(t, { sessions });
   const ctx = toolContext(PRIMARY_SESSION, "system");
 
-  const checkpointID = await execTool(
+  const sessionMemoryID = await execTool(
     tools,
     "memory_init",
     { scope: "session" },
@@ -2078,7 +2150,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "replace",
       content: [
         "## Objective",
@@ -2099,7 +2171,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "patch",
       oldText: "- Use the old API.",
       newText: "- Use the new API (user correction).",
@@ -2110,7 +2182,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "patch",
       oldText: "- Keep the streaming path unchanged.",
       newText: "- Superseded: the streaming path had to change.",
@@ -2121,7 +2193,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "append",
       content:
         "## Rejected Approaches\n\n- Rewriting the parser: it broke streaming.",
@@ -2132,7 +2204,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
     tools,
     "memory_update",
     {
-      artifactID: checkpointID,
+      artifactID: sessionMemoryID,
       mode: "append",
       content:
         "## Work State\n\n- Complete: parser port.\n- Unfinished: streaming tests.",
@@ -2143,7 +2215,7 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   const loaded = await execTool(
     tools,
     "memory_load",
-    { artifactID: checkpointID },
+    { artifactID: sessionMemoryID },
     ctx,
   );
   assert.match(loaded, /Use the new API \(user correction\)\./);
@@ -2156,16 +2228,26 @@ test("successive checkpoint revisions keep corrections, rejected approaches, and
   assert.match(loaded, /Complete: parser port\./);
   assert.match(loaded, /Unfinished: streaming tests\./);
 
-  // The next request sees the same reconciled state, and no stale version.
-  const contextHook = hooks.find((entry) => entry.name === "context");
+  // The compaction summary gets the same reconciled state, and no stale
+  // version.
+  const responseHook = hooks.find((entry) => entry.name === "http.response");
+  const sse = [
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{"content":"## Objective\\n- summarized"},"finish_reason":null}]}',
+    "",
+    'data: {"id":"chatcmpl-test","object":"chat.completion.chunk","created":1,"model":"test","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
+    "",
+    "data: [DONE]",
+    "",
+  ].join("\n");
   const event = {
+    kind: "compaction",
     sessionID: PRIMARY_SESSION,
-    agent: "system",
-    system: [],
-    messages: [],
+    response: new Response(sse, {
+      headers: { "content-type": "text/event-stream" },
+    }),
   };
-  await contextHook.callback(event);
-  const injected = event.system[0].text;
+  await responseHook.callback(event);
+  const injected = await event.response.text();
   assert.match(injected, /Use the new API/);
   assert.doesNotMatch(injected, /Use the old API\./);
   assert.match(injected, /Rejected Approaches/);

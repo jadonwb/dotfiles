@@ -8,9 +8,9 @@ adapter lives in `../artifacts-rpc/`, which imports this package and registers
 Artifacts are working memory. `system` is the primary agent and implements
 changes directly; a plan gates implementation only when the user asked for one,
 and can otherwise be drafted, filled in, and revised without blocking the work.
-Evidence and reviews are optional durable records. Project memory and the
-session checkpoint are the two live documents that are injected back into the
-agent context.
+Evidence and reviews are optional durable records. Project memory is injected
+as an index on every primary request; session memory is appended to the
+compaction summary.
 
 ## Artifact kinds
 
@@ -18,39 +18,45 @@ Every artifact is one structured record plus one generated read-only view,
 addressed by ID only:
 
 - `id` — the `art_…` identifier.
-- `kind` — `memory` (project), `checkpoint` (session), `plan`, `evidence`, or
+- `kind` — `memory` (project), `session_memory` (session), `plan`, `evidence`, or
   `review`.
 - `title` / `description` / `primaryAuthor` — short human-facing labels,
   immutable once created.
 - `status` — `draft`, `published`, `approved`, or `read`; memory and the
-  checkpoint are always `published`. Plans use `draft` until finalized, then may
+  session memory is always `published`. Plans use `draft` until finalized, then may
   be marked `approved` as a review marker; a completed plan also carries
   `completedAt`. Evidence and reviews are finalized to `published` and dismissed
   to `read`.
 - `finalized` — readiness. Content mutations clear it; `plan_finalize` makes a
   plan ready for review, and evidence/review finalization publishes the draft.
-  Memory and the checkpoint stay finalized.
+  Memory and session memory stay finalized.
 
-### memory and checkpoint
+### memory and session_memory
 
-Two live Markdown documents (`content`), both always readable and editable:
+Two live structured documents, both always readable and editable. The
+authoritative record is a `sections` array plus an optional `preamble`; the
+generated `current.md` is rendered from them.
 
 - `memory` is **project memory**, one document per project root (the git common
   checkout, so subdirectories and linked worktrees share it; see `project.mjs`).
   Any primary session in the project may append or correct it.
-- `checkpoint` is the session's small objective/requirements/decisions/progress
-  document. It stays owned by the session that created it.
+- `session_memory` is the session's exact record: objective, requirements,
+  decisions, references, blockers, and next move. It stays owned by the session
+  that created it.
 
-`memory_init` with `scope: "project"` (default) or `scope: "session"` returns
-the existing document ID or creates it; it does not read the body. `memory_update`
-appends a section (`mode: "append"`), replaces one exact occurrence
-(`mode: "patch"`), or replaces the whole body (`mode: "replace"`). `memory_load`
-reads the body; omitting the ID resolves project memory. The plugin injects the
-checkpoint (section-aware bounded) and project memory as a section index plus a
-bounded `## Core` section into every agent-loop request from a primary agent
-(`context` hook). The built-in compaction prompt is left alone; the next request
-reloads the live documents. `artifact_search` searches the session directory plus
-shared project memory and finds either by text when the ID is unknown.
+Section titles are unique and are the handles. `memory_init` with
+`scope: "project"` (default) or `scope: "session"` returns the existing document
+ID or creates it; it does not read the content. `memory_update` appends a new
+section or appends inside an existing section title (`mode: "append"`), replaces
+one exact occurrence (`mode: "patch"`), or replaces the whole document
+(`mode: "replace"`). `memory_load` loads one section by title, or the whole
+document with its section list. The context hook injects project memory as an
+index (`Project memory`, bounded `Core` content, and every other section's
+title and short preview) on each primary-agent request. The
+session memory is appended to the compaction summary, because it is the exact state
+that survives the summary, not an always-on duplicate of the transcript. The
+built-in compaction prompt is left alone. `artifact_search` searches the session directory
+plus shared project memory and finds either by text when the ID is unknown.
 
 ### plan
 
@@ -88,11 +94,10 @@ risk, and correction. `review_finalize` requires the outcome and Summary.
 - Source (chezmoi-managed):
   `~/.local/share/chezmoi/dot_config/opencode/plugins/artifacts/`
 - Live (applied target): `~/.config/opencode/plugins/artifacts/`
-- Registry state: `$XDG_STATE_HOME/opencode/plan-bridge/` (fallback
-  `~/.local/state/opencode/plan-bridge/`), one directory per artifact under
-  `artifacts/<id>/` containing the authoritative `record.json` and the generated
-  `current.md` view. The state directory name is retained so existing artifacts
-  survive the rename.
+- Registry state: `$XDG_STATE_HOME/opencode/artifacts/` (fallback
+  `~/.local/state/opencode/artifacts/`), one directory per artifact directly
+  under it, each containing the authoritative `record.json` and the generated
+  `current.md` view. The two index files live at the registry root.
 
 Files: `store.mjs` (Node-compatible registry logic), `format.mjs` (one-way
 rendering of the generated view), `project.mjs` (project-root resolution),
@@ -142,7 +147,8 @@ Authoring returns directly reusable machine values:
 Read tools return compact text; full loaders include the body:
 
 - `memory_init` (get/create the ID, scope project/session, optional initial
-  `content`), `memory_load` (full; omitting the ID resolves project memory).
+  `content`), `memory_load` (one section title, or the full document with its
+  section list; omitting the ID resolves project memory).
 - `artifact_search` — plain-text search across artifact bodies with an optional
   kind filter, so memories, evidence, plans, and reviews are discoverable
   without IDs.
@@ -163,8 +169,9 @@ than a permission step.
 The setters are available for edits, but the shortest useful flow is:
 
 - **memory** — `memory_init` (project or session, optional initial content) →
-  `memory_update` mode `append` at milestones → mode `patch` for corrections and
-  to supersede stale entries.
+  `memory_update` mode `append` with a `## ` heading, or with an existing
+  section title, at milestones → mode `patch` for corrections and to supersede
+  stale entries.
 - **evidence** — `evidence_create` (optional question/Summary/Limitations) →
   `evidence_finding` as facts are confirmed → `evidence_finalize` (optional
   final overview).
@@ -190,7 +197,9 @@ Fields that look redundant are deliberate:
   (`draft`/`published`/`approved`/`read`) and readiness. A plan can be finalized
   and still draft; evidence/review finalization publishes.
 - `ownerSessionID` routes feedback; `writerSessionID` is the sole mutation
-  authority. They differ when a worker authors an artifact.
+  authority. They differ when a worker authors an artifact. Feedback defaults
+  to the owner; when the writer is a worker, the owner resumes that worker with
+  the feedback and the worker updates the artifact.
 - `primaryAuthor` is an immutable frontend label, never a session identity.
 - Plan evidence stores an immutable description snapshot so the plan stays
   readable after the evidence artifact changes or is cleaned up.
@@ -212,7 +221,7 @@ Fields that look redundant are deliberate:
   clears the marker and returns it to draft. It does not authorize or block any
   implementation.
 - `mark_read` — evidence/review only, sets `status: read` with no owner
-  notification and no delivery bookkeeping. Memory and checkpoints are live and
+  notification and no delivery bookkeeping. Project memory and session memory are live and
   have no read state.
 - `retry_plan_delivery` — redeliver a recorded plan-review submission by request
   ID.
@@ -272,8 +281,8 @@ mise exec -- node --experimental-strip-types --test \
 (`NVOpenCodeArtifacts`) targets the RPC (`personal.artifacts`) and opens each
 artifact's generated `current.md` read-only. The picker exposes
 `:OpenCodePlans`, `:OpenCodeEvidence`, `:OpenCodeReviews`, `:OpenCodeMemory`,
-and `:OpenCodeArtifacts` on `<leader>ap/ae/ar/am/aa`; All excludes memory and
-checkpoints, while Memory is their explicit view. `<M-a>` includes resolved rows and
+and `:OpenCodeArtifacts` on `<leader>ap/ae/ar/am/aa`; All excludes project memory and
+session memory, while Memory is their explicit view. `<M-a>` includes resolved rows and
 `<M-r>` to retry a recorded-but-undelivered plan review. Artifact buffers carry
 `OpenCodeArtifactFeedback`, `OpenCodeArtifactRetryDelivery`, and
 context-sensitively `OpenCodeArtifactApprove` (finalized draft plans) or

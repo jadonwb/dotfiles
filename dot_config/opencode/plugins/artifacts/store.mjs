@@ -7,9 +7,11 @@
 // record shapes are rejected.
 //
 // Kind-specific content (record.json):
-// - memory: a per-session Markdown working memory (`content`) that is always
-//   published and editable. It is injected into the session context and carried
-//   across compaction, so it is never a readiness-gated draft.
+// - memory: structured `## ` sections (`sections` plus an optional `preamble`)
+//   that are always published and editable. The generated Markdown view is
+//   rendered from those sections; stable section IDs are the handles used by
+//   the injected index and section-level loads. Legacy records with a raw
+//   `content` body are migrated on store setup.
 // - plan: `workingDirectory` plus four flat prose fields (goalScope,
 //   intendedChanges, context, checks) and an evidence membership array of
 //   snapshotted entries {id: art_..., description} keyed only by the evidence
@@ -73,6 +75,85 @@ import {
 
 import { bodyOf, renderView } from "./format.mjs";
 
+const MAX_SECTION_TITLE_LENGTH = 200;
+
+function trimmed(value) {
+  return value.replace(/^\s+|\s+$/gu, "");
+}
+
+/** Parse a memory body into a preamble plus unique `## ` sections. */
+function parseMemoryMarkdown(markdown) {
+  const lines = String(markdown ?? "").split("\n");
+  const preambleLines = [];
+  const sections = [];
+  const seen = new Set();
+  let current = null;
+  const push = (section) => {
+    const title = section.title.trim();
+    const key = title.toLowerCase();
+    const content = trimmed(section.lines.join("\n"));
+    if (seen.has(key)) {
+      const existing = sections.find(
+        (candidate) => candidate.title.toLowerCase() === key,
+      );
+      existing.content =
+        existing.content.length === 0
+          ? content
+          : `${existing.content}\n\n${content}`;
+      return;
+    }
+    seen.add(key);
+    sections.push({ title, content });
+  };
+  for (const line of lines) {
+    const match = /^##[ \t]+(.+?)[ \t]*$/u.exec(line);
+    if (match) {
+      if (current) push(current);
+      current = { title: match[1].trim(), lines: [] };
+    } else if (current) {
+      current.lines.push(line);
+    } else {
+      preambleLines.push(line);
+    }
+  }
+  if (current) push(current);
+  return {
+    preamble: trimmed(preambleLines.join("\n")),
+    sections,
+  };
+}
+
+/** Validate the structured section array on a memory/session memory record. */
+function validateMemorySections(record) {
+  if (!Array.isArray(record.sections))
+    return `${record.kind} sections must be an array`;
+  if (typeof record.preamble !== "string")
+    return `${record.kind} preamble must be a string`;
+  const seen = new Set();
+  let total = record.preamble.length;
+  for (const section of record.sections) {
+    if (section === null || typeof section !== "object" || Array.isArray(section))
+      return `${record.kind} sections must contain objects`;
+    if (
+      typeof section.title !== "string" ||
+      section.title.trim().length === 0 ||
+      section.title.length > MAX_SECTION_TITLE_LENGTH
+    )
+      return `${record.kind} section title must be 1-${MAX_SECTION_TITLE_LENGTH} characters`;
+    if (section.title !== section.title.trim())
+      return `${record.kind} section titles must not have surrounding whitespace`;
+    const key = section.title.toLowerCase();
+    if (seen.has(key)) return `${record.kind} section titles must be unique`;
+    seen.add(key);
+    if (typeof section.content !== "string")
+      return `${record.kind} section content must be a string`;
+    total += section.content.length + section.title.length;
+  }
+  if (total > MAX_MARKDOWN_LENGTH)
+    return `${record.kind} structured content is too long`;
+  return null;
+}
+
 const DIR_MODE = 0o700;
 const FILE_MODE = 0o600;
 
@@ -92,12 +173,12 @@ const MAX_SELECTION_BYTES = 64 * 1024;
 
 export const ARTIFACT_KINDS = Object.freeze([
   "memory",
-  "checkpoint",
+  "session_memory",
   "plan",
   "evidence",
   "review",
 ]);
-// Lifecycle is kind-specific: memory (project) and checkpoint (session) are
+// Lifecycle is kind-specific: memory (project) and session memory (session) are
 // always published live documents; plans use draft/approved (approval is a
 // review marker, not a gate); evidence and reviews use draft/published/read —
 // created as drafts, finalized to published, and dismissed with read.
@@ -150,10 +231,10 @@ export class StoreError extends Error {
   }
 }
 
-/** Default registry root: $XDG_STATE_HOME/opencode/plan-bridge or ~/.local/state/opencode/plan-bridge. */
+/** Default registry root: $XDG_STATE_HOME/opencode/artifacts or ~/.local/state/opencode/artifacts. */
 export function defaultStateRoot() {
   const base = process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state");
-  return join(base, "opencode", "plan-bridge");
+  return join(base, "opencode", "artifacts");
 }
 
 function newSharedArtifactID() {
@@ -304,9 +385,6 @@ function validateRecord(record, artifactID) {
     return "invalid status";
   if (typeof record.finalized !== "boolean")
     return "invalid finalized readiness flag";
-  // Records must use the flat kind-specific model; unsupported shapes are rejected.
-  if (record.body !== undefined)
-    return "legacy whole-document body records are not accepted";
   if (typeof record.createdAt !== "string" || record.createdAt.length === 0)
     return "missing createdAt";
   if (typeof record.updatedAt !== "string" || record.updatedAt.length === 0)
@@ -347,18 +425,15 @@ function validateRecord(record, artifactID) {
   ) {
     return "invalid readAt";
   }
-  if (record.sections !== undefined)
-    return "legacy plan sections are not accepted";
-  if (record.topics !== undefined)
-    return "legacy evidence topics are not accepted";
-  if (record.verdict !== undefined)
-    return "legacy review verdict is not accepted";
-
-  if (record.kind === "memory" || record.kind === "checkpoint") {
-    if (typeof record.content !== "string")
-      return `${record.kind} content must be a string`;
-    if (record.content.length > MAX_MARKDOWN_LENGTH)
-      return `${record.kind} content is too long`;
+  if (
+    record.kind !== "memory" &&
+    record.kind !== "session_memory" &&
+    record.sections !== undefined
+  )
+    return "sections apply to memory and session memory only";
+  if (record.kind === "memory" || record.kind === "session_memory") {
+    const problem = validateMemorySections(record);
+    if (problem) return problem;
   }
   if (record.kind === "plan") {
     if (
@@ -463,12 +538,12 @@ export function createStore(options = {}) {
     );
   }
   const root = resolvePath(options.root ?? defaultStateRoot());
-  const artifactsDir = join(root, "artifacts");
-  // Project memory is one document per project location; checkpoints are one
+  const artifactsDir = root;
+  // Project memory is one document per project location; session memory documents are one
   // document per session. Both indexes are pointers only, so injection and
   // mutation stay O(1) instead of rescanning the registry.
   const projectMemoryIndexPath = join(root, "project-memory-index.json");
-  const checkpointIndexPath = join(root, "checkpoint-index.json");
+  const sessionMemoryIndexPath = join(root, "session-memory-index.json");
 
   async function readIndex(path) {
     try {
@@ -568,9 +643,6 @@ export function createStore(options = {}) {
         `Registry record for ${artifactID} is not valid JSON`,
       );
     }
-    // Report artifacts are legacy and inert: ignore them rather than failing
-    // the whole registry scan.
-    if (record && record.kind === "report") return null;
     const problem = validateRecord(record, artifactID);
     if (problem)
       throw new StoreError(
@@ -807,14 +879,17 @@ export function createStore(options = {}) {
       approval: null,
       readAt: null,
     };
-    if (kind === "memory" || kind === "checkpoint") {
+    if (kind === "memory" || kind === "session_memory") {
       if (initial.content !== undefined)
         assertMemoryMarkdown(initial.content, "initial content", {
           allowEmpty: true,
         });
-      record.content =
-        typeof initial.content === "string" ? initial.content : "";
-      // Project memory and the session checkpoint are live working documents,
+      const parsed = parseMemoryMarkdown(
+        typeof initial.content === "string" ? initial.content : "",
+      );
+      record.sections = parsed.sections;
+      record.preamble = parsed.preamble;
+      // Project memory and the session memory are live working documents,
       // not drafts to publish or dismiss. They are always readable and editable.
       record.status = "published";
       record.finalized = true;
@@ -899,10 +974,10 @@ export function createStore(options = {}) {
       index[normalizedLocation] = artifactID;
       await writeIndex(projectMemoryIndexPath, index);
     }
-    if (kind === "checkpoint") {
-      const index = await readIndex(checkpointIndexPath);
+    if (kind === "session_memory") {
+      const index = await readIndex(sessionMemoryIndexPath);
       index[`${normalizedLocation}\u0000${ownerSessionID}`] = artifactID;
-      await writeIndex(checkpointIndexPath, index);
+      await writeIndex(sessionMemoryIndexPath, index);
     }
 
     return { artifactID, ...artifactSummaryOf(record) };
@@ -945,9 +1020,9 @@ export function createStore(options = {}) {
         { artifactID, writerSessionID: record.writerSessionID },
       );
     }
-    // Project memory and the session checkpoint are live documents: edits keep
+    // Project memory and the session memory are live documents: edits keep
     // them published and readable.
-    if (record.kind === "memory" || record.kind === "checkpoint") {
+    if (record.kind === "memory" || record.kind === "session_memory") {
       record.status = "published";
       record.finalized = true;
       record.readAt = null;
@@ -1590,6 +1665,32 @@ export function createStore(options = {}) {
     }
   }
 
+  /** A section title from the injected memory index. Titles are unique. */
+  function assertSectionTitle(section) {
+    if (typeof section !== "string" || section.trim().length === 0) {
+      throw new StoreError("validation", "section must be a non-empty title");
+    }
+  }
+
+  function findSectionByTitle(sections, title) {
+    const key = title.trim().toLowerCase();
+    return sections.find(
+      (section) => section.title.trim().toLowerCase() === key,
+    );
+  }
+
+  /** Bound the rendered structured body by the record size limit. */
+  function assertStructuredMemorySize(record) {
+    const rendered = bodyOf(record);
+    if (rendered.length > MAX_MARKDOWN_LENGTH) {
+      throw new StoreError(
+        "validation",
+        `resulting memory must be at most ${MAX_MARKDOWN_LENGTH} characters`,
+        { artifactID: record.id },
+      );
+    }
+  }
+
   /** Replace the complete session-memory body. */
   async function memoryPut({ artifactID, location, writerSessionID, content }) {
     assertMemoryMarkdown(content, "content", { allowEmpty: true });
@@ -1599,89 +1700,226 @@ export function createStore(options = {}) {
         artifactID,
         location,
         writerSessionID,
-        expectKind: ["memory", "checkpoint"],
+        expectKind: ["memory", "session_memory"],
       });
-      record.content = content;
+      const parsed = parseMemoryMarkdown(content);
+      record.sections = parsed.sections;
+      record.preamble = parsed.preamble;
+      assertStructuredMemorySize(record);
       return commitMutation(artifactID, record);
     });
   }
 
-  /** Append one Markdown block to session memory, separated by a blank line. */
+  /**
+   * Append to session memory. With no section title, a block containing `## `
+   * headings merges into matching sections or adds new ones; a block without
+   * headings appends to the last section (or the preamble). With a section
+   * title, the block is appended inside that section and must not contain
+   * headings.
+   */
   async function memoryAppend({
     artifactID,
     location,
     writerSessionID,
     content,
+    section,
   }) {
     assertMemoryMarkdown(content, "content");
+    if (section !== undefined && section !== null) {
+      assertSectionTitle(section);
+      if (/^##[ \t]+/mu.test(content)) {
+        throw new StoreError(
+          "validation",
+          "A section-targeted append must not contain `## ` headings; omit section to add a section.",
+          { artifactID, section },
+        );
+      }
+    }
     await ensureDirectories();
     return withLock(artifactID, async () => {
       const record = await prepareContentMutation({
         artifactID,
         location,
         writerSessionID,
-        expectKind: ["memory", "checkpoint"],
+        expectKind: ["memory", "session_memory"],
       });
-      const base = record.content.replace(/\s+$/u, "");
-      const next = base.length === 0 ? content : `${base}\n\n${content}`;
-      if (next.length > MAX_MARKDOWN_LENGTH) {
-        throw new StoreError(
-          "validation",
-          `resulting memory must be at most ${MAX_MARKDOWN_LENGTH} characters`,
-          { artifactID },
-        );
+      const sections = record.sections.map((entry) => ({ ...entry }));
+      let preamble = record.preamble;
+
+      if (typeof section === "string") {
+        const target = findSectionByTitle(sections, section);
+        if (!target) {
+          throw new StoreError(
+            "not_found",
+            `No section "${section}" in ${artifactID}`,
+            { artifactID, section, sections: sections.map((entry) => entry.title) },
+          );
+        }
+        const base = target.content.replace(/\s+$/u, "");
+        target.content =
+          base.length === 0 ? content : `${base}\n\n${content}`;
+      } else {
+        const parsed = parseMemoryMarkdown(content);
+        if (parsed.sections.length > 0) {
+          if (parsed.preamble.length > 0) {
+            if (sections.length > 0) {
+              const last = sections[sections.length - 1];
+              last.content =
+                last.content.length === 0
+                  ? parsed.preamble
+                  : `${last.content}\n\n${parsed.preamble}`;
+            } else {
+              preamble =
+                preamble.length === 0
+                  ? parsed.preamble
+                  : `${preamble}\n\n${parsed.preamble}`;
+            }
+          }
+          for (const parsedSection of parsed.sections) {
+            const existing = findSectionByTitle(sections, parsedSection.title);
+            if (existing) {
+              existing.content =
+                existing.content.length === 0
+                  ? parsedSection.content
+                  : `${existing.content}\n\n${parsedSection.content}`;
+            } else {
+              sections.push(parsedSection);
+            }
+          }
+        } else if (sections.length > 0) {
+          const last = sections[sections.length - 1];
+          last.content =
+            last.content.length === 0 ? content : `${last.content}\n\n${content}`;
+        } else {
+          preamble = preamble.length === 0 ? content : `${preamble}\n\n${content}`;
+        }
       }
-      record.content = next;
+
+      record.sections = sections;
+      record.preamble = preamble;
+      assertStructuredMemorySize(record);
       return commitMutation(artifactID, record);
     });
   }
 
-  /** Replace one exact occurrence in session memory; a stale base is refused. */
+  /**
+   * Replace one exact occurrence in session memory; a stale or ambiguous base
+   * is refused. A section title narrows the search to one section.
+   */
   async function memoryPatch({
     artifactID,
     location,
     writerSessionID,
     oldText,
     newText,
+    section,
   }) {
     assertMemoryMarkdown(oldText, "oldText");
     assertMemoryMarkdown(newText, "newText", { allowEmpty: true });
+    if (section !== undefined && section !== null) assertSectionTitle(section);
+    if (/^##[ \t]+/mu.test(newText)) {
+      throw new StoreError(
+        "validation",
+        "A patch must not introduce `## ` headings; append a section instead.",
+        { artifactID },
+      );
+    }
     await ensureDirectories();
     return withLock(artifactID, async () => {
       const record = await prepareContentMutation({
         artifactID,
         location,
         writerSessionID,
-        expectKind: ["memory", "checkpoint"],
+        expectKind: ["memory", "session_memory"],
       });
-      const first = record.content.indexOf(oldText);
-      if (
-        first === -1 ||
-        record.content.indexOf(oldText, first + oldText.length) !== -1
-      ) {
-        throw new StoreError(
-          "patch_conflict",
-          "Memory patch refused: oldText must occur exactly once in the current memory. Re-read the memory and re-base the patch. No write was made.",
-          { artifactID },
+      const sections = record.sections.map((entry) => ({ ...entry }));
+      let preamble = record.preamble;
+      let replaced = false;
+
+      const replaceOnce = (text) => {
+        const first = text.indexOf(oldText);
+        if (
+          first === -1 ||
+          text.indexOf(oldText, first + oldText.length) !== -1
+        ) {
+          return null;
+        }
+        return (
+          text.slice(0, first) +
+          newText +
+          text.slice(first + oldText.length)
         );
-      }
-      const next =
-        record.content.slice(0, first) +
-        newText +
-        record.content.slice(first + oldText.length);
-      if (next.length > MAX_MARKDOWN_LENGTH) {
-        throw new StoreError(
-          "validation",
-          `resulting memory must be at most ${MAX_MARKDOWN_LENGTH} characters`,
-          { artifactID },
+      };
+
+      if (typeof section === "string") {
+        const target = findSectionByTitle(sections, section);
+        if (!target) {
+          throw new StoreError(
+            "not_found",
+            `No section "${section}" in ${artifactID}`,
+            { artifactID, section, sections: sections.map((entry) => entry.title) },
+          );
+        }
+        const next = replaceOnce(target.content);
+        if (next === null) {
+          throw new StoreError(
+            "patch_conflict",
+            `Memory patch refused: oldText must occur exactly once in section "${target.title}". Re-read the section and re-base the patch. No write was made.`,
+            { artifactID, section: target.title },
+          );
+        }
+        target.content = next;
+        replaced = true;
+      } else {
+        const segments = [
+          { scope: "preamble", text: preamble },
+          ...sections.map((entry) => ({
+            scope: "section",
+            title: entry.title,
+            text: entry.content,
+          })),
+        ];
+        const hits = segments.filter((segment) =>
+          segment.text.includes(oldText),
         );
+        const total = hits.reduce(
+          (count, segment) =>
+            count + segment.text.split(oldText).length - 1,
+          0,
+        );
+        if (total !== 1) {
+          throw new StoreError(
+            "patch_conflict",
+            "Memory patch refused: oldText must occur exactly once in the current memory. Re-read the memory and re-base the patch. No write was made.",
+            { artifactID },
+          );
+        }
+        const target = hits[0];
+        const next = replaceOnce(target.text);
+        if (target.scope === "preamble") preamble = next;
+        else {
+          const targetSection = sections.find(
+            (entry) => entry.title === target.title,
+          );
+          targetSection.content = next;
+        }
+        replaced = true;
       }
-      record.content = next;
+
+      if (!replaced) {
+        throw new StoreError("patch_conflict", "Memory patch refused.", {
+          artifactID,
+        });
+      }
+
+      record.sections = sections;
+      record.preamble = preamble;
+      assertStructuredMemorySize(record);
       return commitMutation(artifactID, record);
     });
   }
 
-  /** Full memory/checkpoint loader, read-only and kind-locked. */
+  /** Full memory/session memory loader, read-only and kind-locked. */
   async function getMemory({ artifactID, location }) {
     assertArtifactID(artifactID);
     const normalizedLocation = normalizeLocation(location);
@@ -1689,10 +1927,10 @@ export function createStore(options = {}) {
     const record = await loadScoped(artifactID, normalizedLocation, {
       label: "memory artifact",
     });
-    if (record.kind !== "memory" && record.kind !== "checkpoint") {
+    if (record.kind !== "memory" && record.kind !== "session_memory") {
       throw new StoreError(
         "invalid_kind",
-        `Memory loading applies to memory and checkpoint only; ${artifactID} is a ${record.kind}`,
+        `Memory loading applies to memory and session memory only; ${artifactID} is a ${record.kind}`,
         {
           artifactID,
           kind: record.kind,
@@ -1711,17 +1949,62 @@ export function createStore(options = {}) {
     const record = await loadScoped(artifactID, normalizedLocation, {
       label: "memory artifact",
     });
-    if (record.kind !== "memory" && record.kind !== "checkpoint") {
+    if (record.kind !== "memory" && record.kind !== "session_memory") {
       throw new StoreError(
         "invalid_kind",
-        `Memory summaries apply to memory and checkpoint only; ${artifactID} is a ${record.kind}`,
+        `Memory summaries apply to memory and session memory only; ${artifactID} is a ${record.kind}`,
         {
           artifactID,
           kind: record.kind,
         },
       );
     }
-    return { ...artifactSummaryOf(record), content: record.content };
+    return {
+      ...artifactSummaryOf(record),
+      content: bodyOf(record),
+      sections: record.sections,
+      preamble: record.preamble,
+    };
+  }
+
+  /** One structured section from a memory or session memory, addressed by title. */
+  async function getMemorySection({ artifactID, location, section }) {
+    assertArtifactID(artifactID);
+    assertSectionTitle(section);
+    const normalizedLocation = normalizeLocation(location);
+    await ensureDirectories();
+    const record = await loadScoped(artifactID, normalizedLocation, {
+      label: "memory artifact",
+    });
+    if (record.kind !== "memory" && record.kind !== "session_memory") {
+      throw new StoreError(
+        "invalid_kind",
+        `Memory sections apply to memory and session memory only; ${artifactID} is a ${record.kind}`,
+        { artifactID, kind: record.kind },
+      );
+    }
+    const found = findSectionByTitle(record.sections, section);
+    if (!found) {
+      throw new StoreError(
+        "not_found",
+        `No section "${section}" in ${artifactID}`,
+        {
+          artifactID,
+          section,
+          sections: record.sections.map((entry) => entry.title),
+        },
+      );
+    }
+    return { ...artifactSummaryOf(record), section: found };
+  }
+
+  /** The memory view carries its structured sections for the injected index. */
+  function memoryViewOf(record) {
+    return {
+      ...artifactViewOf(record, bodyOf(record)),
+      sections: record.sections,
+      preamble: record.preamble,
+    };
   }
 
   /** Project memory for a location, or null when none exists. */
@@ -1739,7 +2022,7 @@ export function createStore(options = {}) {
           record.kind === "memory" &&
           record.location === normalizedLocation
         ) {
-          return artifactViewOf(record, record.content);
+          return memoryViewOf(record);
         }
       }
     }
@@ -1761,28 +2044,28 @@ export function createStore(options = {}) {
     }
     index[normalizedLocation] = found ? found.id : null;
     await writeIndex(projectMemoryIndexPath, index).catch(() => {});
-    return found ? artifactViewOf(found, found.content) : null;
+    return found ? memoryViewOf(found) : null;
   }
 
-  /** Session checkpoint for a session at a location, or null. */
-  async function findCheckpointForSession({ sessionID, location }) {
+  /** Session memory for a session at a location, or null. */
+  async function findSessionMemoryForSession({ sessionID, location }) {
     assertNonEmptyString(sessionID, "sessionID", MAX_SESSION_LENGTH);
     const normalizedLocation = normalizeLocation(location);
     await ensureDirectories();
 
     const key = `${normalizedLocation}\u0000${sessionID}`;
-    const index = await readIndex(checkpointIndexPath);
+    const index = await readIndex(sessionMemoryIndexPath);
     if (Object.prototype.hasOwnProperty.call(index, key)) {
       const indexed = index[key];
       if (typeof indexed === "string" && ARTIFACT_ID_PATTERN.test(indexed)) {
         const record = await readRecord(indexed);
         if (
           record &&
-          record.kind === "checkpoint" &&
+          record.kind === "session_memory" &&
           record.location === normalizedLocation &&
           record.ownerSessionID === sessionID
         ) {
-          return artifactViewOf(record, record.content);
+          return memoryViewOf(record);
         }
       }
     }
@@ -1795,15 +2078,15 @@ export function createStore(options = {}) {
       if (
         !record ||
         record.location !== normalizedLocation ||
-        record.kind !== "checkpoint" ||
+        record.kind !== "session_memory" ||
         record.ownerSessionID !== sessionID
       )
         continue;
       if (!found || record.updatedAt > found.updatedAt) found = record;
     }
     index[key] = found ? found.id : null;
-    await writeIndex(checkpointIndexPath, index).catch(() => {});
-    return found ? artifactViewOf(found, found.content) : null;
+    await writeIndex(sessionMemoryIndexPath, index).catch(() => {});
+    return found ? memoryViewOf(found) : null;
   }
 
   /**
@@ -2983,8 +3266,9 @@ export function createStore(options = {}) {
     memoryPatch,
     getMemory,
     getMemorySummary,
+    getMemorySection,
     findProjectMemory,
-    findCheckpointForSession,
+    findSessionMemoryForSession,
     artifactSearch,
     planFieldSet,
     planFieldPatch,

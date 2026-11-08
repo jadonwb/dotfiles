@@ -19,20 +19,20 @@ const FIXTURE_BASE = join("/tmp", "opencode");
 
 async function makeStore(t) {
   await mkdir(FIXTURE_BASE, { recursive: true });
-  const root = await mkdtemp(join(FIXTURE_BASE, "plan-bridge-test-"));
+  const root = await mkdtemp(join(FIXTURE_BASE, "artifacts-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   return { store: createStore({ root }), root };
 }
 
-const LOCATION_A = "/tmp/opencode/plan-bridge-fixture-location-a";
-const LOCATION_B = "/tmp/opencode/plan-bridge-fixture-location-b";
+const LOCATION_A = "/tmp/opencode/artifacts-fixture-location-a";
+const LOCATION_B = "/tmp/opencode/artifacts-fixture-location-b";
 const OWNER = "ses_owner0000000000000000";
 const WRITER = "ses_writer000000000000000";
 const OTHER_WRITER = "ses_otherwriter00000000000";
 const AUTHOR = "System";
 
 function recordPathOf(root, artifactID) {
-  return join(root, "artifacts", artifactID, "record.json");
+  return join(root, artifactID, "record.json");
 }
 
 async function readRecord(root, artifactID) {
@@ -119,7 +119,7 @@ async function createApprovedPlan(store) {
 
 test("default root is under the opencode state directory", () => {
   const root = defaultStateRoot();
-  assert.ok(root.endsWith(join("opencode", "plan-bridge")));
+  assert.ok(root.endsWith(join("opencode", "artifacts")));
 });
 
 test("createArtifact initializes flat records: plan prose/evidence, evidence overview/findings, review outcome/summary/findings", async (t) => {
@@ -143,7 +143,7 @@ test("createArtifact initializes flat records: plan prose/evidence, evidence ove
   );
   assert.equal(
     plan.path,
-    join(root, "artifacts", plan.artifactID, "current.md"),
+    join(root, plan.artifactID, "current.md"),
   );
 
   const record = await readRecord(root, plan.artifactID);
@@ -1392,7 +1392,7 @@ test("mark-read applies to evidence/review; plans reject it, approval rejects no
 
 test("unsupported record shapes are rejected", async (t) => {
   const { store, root } = await makeStore(t);
-  await mkdir(join(root, "artifacts"), { recursive: true });
+  await mkdir(root, { recursive: true });
   const unsupportedShapes = [
     {
       id: "art_00000001",
@@ -1471,18 +1471,15 @@ test("unsupported record shapes are rejected", async (t) => {
     },
   ];
   for (const record of unsupportedShapes) {
-    await mkdir(join(root, "artifacts", record.id), { recursive: true });
+    await mkdir(join(root, record.id), { recursive: true });
     await writeFile(
-      join(root, "artifacts", record.id, "record.json"),
+      join(root, record.id, "record.json"),
       JSON.stringify(record),
       "utf8",
     );
     await assert.rejects(
       store.getArtifact({ artifactID: record.id, location: LOCATION_A }),
-      (error) =>
-        error instanceof StoreError &&
-        error.code === "io" &&
-        /legacy|sections|topics|verdict/i.test(error.message),
+      (error) => error instanceof StoreError && error.code === "io",
       `expected rejection for ${record.id}`,
     );
   }
@@ -1776,7 +1773,6 @@ test("get repairs a current.md that diverged from the authoritative record", asy
   });
   const currentPath = join(
     root,
-    "artifacts",
     evidence.artifactID,
     "current.md",
   );
@@ -1816,7 +1812,7 @@ test("list on an empty or deleted registry returns an empty array, not ENOENT", 
   const empty = await store.listArtifacts({ location: LOCATION_A });
   assert.deepEqual(empty, [], "a fresh registry has no artifacts");
 
-  await rm(join(root, "artifacts"), { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true });
   const after = await store.listArtifacts({ location: LOCATION_A });
   assert.deepEqual(
     after,
@@ -2195,7 +2191,7 @@ test("delivery bookkeeping is unambiguous by submission type even on requestID r
 test("an existing artifact lock is reported, not bypassed; release restores mutations", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
-  const lockPath = join(root, "artifacts", plan.artifactID, "lock");
+  const lockPath = join(root, plan.artifactID, "lock");
   await writeFile(lockPath, "held\n", { mode: 0o600 });
 
   await assert.rejects(
@@ -2314,30 +2310,68 @@ test("session memory is always published, appends incrementally, patches exactly
     content: "## Decisions\n\nKeep the store flat.",
   });
   let record = await readRecord(root, memory.artifactID);
-  assert.match(record.content, /## Objective\n\nFinish the migration\./);
-  assert.match(record.content, /## Decisions\n\nKeep the store flat\./);
+  assert.deepEqual(
+    record.sections.map((section) => section.title),
+    ["Objective", "Decisions"],
+    "each `## ` block becomes a structured section",
+  );
+  assert.match(record.sections[0].content, /Finish the migration\./);
+  assert.match(record.sections[1].content, /Keep the store flat\./);
+  assert.equal(record.content, undefined, "the raw body is not duplicated");
   assert.equal(record.status, "published", "appends keep memory published");
+
+  await store.memoryAppend({
+    artifactID: memory.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    section: "Objective",
+    content: "- Verify before handoff.",
+  });
+  record = await readRecord(root, memory.artifactID);
+  assert.match(record.sections[0].content, /Verify before handoff\./);
+  assert.equal(record.sections.length, 2, "a targeted append adds no section");
 
   await store.memoryPatch({
     artifactID: memory.artifactID,
     location: LOCATION_A,
     writerSessionID: WRITER,
+    section: "Objective",
     oldText: "Finish the migration.",
     newText: "Finish the migration and verify it.",
   });
   record = await readRecord(root, memory.artifactID);
-  assert.match(record.content, /Finish the migration and verify it\./);
+  assert.match(record.sections[0].content, /Finish the migration and verify it\./);
 
+  const loadedSection = await store.getMemorySection({
+    artifactID: memory.artifactID,
+    location: LOCATION_A,
+    section: "Objective",
+  });
+  assert.equal(loadedSection.section.title, "Objective");
+  assert.match(loadedSection.section.content, /Verify before handoff\./);
+
+  await store.memoryAppend({
+    artifactID: memory.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    content: "## Duplicate A\n\nsame text.",
+  });
+  await store.memoryAppend({
+    artifactID: memory.artifactID,
+    location: LOCATION_A,
+    writerSessionID: WRITER,
+    content: "## Duplicate B\n\nsame text.",
+  });
   await assert.rejects(
     store.memoryPatch({
       artifactID: memory.artifactID,
       location: LOCATION_A,
       writerSessionID: WRITER,
-      oldText: "## ",
-      newText: "## ",
+      oldText: "same text.",
+      newText: "changed.",
     }),
     (error) => error instanceof StoreError && error.code === "patch_conflict",
-    "a non-unique base is refused",
+    "a base that occurs in more than one section is refused",
   );
 
   const found = await store.findProjectMemory({ location: LOCATION_A });
@@ -2382,27 +2416,28 @@ test("session memory is always published, appends incrementally, patches exactly
     content: "## Shared\n\n- visible to every session in the project.",
   });
   record = await readRecord(root, memory.artifactID);
-  assert.match(record.content, /visible to every session/);
+  assert.equal(record.sections.at(-1).title, "Shared");
+  assert.match(record.sections.at(-1).content, /visible to every session/);
 
-  // The session checkpoint is a second, session-owned document.
-  const checkpoint = await store.createArtifact({
-    kind: "checkpoint",
+  // The session memory is a second, session-owned document.
+  const sessionMemory = await store.createArtifact({
+    kind: "session_memory",
     ownerSessionID: OWNER,
     writerSessionID: WRITER,
     primaryAuthor: "System",
     location: LOCATION_A,
-    title: "Session checkpoint",
+    title: "Session memory",
     description: "Objective and progress.",
   });
-  assert.equal(checkpoint.status, "published");
-  assert.equal(checkpoint.finalized, true);
-  const checkpointView = await store.findCheckpointForSession({
+  assert.equal(sessionMemory.status, "published");
+  assert.equal(sessionMemory.finalized, true);
+  const sessionMemoryView = await store.findSessionMemoryForSession({
     sessionID: OWNER,
     location: LOCATION_A,
   });
-  assert.equal(checkpointView.id, checkpoint.artifactID);
+  assert.equal(sessionMemoryView.id, sessionMemory.artifactID);
   assert.equal(
-    await store.findCheckpointForSession({
+    await store.findSessionMemoryForSession({
       sessionID: "ses_none00000000000000000",
       location: LOCATION_A,
     }),
@@ -2410,13 +2445,13 @@ test("session memory is always published, appends incrementally, patches exactly
   );
   await assert.rejects(
     store.memoryAppend({
-      artifactID: checkpoint.artifactID,
+      artifactID: sessionMemory.artifactID,
       location: LOCATION_A,
       writerSessionID: OTHER_WRITER,
       content: "x",
     }),
     (error) => error instanceof StoreError && error.code === "forbidden",
-    "the checkpoint stays owned by its session",
+    "the session memory stays owned by its session",
   );
 });
 
@@ -3521,7 +3556,7 @@ test("mark-read applies to evidence/review; plans reject it, approval rejects no
 
 test("unsupported record shapes are rejected", async (t) => {
   const { store, root } = await makeStore(t);
-  await mkdir(join(root, "artifacts"), { recursive: true });
+  await mkdir(root, { recursive: true });
   const unsupportedShapes = [
     {
       id: "art_00000001",
@@ -3600,18 +3635,15 @@ test("unsupported record shapes are rejected", async (t) => {
     },
   ];
   for (const record of unsupportedShapes) {
-    await mkdir(join(root, "artifacts", record.id), { recursive: true });
+    await mkdir(join(root, record.id), { recursive: true });
     await writeFile(
-      join(root, "artifacts", record.id, "record.json"),
+      join(root, record.id, "record.json"),
       JSON.stringify(record),
       "utf8",
     );
     await assert.rejects(
       store.getArtifact({ artifactID: record.id, location: LOCATION_A }),
-      (error) =>
-        error instanceof StoreError &&
-        error.code === "io" &&
-        /legacy|sections|topics|verdict/i.test(error.message),
+      (error) => error instanceof StoreError && error.code === "io",
       `expected rejection for ${record.id}`,
     );
   }
@@ -3905,7 +3937,6 @@ test("get repairs a current.md that diverged from the authoritative record", asy
   });
   const currentPath = join(
     root,
-    "artifacts",
     evidence.artifactID,
     "current.md",
   );
@@ -3945,7 +3976,7 @@ test("list on an empty or deleted registry returns an empty array, not ENOENT", 
   const empty = await store.listArtifacts({ location: LOCATION_A });
   assert.deepEqual(empty, [], "a fresh registry has no artifacts");
 
-  await rm(join(root, "artifacts"), { recursive: true, force: true });
+  await rm(root, { recursive: true, force: true });
   const after = await store.listArtifacts({ location: LOCATION_A });
   assert.deepEqual(
     after,
@@ -4324,7 +4355,7 @@ test("delivery bookkeeping is unambiguous by submission type even on requestID r
 test("an existing artifact lock is reported, not bypassed; release restores mutations", async (t) => {
   const { store, root } = await makeStore(t);
   const plan = await createPlan(store);
-  const lockPath = join(root, "artifacts", plan.artifactID, "lock");
+  const lockPath = join(root, plan.artifactID, "lock");
   await writeFile(lockPath, "held\n", { mode: 0o600 });
 
   await assert.rejects(
@@ -4489,40 +4520,40 @@ test("artifact search finds project memory and evidence by text, with a kind fil
   );
 });
 
-test("checkpoint content is rendered verbatim and searchable", async (t) => {
+test("session memory content is rendered verbatim and searchable", async (t) => {
   const { store, root } = await makeStore(t);
-  const checkpoint = await store.createArtifact({
-    kind: "checkpoint",
+  const sessionMemory = await store.createArtifact({
+    kind: "session_memory",
     ownerSessionID: OWNER,
     writerSessionID: WRITER,
     primaryAuthor: "System",
     location: LOCATION_A,
-    title: "Session checkpoint",
+    title: "Session memory",
     description: "Objective and progress.",
     initial: { content: "## Objective\n\nFinish the split." },
   });
 
   const view = await store.getMemory({
-    artifactID: checkpoint.artifactID,
+    artifactID: sessionMemory.artifactID,
     location: LOCATION_A,
   });
   assert.match(view.content, /## Objective\n\nFinish the split\./);
 
   const onDisk = await readFile(
-    join(root, "artifacts", checkpoint.artifactID, "current.md"),
+    join(root, sessionMemory.artifactID, "current.md"),
     "utf8",
   );
-  assert.match(onDisk, /kind: "checkpoint"/);
+  assert.match(onDisk, /kind: "session_memory"/);
   assert.match(onDisk, /Finish the split\./);
 
   const found = await store.artifactSearch({
     location: LOCATION_A,
     query: "finish split",
-    kinds: ["checkpoint"],
+    kinds: ["session_memory"],
   });
   assert.deepEqual(
     found.results.map((result) => result.id),
-    [checkpoint.artifactID],
+    [sessionMemory.artifactID],
   );
 });
 
@@ -4538,7 +4569,7 @@ test("artifact search reads stored text without rendering or rewriting the view"
     description: "Search fixture.",
     initial: { content: "## Quirk\n\nstored-only phrase." },
   });
-  const viewPath = join(root, "artifacts", memory.artifactID, "current.md");
+  const viewPath = join(root, memory.artifactID, "current.md");
   await rm(viewPath);
 
   const found = await store.artifactSearch({

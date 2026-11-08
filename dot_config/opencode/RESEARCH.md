@@ -30,20 +30,20 @@ memory, a review workflow, and DeepSeek tool guidance.
 
 OpenCode's built-in summary prompt asks for terse single-line bullets, a short
 "Relevant Files" list, and explicitly prefers short references. On later
-compactions it reconciles the previous checkpoint and gives newer history
+compactions it reconciles the previous compaction summary and gives newer history
 precedence. No request override is installed: an earlier prompt override and a
 later addendum were both removed (see the 2026-11-07 section), because they
 duplicated the built-in, depended on English marker strings, and had no A/B
 showing benefit. The anchor set lives outside the summarizer instead.
 
-The checkpoint keeps the tiered shape now common in harnesses:
+The summary keeps the tiered shape now common in harnesses:
 
 - **T0 — instructions/rules** are re-read by the harness after compaction; do
   not duplicate them in the summary.
 - **T1 — task state** (objective, requirements, decisions, completed/active/
   blocked work, next move, exact identifiers) is carried verbatim or nearly so.
 - **T2 — durable memory** is externalized in the artifact registry and
-  re-injected on every request, so it survives any number of summaries.
+  re-read by the harness, so it survives any number of summaries.
 - **T3 — transcript** is what gets compressed.
 
 The same idea appears in Claude Code (compaction re-reads `CLAUDE.md` and auto
@@ -79,10 +79,10 @@ the summarizer.
   surviving compaction and restarts: state lives on disk, not in the transcript
   (<https://cookbook.openai.com/articles/codex_exec_plans>).
 
-Applied here: session memory is an always-published artifact, injected into
-context on every request; the next request reloads it after compaction. Plans
-are working documents that can be updated incrementally, not a single write at
-the end.
+Applied here: memory is always published. Project memory is injected as a
+structured section index on every primary request; session memory is appended
+after compaction. Plans are working documents that can be updated incrementally,
+not a single write at the end.
 
 ## DeepSeek V4.1 Flash 1017
 
@@ -225,7 +225,7 @@ manual compaction. The first attempt failed with
 `TypeError: u.content.map is not a function` because the memory hook pushed a
 message with string content instead of typed content parts. After fixing the
 hook to push `content: [{ type: "text", text }]`, compaction completed and the
-checkpoint preserved the memory and artifact ID. A follow-up prompt answered
+compaction summary preserved the memory and artifact ID. A follow-up prompt answered
 `ORANGE-42` from the re-injected memory. This is the end-to-end proof that the
 context hook and memory index work together; the old compaction hook mentioned
 in that experiment has since been removed.
@@ -332,7 +332,7 @@ in that experiment has since been removed.
 
 - V2 splits the plugin surface into `prompt` (admission, redaction, attachment),
   `context` (runs before every agent-loop model call in a tool loop), and
-  `compaction` (checkpoint summary; `event.result` replaces the model call). The
+  `compaction` (summary; `event.result` replaces the model call). The
   artifact registry uses exactly `context` + `compaction`, which is the
   supported seam for this behavior. The `prompt` hook is the right place if
   redaction or file attachment is ever needed
@@ -404,9 +404,9 @@ in that experiment has since been removed.
 
 ### Changes applied from this research
 
-- Session memory is always-on default behavior, kept to ~40 lines as a resume
-  index, with Preferences and References; durable detail stays in the repo or
-  the relevant artifact.
+- Project memory is indexed on every primary request; session memory is
+  appended to the compaction summary. Durable detail stays in the artifact
+  sections and is loaded on demand.
 - Memory is appended as an extra system part at the end of the instructions, not
   as a user message or a visible context entry. The stable prefix before it
   stays cacheable, and the memory never appears in the transcript. Each memory
@@ -424,16 +424,16 @@ in that experiment has since been removed.
   that are never merged.
 - (Superseded 2026-11-07.) A compaction addendum once carried an
   `## Errors and Fixes` section and asked for verbatim user wording. It was
-  removed after review: the checkpoint is the better carrier for requirements,
+  removed after review: session memory is the better carrier for requirements,
   the built-in prompt already reconciles newer history, and the addendum had no
   A/B evidence. Large tool output is still written to a file and referenced, not
   pasted into context.
 - (Superseded 2026-11-07.) The system prompt once required a cold-start reload
-  after every compaction. It now trusts the injected checkpoint and re-reads or
+  after every compaction. It now trusts the appended session memory and re-reads or
   verifies only when information is missing, contradictory, or may have changed.
-- Memory is updated by append or patch; the full body is rewritten only when
-  consolidating, to avoid the brevity bias and context collapse that repeated
-  whole-context rewriting produces.
+- Memory is updated by append or patch; the whole document is rewritten only
+  when consolidating, to avoid the brevity bias and context collapse that
+  repeated whole-context rewriting produces.
 - The custom diagram tool was removed after confirming OpenCode's built-in
   `opencode.merman` TUI renderer; only the `mermaid-diagrams` skill remains.
 
@@ -451,48 +451,49 @@ Primary evidence: strings extracted from the OpenCode 2.2.6 binary
   (uncommitted/committed/pushed/reviewed) recorded. Its rules exclude
   instructions, AGENTS.md, and environment details because the next agent
   receives them separately.
-- On later compactions it already instructs: "Newer history always takes
-  precedence over the existing checkpoint", and to reconcile Work State and Next
-  Move, moving completed work out of Active and dropping resolved blockers.
+- On later compactions it already gives newer history precedence over the
+  existing summary and asks to reconcile Work State and Next Move, moving
+  completed work out of Active and dropping resolved blockers.
 - Built-in defaults are `keep: 15000` tokens and `precompute: false`.
 
 Consequence: replacing that prompt with a near-copy was redundant, lost the
 consolidation rules, and depended on English marker strings. An addendum was
 tried next and later removed as well: it duplicated the built-in precedence
 rule, added a provider-specific request rewrite, and had no A/B evidence that it
-improved retention. Verbatim requirements now live in the session checkpoint,
-which is recorded when they are given and re-injected on every request. The
-built-in prompt is used unmodified.
+improved retention. Verbatim requirements now live in session memory,
+which is recorded when they are given and appended to the compaction summary.
+The built-in prompt is used unmodified.
 
-### Project memory and checkpoint
+### Project memory and session memory
 
 - Memory is project-scoped, not session-scoped. The project root is the git
   common checkout: a normal checkout resolves to its toplevel, a linked worktree
   to the main checkout, a submodule to its own root, and a non-git directory to
   itself. Subdirectories therefore share one memory.
-- Two documents: `memory` (project knowledge) and `checkpoint` (session state).
-  Both are live/published; the checkpoint is the only progress log.
+- Two documents: `memory` (project knowledge) and `session_memory` (session state).
+  Both are live/published; session memory is the only progress log.
 - Three index files keep lookup O(1): `project-memory-index.json`,
-  `checkpoint-index.json`, and the scan fallback that repairs stale entries.
-- Discovery is plain text search (`artifact_search`) over the stored Markdown
+  `session-memory-index.json`, and the scan fallback that repairs stale entries.
+- Discovery is plain text search (`artifact_search`) over the rendered body
   (no Prettier render) with a kind filter. Chroma's context-rot work and
   Anthropic's just-in-time retrieval both argue for retrieving only what is
   relevant; there is no evidence yet that this project needs embeddings, so it
   does not have them.
 - Project memory is mutated by any primary session in the project (the writer
-  restriction is dropped for this kind); checkpoints remain writer-owned.
+  restriction is dropped for this kind); session memory remains writer-owned.
 
 ### Injection and precedence
 
-- The context block carries the checkpoint in full (head+tail bound, so newly
-  appended progress cannot be truncated away) and project memory as an index
-  (title, description, section headings). Bodies are loaded or searched on
+- The context block carries project memory as an index built from its structured
+  JSON sections: a plain `Project memory` heading, bounded `Core` content, and
+  every other section's title and short preview. Session memory is appended to
+  the compaction summary, verbatim. Section bodies are loaded or searched on
   demand.
 - The block is explicitly background, not authority: the newest user instruction
   and verified tool output override it. This matches Manus's "keep errors but
   not stale self-diagnosis" and the built-in consolidation rule.
 - Nothing is injected into the compaction transcript. The next request reloads
-  the checkpoint and project memory, so copying them into the summarizer would
+  session memory and project memory, so copying them into the summarizer would
   only add a second, staler version.
 
 ### Planning and `/goal`
@@ -503,7 +504,7 @@ built-in prompt is used unmodified.
 - Formal planning is therefore opt-in: plan when the user asks, finalize, and
   stop with an explicit blocker ("waiting for approval of art_…") so the goal
   judge pauses instead of auto-continuing. Without an explicit request, plans
-  never gate work, and progress lives in the checkpoint rather than a second
+  never gate work, and progress lives in session memory rather than a second
   status log.
 - A research-and-plan objective works under one goal: publish evidence, then the
   plan, then stop for approval.
@@ -557,8 +558,9 @@ real ones. Sessions were driven through the HTTP API and inspected with
 
 ## Artifact model
 
-- `memory` is shared project knowledge and `checkpoint` is live session state;
-  both are always published and injected into context.
+- `memory` is shared project knowledge and `session_memory` is live session state;
+  both are always published. Project memory is indexed on every primary request;
+  session memory is appended to the compaction summary.
 - `plan` is an optional working document; `plan_finalize` marks readiness for
   review, not permission to implement.
 - `evidence` holds reusable research with self-contained findings.
@@ -589,9 +591,10 @@ same artifacts remain viewable in Neovim and readable by any future client.
   readiness, and approval but rejects later content mutations. A follow-up plan
   can point at the completed plan with `previousPlanID`.
 - Memory injection checks the agent's `primary` mode via `ctx.agent.get`
-  instead of comparing the agent name to `system`. Project-memory indexes now
-  carry `updatedAt` and a bounded `## Core` section; checkpoint clipping keeps
-  priority sections (`Objective`, `Requirements`, `Decisions`, `Blockers`,
-  `Next Move`) instead of slicing the middle by character count.
+  instead of comparing the agent name to `system`. Memory and session memory store
+  structured `sections` with unique titles; the project-memory index lists each
+  title and preview, and `memory_load` can load one section by title. The
+  session memory is appended to the compaction summary, not injected on every
+  request; it is appended verbatim.
 - `search` and `review` permissions start with a `* deny` gate, and `search`
   denies `write`. The read-only contract is structural, not prompt-only.

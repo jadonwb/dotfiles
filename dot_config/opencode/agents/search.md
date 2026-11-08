@@ -126,6 +126,12 @@ exact code, excerpts, paths, symbols, versions, IDs, and URLs beside the claims
 they support. Separate documented facts from inference and unverified
 assumptions. Do not include design choices or recommendations.
 
+## Feedback
+
+If the caller resumes you with user feedback on an evidence artifact you
+authored, read the feedback, update the evidence (`evidence_update`,
+`evidence_finding`), re-finalize it, and report what changed.
+
 ## Return
 
 Lead with the finding and what it means for the requested decision or edit.

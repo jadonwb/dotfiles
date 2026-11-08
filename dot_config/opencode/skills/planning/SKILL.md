@@ -47,9 +47,9 @@ Do not write file-by-file edit instructions, code, line anchors, or a full task
 breakdown before the work is understood. Those belong in the work itself. If a
 stage needs its own design pass, do that pass when you reach it.
 
-## Progress belongs in the checkpoint
+## Progress belongs in session memory
 
-The session checkpoint (see the memory tools) is the only progress log:
+Session memory (see the memory tools) is the only progress log:
 
 - objective and current requirements
 - decisions made
@@ -75,7 +75,7 @@ state.
    occurrence.
 4. `tools.plan["finalize"]({ artifactID })` — ready for review.
 5. If the user asked for planning: report the plan ID and ask for approval, then
-   stop. Otherwise implement, updating the checkpoint as you go. When the
+   stop. Otherwise implement, updating session memory as you go. When the
    significant work is done, record the outcome with `plan_complete`.
 
 ## Shape
@@ -134,5 +134,5 @@ both.
 - Planning because the change touches several files.
 - Implementing before the approval you were asked to wait for.
 - Turning the plan into a file-by-file task list before the work is understood.
-- Keeping progress in both the plan and the checkpoint.
+- Keeping progress in both the plan and session memory.
 - Expanding scope silently instead of updating the plan.

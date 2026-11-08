@@ -65,7 +65,7 @@ to act.
 
 - **Pass** — record the result and continue.
 - **Changes required** — apply the correction in scope, rerun the focused check,
-  and update the plan or checkpoint. If the correction expands scope, stop and put
+  and update the plan or session memory. If the correction expands scope, stop and put
   the decision to the user.
 - **Blocked** — obtain the missing fact or tell the user what is missing.
 
@@ -75,6 +75,8 @@ loop; if it repeats, report the blocker.
 
 ## User feedback
 
-If the user comments on a review artifact, read the artifact by ID, answer the
-specific point, and update the review or the underlying work. Do not restart the
-review from scratch.
+If the user comments on a review artifact, read it by ID and answer the specific
+point. The review is writer-owned by the review subagent: resume that subagent
+with the feedback so it updates and re-finalizes the review, then reload it. Do
+not rewrite the review from the primary session or restart the review from
+scratch.

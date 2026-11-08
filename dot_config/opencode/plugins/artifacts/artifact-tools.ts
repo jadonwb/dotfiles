@@ -39,7 +39,7 @@ const MAX_ANCESTRY_HOPS = 16;
 // an ID the model has no tool to load.
 const SEARCHABLE_KINDS = Object.freeze([
   "memory",
-  "checkpoint",
+  "session_memory",
   "plan",
   "evidence",
   "review",
@@ -325,6 +325,17 @@ export type ArtifactView = ArtifactSummary & {
   content: string;
 };
 
+/** One structured `## ` section of project memory or a session memory. */
+export type MemorySection = {
+  title: string;
+  content: string;
+};
+
+export type MemoryView = ArtifactView & {
+  sections: MemorySection[];
+  preamble: string;
+};
+
 export type ArtifactStructure = {
   evidence?: string[];
   findings?: { id: string; title: string }[];
@@ -358,6 +369,7 @@ export type ArtifactToolDeps = {
       location: string;
       writerSessionID: string;
       content: string;
+      section?: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     memoryPatch(input: {
       artifactID: string;
@@ -365,6 +377,7 @@ export type ArtifactToolDeps = {
       writerSessionID: string;
       oldText: string;
       newText: string;
+      section?: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     planFieldSet(input: {
       artifactID: string;
@@ -512,14 +525,25 @@ export type ArtifactToolDeps = {
     getMemorySummary(input: {
       artifactID: string;
       location: string;
-    }): Promise<ArtifactSummary & { content: string }>;
+    }): Promise<
+      ArtifactSummary & {
+        content: string;
+        sections: MemorySection[];
+        preamble: string;
+      }
+    >;
+    getMemorySection(input: {
+      artifactID: string;
+      location: string;
+      section: string;
+    }): Promise<ArtifactSummary & { section: MemorySection }>;
     findProjectMemory(input: {
       location: string;
-    }): Promise<ArtifactView | null>;
-    findCheckpointForSession(input: {
+    }): Promise<MemoryView | null>;
+    findSessionMemoryForSession(input: {
       sessionID: string;
       location: string;
-    }): Promise<ArtifactView | null>;
+    }): Promise<MemoryView | null>;
     artifactSearch(input: {
       location: string;
       query: string;
@@ -558,7 +582,7 @@ export type ArtifactToolDeps = {
       location: string;
     }): Promise<ArtifactSummary & { outcome: string | null; summary: string }>;
   };
-  /** Session/registry location (plans, evidence, checkpoints). */
+  /** Session/registry location (plans, evidence, session memory documents). */
   directory: string;
   /** Project root that owns shared project memory (git common checkout). */
   projectDirectory: string;
@@ -566,7 +590,7 @@ export type ArtifactToolDeps = {
 };
 
 /**
- * Memory artifacts live at the project root and checkpoints at the session
+ * Memory artifacts live at the project root and session memory documents at the session
  * directory, so a mutation addressed by ID must find which scope owns it while
  * keeping the store's location scoping.
  */
@@ -598,7 +622,7 @@ async function memoryLocationFor(
   }
   throw new StoreError(
     "not_found",
-    `No memory or checkpoint artifact ${artifactID} in this project`,
+    `No memory or session memory artifact ${artifactID} in this project`,
   );
 }
 
@@ -672,7 +696,7 @@ export function addArtifactTools(
   editor.namespace({
     name: "memory",
     description:
-      "Maintains project memory and the session checkpoint as live documents.",
+      "Maintains project memory and session memory as live documents.",
   });
   editor.namespace({
     name: "plan",
@@ -733,7 +757,7 @@ export function addArtifactTools(
   //
   // Two live documents, both always published and injected into later requests:
   // project memory (one per project, lasting knowledge shared by sessions) and
-  // the session checkpoint (small running state for this session). Tools work
+  // session memory (small running state for this session). Tools work
   // incrementally so the agent records a finding, continues working, and
   // appends the next section instead of writing once at the end.
   // -------------------------------------------------------------------------
@@ -742,7 +766,7 @@ export function addArtifactTools(
     name: "init",
     namespace: "memory",
     description:
-      "Get or create a memory document and return its bare artifact ID. scope=project is lasting project knowledge shared by every session; scope=session is this session's small checkpoint. This does not read the body: use memory_load. content is used only when creating.",
+      "Get or create a memory document and return its bare artifact ID. scope=project is lasting project knowledge shared by every session; scope=session is this session's exact record — important requirements, decisions, facts, and artifact references that must survive compaction. This does not read the document: use memory_load. content is used only when creating; each memory is a `## ` section titled by what it records.",
     input: {
       type: "object",
       properties: {
@@ -750,7 +774,7 @@ export function addArtifactTools(
           type: "string",
           enum: ["project", "session"],
           description:
-            "project (default) for lasting project knowledge; session for this session's objective/progress checkpoint.",
+            "project (default) for lasting project knowledge; session for this session's exact record: requirements, decisions, facts, and references.",
         },
         title: {
           type: "string",
@@ -775,7 +799,7 @@ export function addArtifactTools(
       const scope = input.scope === "session" ? "session" : "project";
       const existing =
         scope === "session"
-          ? await deps.store.findCheckpointForSession({
+          ? await deps.store.findSessionMemoryForSession({
               sessionID: provenance.ownerSessionID,
               location: deps.directory,
             })
@@ -784,7 +808,7 @@ export function addArtifactTools(
             });
       if (existing) return { content: existing.id };
       const created = await deps.store.createArtifact({
-        kind: scope === "session" ? "checkpoint" : "memory",
+        kind: scope === "session" ? "session_memory" : "memory",
         ownerSessionID: provenance.ownerSessionID,
         writerSessionID: writer,
         primaryAuthor: primaryAuthorOf(toolContext.agent),
@@ -793,15 +817,15 @@ export function addArtifactTools(
           typeof input.title === "string" && input.title.trim().length > 0
             ? input.title
             : scope === "session"
-              ? "Session checkpoint"
+              ? "Session memory"
               : "Project memory",
         description:
           typeof input.description === "string" &&
           input.description.trim().length > 0
             ? input.description
             : scope === "session"
-              ? "Objective, decisions, progress, blockers, and next move."
-              : "Lasting project knowledge: decisions, pitfalls, and findings.",
+              ? "Recorded exact memories for this session."
+              : "Lasting recorded memories: decisions, pitfalls, and findings.",
         initial: { content: input.content },
       });
       return { content: created.artifactID };
@@ -812,19 +836,19 @@ export function addArtifactTools(
     name: "update",
     namespace: "memory",
     description:
-      "Mutate project memory or the session checkpoint. mode=append adds a Markdown block at a milestone; mode=patch replaces one exact oldText with newText (empty newText deletes); mode=replace replaces the whole body when consolidating. Returns the artifact ID.",
+      "Mutate project memory or session memory. mode=append adds a `## ` section or appends to an existing section title; mode=patch replaces one exact oldText with newText (empty newText deletes) in the document or in a named section; mode=replace replaces the whole document when consolidating. Returns the artifact ID.",
     input: {
       type: "object",
       properties: {
         artifactID: {
           type: "string",
-          description: "Memory or checkpoint artifact ID.",
+          description: "Memory or session memory artifact ID.",
         },
         mode: {
           type: "string",
           enum: ["append", "patch", "replace"],
           description:
-            "append adds content; patch replaces one exact oldText; replace replaces the whole body.",
+            "append adds content; patch replaces one exact oldText; replace replaces the whole document.",
         },
         content: {
           type: "string",
@@ -839,6 +863,11 @@ export function addArtifactTools(
           type: "string",
           description:
             "Replacement text for patch; empty deletes the matched text.",
+        },
+        section: {
+          type: "string",
+          description:
+            "Optional unique section title from the injected index. For append, target that section (content must not contain `## ` headings). For patch, search only that section. Not used by replace.",
         },
       },
       required: ["artifactID", "mode"],
@@ -859,6 +888,8 @@ export function addArtifactTools(
           location,
           writerSessionID: writer,
           content: input.content,
+          section:
+            typeof input.section === "string" ? input.section : undefined,
         });
         return { content: appended.artifactID };
       }
@@ -878,10 +909,18 @@ export function addArtifactTools(
           writerSessionID: writer,
           oldText: input.oldText,
           newText: input.newText,
+          section:
+            typeof input.section === "string" ? input.section : undefined,
         });
         return { content: patched.artifactID };
       }
       if (input.mode === "replace") {
+        if (typeof input.section === "string") {
+          throw new StoreError(
+            "validation",
+            "replace does not target a section; omit section",
+          );
+        }
         if (typeof input.content !== "string") {
           throw new StoreError(
             "validation",
@@ -907,14 +946,19 @@ export function addArtifactTools(
     name: "load",
     namespace: "memory",
     description:
-      "Load project memory (or a checkpoint by ID) with full Markdown inline. Omit artifactID for the project memory. Re-read after compaction or before a long phase.",
+      "Load project memory (or session memory by ID). Omit section for the full document plus its section titles; pass a section title from the injected index to load just that section. Omit artifactID for project memory.",
     input: {
       type: "object",
       properties: {
         artifactID: {
           type: "string",
           description:
-            "Optional memory or checkpoint artifact ID; omitted resolves this project's memory.",
+            "Optional project or session memory artifact ID; omitted resolves this project's memory.",
+        },
+        section: {
+          type: "string",
+          description:
+            "Optional unique section title from the injected index; loads only that section.",
         },
       },
       additionalProperties: false,
@@ -936,10 +980,33 @@ export function addArtifactTools(
         }
         artifactID = existing.id;
       }
+      const location = await memoryLocationFor(deps, artifactID);
+      if (typeof input.section === "string") {
+        const result = await deps.store.getMemorySection({
+          artifactID,
+          location,
+          section: input.section,
+        });
+        return {
+          content: [
+            "ARTIFACT_SECTION",
+            `Kind: ${result.kind}`,
+            `Status: ${result.status}`,
+            `Title: ${result.title}`,
+            `Artifact: ${result.id}`,
+            `Section: ${result.section.title}`,
+            "",
+            result.section.content,
+          ].join("\n"),
+        };
+      }
       const summary = await deps.store.getMemorySummary({
         artifactID,
-        location: await memoryLocationFor(deps, artifactID),
+        location,
       });
+      const sectionList = summary.sections
+        .map((section) => section.title)
+        .join(", ");
       return {
         content: [
           "ARTIFACT_CONTENT",
@@ -947,9 +1014,12 @@ export function addArtifactTools(
           `Status: ${summary.status}`,
           `Title: ${summary.title}`,
           `Artifact: ${summary.id}`,
+          sectionList.length > 0 ? `Sections: ${sectionList}` : null,
           "",
           summary.content,
-        ].join("\n"),
+        ]
+          .filter((line): line is string => line !== null)
+          .join("\n"),
       };
     },
   });
@@ -958,7 +1028,7 @@ export function addArtifactTools(
     name: "search",
     namespace: "artifact",
     description:
-      "Search artifact text in this session's directory and shared project memory (memory, checkpoints, evidence, plans, reviews) and return matching IDs with line snippets. Use to discover relevant memories and evidence without knowing IDs.",
+      "Search artifact text in this session's directory and shared project memory (memory, session_memory, evidence, plans, reviews) and return matching IDs with line snippets. Use to discover relevant memories and evidence without knowing IDs.",
     input: {
       type: "object",
       properties: {
@@ -971,7 +1041,7 @@ export function addArtifactTools(
           type: "array",
           items: { type: "string" },
           description:
-            "Optional kind filter: memory, checkpoint, plan, evidence, review.",
+            "Optional kind filter: memory, session_memory, plan, evidence, review.",
         },
         limit: {
           type: "number",

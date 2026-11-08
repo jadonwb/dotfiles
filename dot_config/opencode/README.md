@@ -33,9 +33,10 @@ otherwise stays out of the way.
 | `review-workflow`   | an independent correctness check, or the user asks     |
 | `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
 
-Session memory is deliberately **not** a skill: it is always-on behavior in the
-system prompt. Other discovered skills (`opencode`, `omarchy`, `run-as-root`,
-`diagnose-crash`, `report`, …) load when their descriptions match.
+Memory is deliberately **not** a skill: project memory is indexed on every
+primary request, and session memory is appended to the compaction summary. Other
+discovered skills (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`,
+`report`, …) load when their descriptions match.
 
 The split follows the current guidance: a system prompt defines permanent
 behavior and policy; a skill defines a repeatable procedure for a task that only
@@ -54,9 +55,10 @@ stable instructions rather than rewriting them.
 `plugins/artifacts/` is a standalone filesystem-backed registry and the
 `personal.artifacts` RPC used by Neovim. Kinds:
 
-- `memory` — **project memory**, one live document per repository, shared by
-  sessions, subdirectories, and linked worktrees of that checkout.
-- `checkpoint` — the session's small objective/progress document.
+- `memory` — **project memory**, one structured document per repository, shared
+  by sessions, subdirectories, and linked worktrees of that checkout.
+- `session_memory` — the session's exact
+  objective/requirements/decisions/references record.
 - `plan` — an optional working document; an approval gate only when the user
   asked for a plan. A completed plan records its outcome, changed files,
   verification, and unfinished work, then freezes. Later work starts a new plan
@@ -81,29 +83,24 @@ cannot be edited.
 ## Compaction and memory
 
 - Every agent-loop request from a **primary** agent (`context` hook) gets a
-  `<memory-context>` system part: the session checkpoint, bounded by section
-  rather than by character position, plus the project-memory **index** (title,
-  description, update time, the bounded `## Core` section, and section
-  headings). Large documents are not inlined beyond that; the agent loads or
-  searches them. It is never a user message and never appears in the transcript.
-- Compaction uses OpenCode's built-in summary prompt unmodified. The prompt
-  already covers objective, requirements, decisions, work state, next move,
-  files, and context, and reconciles newer history. Nothing is injected into the
-  compaction transcript: the next request reloads the checkpoint and project
-  memory, so a summarizer copy would only add a second, staler version.
-- Requirements and corrections belong in the checkpoint, recorded when they are
-  given. Injection cannot recover a requirement the agent never saved, and a
-  summary is not a substitute for the live document.
+  `<memory-context>` system part with the project-memory **index**: a plain
+  `Project memory` heading, the bounded `Core` content, and every other
+  section's title and short preview. The index is built from the record's
+  structured sections, not from Markdown headings; the agent loads one section
+  by title, or the whole document, on demand.
+- Session memory is appended to the **compaction summary** by the
+  `http.response` hook for `kind: "compaction"`, before the finish event. It is
+  the exact state that survives the summary, not an always-on duplicate of the
+  transcript.
+- Compaction uses OpenCode's built-in summary prompt unmodified. The response
+  hook appends session memory after the model's summary; nothing is injected
+  into the transcript as a separate message.
+- Requirements and corrections belong in session memory, recorded when they are
+  given. The summary cannot recover a requirement the agent never saved.
 - `buffer: "30%"` keeps the last 30% of the 1M window free, so automatic
   compaction starts at ~700k tokens. `keep.tokens: 32000` keeps the recent tail.
   The threshold is a policy choice, not a measured optimum; see RESEARCH.md.
-- Section-aware clipping keeps `## Objective`, `## Requirements`, `## Decisions`,
-  `## Blockers`, and `## Next Move`, then fills the remaining budget with the
-  newest non-priority sections. A requirement in the middle survives even when
-  older progress is elided.
-
-Checkpoint tests append past the bound and confirm the newest `## Next Move` and
-a mid-document requirement survive while stale progress is elided.
+- Session memory is appended verbatim; it is not clipped.
 
 ## Layout
 

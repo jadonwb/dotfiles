@@ -9,7 +9,7 @@
 // idempotent (byte-stable for the same record).
 //
 // Kind-specific bodies are pure functions of the record:
-// - memory: "# Session Memory" followed by the stored Markdown body.
+// - memory: the structured `sections` rendered back into Markdown.
 // - plan: "# Goal / Scope", "## Intended Changes and Behaviors", "## Context",
 //   a nested "### Evidence" list snapshotting each referenced evidence
 //   artifact's short description next to its artifact ID, then "## Checks";
@@ -133,12 +133,40 @@ function pushSubheading(lines, heading, content) {
 }
 
 /**
- * Deterministic memory/checkpoint body: the stored Markdown verbatim. The
+ * Deterministic memory/session memory body: the stored Markdown verbatim. The
  * content carries its own headings, so the view must not wrap it in a second
  * one and the search snippets must expose the real text.
  */
 export function memoryBodyOf(record) {
-  return typeof record.content === "string" ? record.content : "";
+  const sections = Array.isArray(record.sections) ? record.sections : [];
+  const preamble =
+    typeof record.preamble === "string" ? record.preamble : "";
+  const parts = [];
+  if (preamble.length > 0) parts.push(preamble);
+  for (const section of sections) {
+    const heading = `## ${section.title}`;
+    parts.push(
+      section.content.length > 0
+        ? `${heading}\n\n${section.content}`
+        : heading,
+    );
+  }
+  return parts.join("\n\n");
+}
+
+/** One-line section description for the injected project-memory index. */
+export function sectionPreview(section, limit = 96) {
+  if (!section || typeof section.content !== "string") return "";
+  const line =
+    section.content
+      .split("\n")
+      .find((candidate) => candidate.trim().length > 0) ?? "";
+  const plain = line
+    .replace(/^\s*(?:[-*+]\s+|#{1,6}\s+|>\s*)/u, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+  if (plain.length <= limit) return plain;
+  return `${plain.slice(0, limit)}…`;
 }
 
 /** Deterministic plan body: flat prose fields plus snapshot evidence membership. */
@@ -223,7 +251,7 @@ export function reviewBodyOf(record) {
 
 /** Compose the body for whichever kind this record is. */
 export function bodyOf(record) {
-  if (record.kind === "memory" || record.kind === "checkpoint")
+  if (record.kind === "memory" || record.kind === "session_memory")
     return memoryBodyOf(record);
   if (record.kind === "plan") return planBodyOf(record);
   if (record.kind === "evidence") return evidenceBodyOf(record);

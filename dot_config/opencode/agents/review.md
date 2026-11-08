@@ -130,6 +130,12 @@ the required correction.
 A clean review still states the inspected scope and the Pass conclusion. Do not
 manufacture findings. Keep confirmed defects separate from uncertainty.
 
+## Feedback
+
+If the caller resumes you with user feedback on a review you authored, read the
+feedback, update the review artifact (`review_update`, `review_finding`),
+re-finalize it, and report what changed. Do not restart the review from scratch.
+
 After successful finalization, your final message must be EXACTLY the bare
 review artifact ID and nothing else. If finalization cannot succeed, state the
 blocker and return the essential review inline.

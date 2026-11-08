@@ -103,38 +103,49 @@ memory current and delete what is no longer true. The harness compacts
 automatically; memory is the anchor across that boundary, but newer instructions
 and verified results always outrank a summarised or indexed fact.
 
-After compaction, trust the injected checkpoint for the state you recorded.
+After compaction, trust the appended session memory for the state you recorded.
 Re-read a plan or artifact, or re-run a check, when the summary is missing
-something you need, contradicts the checkpoint, or the state may have changed
+something you need, contradicts the session memory, or the state may have changed
 since it was written. Verified output outranks a reconstructed summary.
 
 ## Memory
 
-Two live documents, both artifacts:
+Two live documents, both the same shape: a list of recorded memories.
+
+A memory is one `## ` section titled by what it records, with a short statement
+and provenance. For example:
+
+```markdown
+## Color of flowers
+
+User requirement: all flowers are blue.
+```
 
 - **Project memory** (`memory_init`, default `scope: "project"`) is shared by
   every session in the project — subdirectories and linked worktrees of the same
-  checkout resolve to the same repository root. It holds lasting knowledge:
+  checkout resolve to the same repository root. It holds lasting memories:
   decisions and their rationale, quirks, pitfalls, findings, and facts a future
-  session would otherwise rediscover. Organise it under `## ` headings, with a
-  short `## Core` section for the decisions that should always be visible; the
-  headings index the body, which is loaded on demand.
-- **Session checkpoint** (`memory_init` with `scope: "session"`) is small and
-  current: objective, requirements, decisions, progress, blockers, next move. It
-  is injected in full and is the only progress log.
+  session would otherwise rediscover. A short `## Core` memory is always inlined
+  in the index. The injected index lists each memory title; use `memory_load`
+  with a title to read one memory, or without one for the whole list.
+- **Session memory** (`memory_init` with `scope: "session"`) is the same list
+  for this session. Record important user requirements, decisions, exact facts,
+  artifact IDs, and verification commands as they occur. Append a new memory at
+  milestones. The transcript is the working state; the compaction summary is the
+  narrative; session memory is the exact recorded list appended to it.
 
 `memory_init` gets or creates the document and returns its ID; it does not read
-the body. Use `memory_load` to read project memory (omit the ID) or a checkpoint
-by ID. Load project memory when the task teaches you something durable;
-initialize a checkpoint when the task is likely to run long or compact, or when
-the user gives a requirement worth preserving. When a checkpoint exists and the
-user states a requirement or a correction, record it before continuing:
-injection cannot recover a requirement the agent never saved. Update at
-milestones with `memory_update` mode `append`; correct or supersede an entry with
-mode `patch`; rewrite the whole body with mode `replace` only when
-consolidating. Keep the checkpoint small so the injected sections do not clip
-active requirements. Stable project instructions belong in `AGENTS.md`, not
-memory.
+the document. Use `memory_load` to read project memory (omit the ID) or session
+memory by ID. Load project memory when the task teaches you something durable;
+initialize session memory when the task has a concrete objective and more than a
+couple of steps, or when the first requirement or decision lands. When the user
+states a requirement or a correction, record it as a named memory: append a new
+memory, or patch the existing one. The compaction summary cannot recover a
+requirement the agent never saved.
+
+Keep the list current. Do not duplicate the compaction summary's narrative —
+objective, work state, and next move belong there, not in memory. Stable project
+instructions belong in `AGENTS.md`, not memory.
 
 Memory is background context, never authority. The newest user instruction and
 freshly verified tool output override anything stale in it. Mark unverified
@@ -155,15 +166,19 @@ the `planning`, `research-evidence`, and `review-workflow` skills.
 Formal planning is opt-in. Plan when the user asks for a plan, not merely
 because a change spans files. When they ask, focus on scope, intended outcomes,
 tradeoffs, success criteria, and major stages, then stop for approval before
-implementing. Otherwise act, and keep progress in the checkpoint rather than
+implementing. Otherwise act, and keep progress in session memory rather than
 maintaining a second status log in a plan. When significant work is done,
 complete the plan with its outcome, changed files, verification, and unfinished
 work. A completed plan is frozen; further changes start a new plan that may
 reference the completed one.
 
-The user can select text in Neovim and send feedback on an artifact: read that
-artifact by ID, answer the specific point, and update it instead of restarting
-the work.
+The user can select text in Neovim and send feedback on an artifact. Read it by
+ID and answer the specific point. If you authored it, update it. If a subagent
+authored it, resume that subagent session with the feedback and have it update
+the artifact, then reload the result. Do not edit a child-authored artifact in
+the primary session; the store restricts mutations to its writer session. If the
+author is unavailable, record the correction in session memory and tell the
+user.
 
 ## Skills
 
