@@ -5,7 +5,8 @@ import { join } from "node:path"
 
 // Server-side desktop notifications. The TUI's attention path is terminal-
 // mediated (and duplicates when a desktop client is also open), so this plugin
-// is the single notifier: one notification per completed primary session.
+// is the single notifier: one notification per run finished, question, or
+// permission prompt.
 //
 // Duplicate plugin copies in one server share `claims`; separate server
 // processes coordinate through an atomic lock file in the runtime directory.
@@ -86,10 +87,39 @@ function notify(title: string, body: string) {
   }
 }
 
-const STATUS: Record<string, string> = {
-  "session.execution.succeeded": "Session done",
-  "session.execution.failed": "Session failed",
-  "session.execution.interrupted": "Session interrupted",
+/**
+ * Events worth a desktop notification. A finished run only matters for the
+ * primary session; a form or a permission prompt blocks that session, so its
+ * child sessions notify too.
+ */
+const OUTCOMES: Record<
+  string,
+  {
+    body: (event: any) => string
+    childSessions: boolean
+  }
+> = {
+  "session.execution.succeeded": { body: () => "Session done", childSessions: false },
+  "session.execution.failed": { body: () => "Session failed", childSessions: false },
+  "session.execution.interrupted": { body: () => "Session interrupted", childSessions: false },
+  "form.created": {
+    body: (event) => text(event.data?.form?.title) || "Input needed",
+    childSessions: true,
+  },
+  "permission.asked": {
+    body: (event) =>
+      text(event.data?.message) || `Permission needed: ${text(event.data?.action) || "action"}`,
+    childSessions: true,
+  },
+}
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value.trim() : ""
+}
+
+function sessionIDOf(event: any): string | undefined {
+  if (event.type === "form.created") return event.data?.form?.sessionID
+  return event.data?.sessionID
 }
 
 export default {
@@ -102,10 +132,10 @@ export default {
       try {
         for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
           trace(`event ${event.type}`)
-          const body = STATUS[event.type]
-          if (!body) continue
+          const outcome = OUTCOMES[event.type]
+          if (!outcome) continue
 
-          const sessionID = event.data?.sessionID
+          const sessionID = sessionIDOf(event)
           if (typeof sessionID !== "string" || !sessionID) {
             trace(`event ${event.type} without sessionID`)
             continue
@@ -118,7 +148,7 @@ export default {
               return undefined
             })
 
-          if (session?.parentID) {
+          if (!outcome.childSessions && session?.parentID) {
             trace(`skip child session ${sessionID}`)
             continue
           }
@@ -131,9 +161,8 @@ export default {
             continue
           }
 
-          const title =
-            typeof session?.title === "string" && session.title.trim() ? session.title.trim() : "OpenCode"
-          notify(title, body)
+          const title = text(session?.title) || "OpenCode"
+          notify(title, outcome.body(event))
         }
         trace("event stream ended")
       } catch (error) {
