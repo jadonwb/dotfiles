@@ -471,7 +471,20 @@ Panel {
           currentIndex: root.cursorIndex()
           model: root.rows
 
-          ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+          ScrollBar.vertical: ScrollBar {
+            id: listScroll
+            policy: ScrollBar.AsNeeded
+            width: Style.space(4)
+            padding: 0
+            background: Item {}
+
+            contentItem: Rectangle {
+              implicitWidth: Style.space(4)
+              radius: width / 2
+              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b,
+                listScroll.pressed ? 0.55 : 0.28)
+            }
+          }
 
           onCurrentIndexChanged: if (currentIndex >= 0) Qt.callLater(keepCurrentVisible)
           function keepCurrentVisible() {
