@@ -18,6 +18,29 @@ Hyprland 0.57 dispatchers are Lua expressions. Run them through `hyprctl
 dispatch '<expression>'`; the older `dispatcher arg,arg` form is unreliable once
 an argument contains `,` or `:`.
 
+## Announce before taking the desktop
+
+Before any command that opens, focuses, moves, or closes a window for a test,
+run:
+
+```bash
+opencode-announce "Testing the minimized panel" "Closing and reopening it for two seconds."
+```
+
+It sends a normal OpenCode notification (same app name and icon as the server
+notifications) and waits two seconds. Say what you are testing and what will
+happen; the wait defaults to two seconds, and a third argument lengthens it.
+
+Reading window state, checking `hyprctl` output, and capturing a window need no
+announcement. Announce the first action that changes what the user sees.
+
+If the helper is unavailable, the raw form is:
+
+```bash
+notify-send --app-name "OpenCode" "Testing the minimized panel" "Closing and reopening it for two seconds." 2>/dev/null || true
+sleep 2
+```
+
 ## Find the window
 
 ```bash

@@ -15,3 +15,15 @@ confirmation prompts and TUI pickers block the session and hide progress.
 - Do not poll a blocked job: terminate it, then retry with a non-interactive
   form.
 - Prefer the dedicated read/edit/glob/grep tools over shell paging.
+
+## Desktop tests
+
+Before a command that opens, focuses, moves, or closes a window or panel for a
+test, run:
+
+```bash
+opencode-announce "Testing <what>" "<what will happen and how long>"
+```
+
+It sends a desktop notification and waits two seconds. Reading window state or
+capturing a window needs no announcement. Details in the `desktop` skill.
