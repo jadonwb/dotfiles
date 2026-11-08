@@ -58,9 +58,9 @@ pruned whenever a window leaves the minimized workspace, however it left.
 Thumbnails live in `~/.cache/omarchy/minimized/` and are pruned the same way.
 
 `x` is a close request, not a kill. If the app answers with a save-changes
-dialog, the window comes back to its workspace, focused, and a notification
-says why it returned, so the question is never left on the hidden workspace.
-The panel never force-closes; that stays an explicit manual action.
+dialog, the window comes back to its workspace and is focused, so the question
+is never left on the hidden workspace. The panel never force-closes; that stays
+an explicit manual action.
 
 ## Settings
 

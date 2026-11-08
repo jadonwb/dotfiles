@@ -584,10 +584,9 @@ cmd_close() {
   [[ -n $address ]] || die "close needs a window address"
   [[ $address == 0x* ]] || address="0x$address"
 
-  local window app
+  local window
   window=$(window_json "$address")
   [[ -n $window ]] || return 0
-  app=$(state_get "$address" | jq -r '.app // empty' 2>/dev/null)
 
   hyprctl dispatch "hl.dsp.window.close({ window = \"address:$address\" })" >/dev/null 2>&1
   sleep 0.6
@@ -598,11 +597,9 @@ cmd_close() {
     return 0
   fi
 
+  # The app is waiting for an answer on a hidden workspace. Bring it back so
+  # the dialog is in front of the user; the window returning is the signal.
   cmd_restore "$address"
-  if command -v notify-send >/dev/null 2>&1; then
-    notify-send -a "Omarchy" "Close needs an answer" \
-      "${app:-The window} is asking before it closes." >/dev/null 2>&1 || true
-  fi
 }
 
 # ---------------------------------------------------------------- reporting
