@@ -15,5 +15,3 @@ confirmation prompts and TUI pickers block the session and hide progress.
 - Do not poll a blocked job: terminate it, then retry with a non-interactive
   form.
 - Prefer the dedicated read/edit/glob/grep tools over shell paging.
-
-This applies to every agent and every project.
