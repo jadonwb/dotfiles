@@ -30,7 +30,7 @@
         "image_preview": true
     },
     "attention": {
-        "notifications": true,
+        "notifications": false,
         "sound": false
     },
     "session": {
@@ -38,5 +38,6 @@
     },
     "terminal": {
         "title": false
-    }
+    },
+    "plugins": ["./herdr-opencode"]
 }
