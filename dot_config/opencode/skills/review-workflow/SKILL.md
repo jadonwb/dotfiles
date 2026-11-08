@@ -5,8 +5,7 @@ description: Get an independent correctness review of a change, artifact, or des
 
 # Review workflow
 
-A review is an independent inspection with clean context, not a completion
-ritual. Use it when a defect would be costly and the author may be blind to it.
+A review is an independent inspection with clean context. Use it when a defect would be costly and the author may be blind to it.
 
 ## When to review
 
@@ -33,9 +32,9 @@ Already checked: <checks the author ran; do not repeat unless code changed>.
 Do not write files; run read-only checks if needed.
 ```
 
-Give the reviewer the concern and the scope, not a conclusion. It loads the
-artifacts by ID itself. Ask for the strongest failure case or counterargument,
-not confirmation. A review is not a substitute for running the thing.
+Give the reviewer the concern and the scope; let it reach its own conclusion.
+It loads the artifacts by ID itself. Ask for the strongest failure case or
+counterargument. Run the thing as well.
 
 One independent review is the default. A consensus of several reviewers or
 models is reserved for a high-stakes, hard-to-reverse decision; most of what any
@@ -50,7 +49,7 @@ them as two parallel review subagents:
 - **Standards / regressions** — does it fit the repository's conventions and
   avoid adjacent breakage?
 
-Keep the axes separate; do not merge or rerank them. A change can pass one and
+Keep the axes separate. A change can pass one and
 fail the other, and combining them hides that. Cap each review at a short,
 actionable summary.
 

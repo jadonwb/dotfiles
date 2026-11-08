@@ -9,8 +9,7 @@ isolation.
 
 - `system` — the primary and default agent. Full tool access, general
   engineering/research instructions, concise output style, and the delegation
-  policy. It does the implementation; there is no builder or command-runner
-  session.
+  policy. It implements the work; commands run in the same session.
 - `search` — read-only research subagent. Used when a question needs broad
   documentation or many files and only a compact answer should enter the main
   context, or when independent questions can run in parallel.
@@ -34,22 +33,21 @@ otherwise stays out of the way.
 | `past-conversations` | the user asks to recall an earlier session or decision |
 | `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
 
-Past-conversation recall is deliberately a skill (`past-conversations`): it
+Past-conversation recall is a skill (`past-conversations`): it
 queries the local session database only when the user asks to remember
-something. Nothing is injected on every request. Other discovered skills
+something. Other discovered skills
 (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …) load when
 their descriptions match.
 
 The split follows the current guidance: a system prompt defines permanent
 behavior and policy; a skill defines a repeatable procedure for a task that only
 applies sometimes. Durable project knowledge belongs in `AGENTS.md` and in the
-repository, not in the prompt.
+repository.
 
 Skill authoring follows the current best practices: a specific what-and-when
 description with trigger terms, a body well under 500 lines, the workflow and
-tool sequence rather than a restatement of the system prompt, and supporting
-detail only where it changes behavior. The always-loaded prompt is kept stable
-because prompt caching keys on the prefix; no per-session document is appended to
+tool sequence with supporting detail only where it changes behavior. The always-loaded prompt stays stable
+so the provider can reuse its cached prefix; per-session state lives outside
 it.
 
 ## Artifacts
@@ -67,24 +65,24 @@ it.
 Create artifacts early. `plan_create`, `evidence_create`, and
 `review_create` accept initial content, so a draft can be filled incrementally
 as the work teaches you something. `artifact_search` finds existing artifact
-text, so discovery does not require knowing an ID. `plan_update` accepts whole
+text, so discovery works from the text itself. `plan_update` accepts whole
 fields, an ordered `evidenceIDs` list, and an optional `patch` object for one
 exact occurrence, so a plan bullet can change without restating the field.
 `plan_complete` records the outcome and freezes the plan.
 
 The user can review artifacts in Neovim, select text, and send feedback. When
 the user asks for a plan, approval is the signal to start implementing. When
-they did not ask, approval is only a review marker and never a precondition.
+they did not ask, approval is a review marker; implementation continues either way.
 Editing a reviewed artifact returns it to draft for re-review; a completed plan
 cannot be edited.
 
 ## Compaction
 
-- Compaction uses OpenCode's built-in summary prompt unmodified. No response hook
-  rewrites the summary and no memory document is appended.
+- Compaction uses OpenCode's built-in summary prompt unmodified, so the prompt
+  carries only stable instructions.
 - `buffer: "30%"` keeps the last 30% of the 1M window free, so automatic
   compaction starts at ~700k tokens. `keep.tokens: 32000` keeps the recent tail.
-  The threshold is a policy choice, not a measured optimum.
+  The threshold is a policy choice.
 - Compaction is lossy: it keeps terse bullets and drops detail it judges
   recoverable from code or files. Write decisions and comparisons to repository
   notes or evidence while they are fresh.
@@ -105,9 +103,9 @@ cannot be edited.
 
 ## Bridge
 
-Artifacts were never meant to own the Neovim <-> OpenCode channel. The channel
-is now its own layer, so it can grow into session control and editor UI commands
-without touching artifact code:
+Artifacts stay separate from the Neovim <-> OpenCode channel. The channel is its
+own layer, so it can grow into session control and editor UI commands on its
+own:
 
 - `personal.bridge.describe` returns `{ protocol, domains }` — the handshake a
   frontend uses before calling a domain. It is plumbing only; it carries no
@@ -115,7 +113,7 @@ without touching artifact code:
 - `plugins/bridge/registry.ts` exports `registerDomain` and `mintRequestID`. An
   adapter plugin registers its contract through it instead of calling
   `ctx.rpc.register` directly, so the handshake and the registration cannot
-  drift apart. The artifact tools never import this module: storage and tools
+  drift apart. The artifact tools stay independent of this module: storage and tools
   live in `plugins/artifacts/`, and only the RPC adapter
   (`plugins/artifacts-rpc/`) touches the bridge.
 - The registry lives on `globalThis` under a symbol because each plugin is its

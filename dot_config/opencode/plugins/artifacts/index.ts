@@ -1,10 +1,9 @@
-// Standalone artifact plugin: storage and agent tools. It deliberately knows
-// nothing about the Neovim bridge or RPC.
+// Standalone artifact plugin: storage and agent tools, independent of the
+// Neovim bridge and RPC.
 //
 // The editor-facing half lives in ../artifacts-rpc, which imports the store and
-// the contract and registers `personal.artifacts` through the bridge. Keeping
-// that adapter out of this plugin means the artifact tools stay usable without
-// any bridge code.
+// the contract and registers `personal.artifacts` through the bridge. The
+// adapter stays separate, so the artifact tools work on their own.
 //
 // Registry logic lives in ./store.mjs, tool/authorization logic in
 // ./artifact-tools.ts, and project identity in ./project.mjs. The location is
@@ -12,10 +11,10 @@
 // resolved from server-assigned session ancestry, and the writer is the
 // artifact's creating session.
 //
-// Artifacts are project-scoped: plans, evidence, and reviews created in one
-// worktree are listed and loadable from every worktree of the same checkout.
-// No context is injected and no summary is rewritten; durable notes live in
-// AGENTS.md, repository docs, and the artifacts themselves.
+// Artifacts are keyed by the project: plans, evidence, and reviews created in
+// one worktree are listed and loadable from every worktree of the same
+// checkout. The prompt stays stable: durable notes live in AGENTS.md,
+// repository docs, and the artifacts themselves.
 import { createStore } from "./store.mjs";
 import { addArtifactTools } from "./artifact-tools.ts";
 import { projectLocation } from "./project.mjs";

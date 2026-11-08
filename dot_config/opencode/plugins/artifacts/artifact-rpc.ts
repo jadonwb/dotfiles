@@ -1,5 +1,5 @@
 // Typed RPC contract for shared artifacts.
-// Contract module only: no registration and no I/O here. The HTTP surface is
+// Contract module only: schemas and types. The HTTP surface is
 // POST /api/rpc/personal.artifacts/<method> with {input} -> {output}; the
 // `location` deepObject query selects the registered instance.
 //
@@ -12,7 +12,7 @@
 // Metadata separation: the summary carries only frontend metadata (title,
 // description, primaryAuthor, status) plus owner-scoping metadata required for
 // the Neovim attached-session filter (ownerSessionID). writerSessionID is
-// internal routing/delivery data and is never exposed on the wire; the
+// internal routing/delivery data, stripped before the wire; the
 // per-artifact summary is produced by store.mjs and stripped in index.ts.
 
 const artifactSummary = {
@@ -259,7 +259,7 @@ const Artifacts = {
         additionalProperties: false,
       },
       // No `delivery` in the response: mark_read is evidence/review dismissal
-      // and never emits an owner notification.
+      // and records the read locally.
       output: {
         type: "object",
         properties: {

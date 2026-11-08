@@ -125,7 +125,9 @@ finding states severity, affected path/symbol, evidence, behavioral risk, and
 the required correction.
 
 A clean review still states the inspected scope and the Pass conclusion. Do not
-manufacture findings. Keep confirmed defects separate from uncertainty.
+manufacture findings. Keep confirmed defects separate from uncertainty. Write
+plainly: state each finding and its evidence directly, and skip contrast framing
+or significance inflation.
 
 ## Feedback
 

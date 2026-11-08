@@ -1,12 +1,11 @@
 // Project identity for shared artifacts.
 //
-// Artifacts must follow the repository, not the tab: sessions opened in a
-// subdirectory, and sessions opened in a git worktree, should share one
-// artifact scope. The rule is:
+// Artifacts follow the repository, so every tab and worktree of a checkout
+// shares one artifact scope. The rule is:
 //
 //   - a normal checkout or a submodule: the repository root
 //   - a linked worktree: the main checkout that owns the common git directory
-//   - no git repository: the directory itself
+//   - outside git: the directory itself
 //
 // `OPENCODE_PROJECT_ROOT` overrides the result, which keeps tests and
 // unusual layouts deterministic.
@@ -35,7 +34,7 @@ export function projectLocation(directory) {
   const toplevel = git(resolved, ["rev-parse", "--show-toplevel"]);
   if (!toplevel) return resolved;
 
-  // Submodules have their own root; do not share artifacts with the superproject.
+  // Submodules have their own root; artifacts stay within the submodule.
   const superproject = git(resolved, [
     "rev-parse",
     "--show-superproject-working-tree",

@@ -1,9 +1,8 @@
 // One-way rendering of the read-only artifact view (current.md).
 //
-// The view is generated from the authoritative record and is never read back
-// into storage. Rendering composes a minimal frontmatter block containing only
-// frontend artifact metadata (id, kind, status, title, primaryAuthor,
-// description — never owner/writer/session routing IDs) followed by a
+// The view is a one-way rendering of the authoritative record. Rendering
+// composes a minimal frontmatter block with frontend artifact metadata (id,
+// kind, status, title, primaryAuthor, description) followed by a
 // deterministic kind-specific Markdown body and then formats the complete
 // document with the pinned Prettier binary, so the formatted output is
 // idempotent (byte-stable for the same record).
@@ -19,9 +18,9 @@
 // - review: "# Review", the machine-readable "## Outcome", the human-readable
 //   "## Summary", then one named finding section per finding.
 //
-// Machine finding IDs never appear in the Markdown; they are returned by the
-// tools and listed compactly by the full load tools only (never by summary
-// readers or the rendered view).
+// The Markdown shows findings by title. Machine finding IDs are returned by the
+// tools and listed by the full load tools; summary readers and the rendered
+// view omit them.
 
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";

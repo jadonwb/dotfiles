@@ -31,12 +31,12 @@ asked for.
   updated as background if it helps, but it does not gate the work.
 
 If a goal is active, end the approval turn with an explicit blocker such as
-"Waiting for your approval of plan art_…". The goal judge treats that as blocked
-rather than auto-continuing, and the work resumes when the user answers.
+"Waiting for your approval of plan art_…". The goal judge treats that as blocked;
+the work resumes when the user answers.
 
 ## What belongs in a plan
 
-A plan is about direction, not execution detail:
+A plan records direction; execution details belong in the work:
 
 - scope and the outcome it achieves
 - important tradeoffs and why one was chosen
@@ -58,8 +58,7 @@ the repository (`docs/`, `notes/`, or a file next to the work). Record:
 - the next move
 
 The plan records scope and criteria and changes only when scope or criteria
-change. Do not copy progress into the plan and keep two versions of the same
-state.
+change. Keep one version of the same state.
 
 ## Workflow
 
@@ -106,8 +105,8 @@ state.
 ## Completion and review
 
 `approve_plan` in Neovim records the user's review. When the user asked for a
-plan, approval is the signal to start. When they did not, approval is only a
-marker and never a precondition.
+plan, approval is the signal to start. When they did not, approval is a review
+marker; implementation continues.
 
 When significant work is done, record the outcome in the plan:
 
@@ -118,7 +117,7 @@ When significant work is done, record the outcome in the plan:
 3. A later change starts a new plan with `previousPlanID` pointing at the
    completed plan. Do not reopen or edit the completed plan.
 
-Completion is an outcome record, not a permission gate. Do not complete a plan
+Completion records the outcome. Do not complete a plan
 for every small edit; use it when the work is significant enough to review or
 revisit.
 
@@ -126,8 +125,7 @@ revisit.
 
 A deeper session can combine research and planning under one goal: research,
 publish evidence, then produce the plan and stop for approval. Keep the research
-in evidence artifacts and the decision in the plan; do not restate findings in
-both.
+in evidence artifacts and the decision in the plan; state each finding once.
 
 ## Failure modes to avoid
 

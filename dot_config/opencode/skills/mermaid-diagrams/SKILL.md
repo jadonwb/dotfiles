@@ -6,8 +6,8 @@ description: Use when an explanation involves a flow, sequence, state machine, a
 # Mermaid diagrams
 
 OpenCode's TUI and graphical clients render ` ```mermaid ` fenced blocks as
-diagrams. That is the only way to show a diagram: write the Mermaid source, not
-ASCII art and not a custom tool call.
+diagrams. That is the only way to show a diagram: write the Mermaid source in a
+fenced block.
 
 ## When to use
 
@@ -24,8 +24,7 @@ with one or two sentences that say what it shows and why it matters.
 
 ## Format
 
-- Keep a diagram small: aim for 4–12 nodes, and split a large one rather than
-  shrinking it.
+- Keep a diagram small: aim for 4–12 nodes, and split a large one.
 - Prefer `flowchart TD` for top-down flows and `flowchart LR` for pipelines.
 - Use short node IDs and readable labels: `A[User]`, `B[Evidence]`.
 - Quote labels that contain spaces, punctuation, or parentheses:

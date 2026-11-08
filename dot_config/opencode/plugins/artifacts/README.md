@@ -1,16 +1,15 @@
 # artifacts
 
 A standalone, filesystem-backed registry for durable artifacts and the agent
-tools that author them. It knows nothing about the Neovim bridge: the RPC
+tools that author them. It stays independent of the Neovim bridge: the RPC
 adapter lives in `../artifacts-rpc/`, which imports this package and registers
 `personal.artifacts` through `../bridge/registry.ts`.
 
-Artifacts are durable notes. `system` is the primary agent and implements
+Artifacts are structured records. `system` is the primary agent and implements
 changes directly; a plan gates implementation only when the user asked for one,
 and can otherwise be drafted, filled in, and revised without blocking the work.
-Evidence and reviews are optional durable records. Nothing is injected into the
-prompt and no summary is rewritten: durable knowledge lives in `AGENTS.md`,
-repository docs, and these artifacts.
+Evidence and reviews are optional durable records. The prompt stays stable:
+durable knowledge lives in `AGENTS.md`, repository docs, and these artifacts.
 
 ## Artifact kinds
 
@@ -40,8 +39,7 @@ ordered `evidenceIDs` membership, and optionally patches one exact occurrence in
 without restating the whole field. An evidence membership array snapshots
 `{id, description}` for attached evidence. `plan_finalize` requires non-empty
 Goal/Scope and Intended Changes; checks, context, and evidence stay optional.
-`plan_load` reads any plan and reports status, readiness, and completion; a
-separate status tool is not needed. Editing a reviewed plan returns it to draft
+`plan_load` reads any plan and reports status, readiness, and completion. Editing a reviewed plan returns it to draft
 and clears the review marker. `plan_complete` records the outcome summary,
 changed files, verification, and unfinished work, then freezes the plan; later
 content mutations fail and a new plan should reference the completed one with
@@ -83,8 +81,8 @@ message builders). Tests live in
 - `current.md` is a one-way rendering for display: frontmatter with only
   frontend metadata (`id`, `kind`, `status`, `title`, `primaryAuthor`,
   `description`) followed by a deterministic kind-specific body, formatted by
-  Prettier over the complete document. The generated view is never parsed back
-  into storage; editors read it read-only.
+  Prettier over the complete document. The generated view is one-way; editors read it
+  read-only.
 - After an interrupted write the next mutation regenerates the view from the
   record.
 
@@ -94,7 +92,7 @@ Capability tools are registered under the documented namespace/Code Mode
 contract. The model calls them as `tools.plan["create"]`,
 `tools.evidence["create"]`, and so on; each effective name (`plan_create`,
 `evidence_create`, …) is also its permission string. Kind, namespace, and permission
-are fixed by the tool and never supplied by the model; a wrong-kind ID fails
+come from the tool; a wrong-kind ID fails
 with `invalid_kind`.
 
 Authoring returns directly reusable machine values:
@@ -149,8 +147,7 @@ The setters are available for edits, but the shortest useful flow is:
   `previousPlanID`.
 
 A draft can be created as soon as its subject is known and filled while the work
-continues; a finalize call is a readiness/publish boundary, not a permission
-boundary.
+continues; a finalize call is a readiness/publish boundary.
 
 ### Schema notes
 
@@ -163,7 +160,8 @@ Fields that look redundant are deliberate:
   authority. They differ when a worker authors an artifact. Feedback defaults
   to the owner; when the writer is a worker, the owner resumes that worker with
   the feedback and the worker updates the artifact.
-- `primaryAuthor` is an immutable frontend label, never a session identity.
+- `primaryAuthor` is an immutable frontend label; session identities stay
+  internal.
 - Plan evidence stores an immutable description snapshot so the plan stays
   readable after the evidence artifact changes or is cleaned up.
 - `completedAt` is the plan freeze marker, separate from `status` and
@@ -181,10 +179,10 @@ Fields that look redundant are deliberate:
   validated `recipient` (`"owner"` or `"writer"`, default `"owner"`).
 - `approve_plan` — plan only, requires a finalized draft (`not_ready`
   otherwise), sets `status: approved` as a review marker. Editing the plan
-  clears the marker and returns it to draft. It does not authorize or block any
-  implementation.
-- `mark_read` — evidence/review only, sets `status: read` with no owner
-  notification and no delivery bookkeeping.
+  clears the marker and returns it to draft. It marks the review; implementation
+  continues regardless.
+- `mark_read` — evidence/review only, sets `status: read` and records the
+  dismissal.
 - `retry_plan_delivery` — redeliver a recorded plan-review submission by request
   ID.
 
@@ -199,9 +197,8 @@ arbitrary thrown errors.
 ## Feedback and review semantics
 
 - Submissions deduplicate by a client-generated `requestID`.
-- A plan review is a recorded marker plus a synthetic notification. It is not an
-  implementation gate; the primary agent may continue working while the user
-  reviews.
+- A plan review is a recorded marker plus a synthetic notification. The primary
+  agent may continue working while the user reviews.
 - Editing a `read` or `approved` artifact returns it to the visible `draft`,
   clears readiness, and clears the review/read marker so it reappears in pickers
   until re-finalized.
@@ -211,24 +208,23 @@ arbitrary thrown errors.
 ## Delivery
 
 A submission is persisted first, then durably admitted to the target session via
-`ctx.session.synthetic` with `delivery: "queue"` and `resume: true`. Delivery is
-review/feedback only; `mark_read` never delivers. Approval text names the
+`ctx.session.synthetic` with `delivery: "queue"` and `resume: true`. Delivery covers
+review/feedback; `mark_read` records the read locally. Approval text names the
 artifact ID and the record's authoritative
 `kind=plan status=approved finalized=true` payload so the primary agent can
-answer the review without a separate lookup. Delivery is at-least-once, not
-exactly-once.
+answer the review without a separate lookup. Delivery is at-least-once.
 
 ## Stale locks
 
 Mutations hold an exclusive per-artifact lock file (`artifacts/<id>/lock`). An
-existing lock is reported as `lock_conflict`; it is never bypassed. If a
+existing lock is reported as `lock_conflict`. If a
 mutation crashed while holding the lock, remove `artifacts/<id>/lock` by hand
-and retry. The record is never discarded.
+and retry. The record stays.
 
 ## Tests
 
 Standalone tests run on the repository's mise-managed Node (the plugin runs
-under OpenCode's embedded Bun, but the tests do not need Bun):
+under OpenCode's embedded Bun; the tests run under Node):
 
 ```
 mise exec -- node --experimental-strip-types --test \
@@ -250,5 +246,4 @@ context-sensitively `OpenCodeArtifactApprove` (finalized draft plans) or
 `OpenCodeArtifactMarkRead` (published evidence/reviews), both on `<leader>ay`
 (plus `<leader>af`).
 
-Requests go through `opencode api` with argv lists and JSON-encoded bodies;
-user-selected Markdown is never interpolated into shell commands.
+Requests go through `opencode api` with argv lists and JSON-encoded bodies.

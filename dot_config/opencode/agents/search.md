@@ -134,7 +134,9 @@ authored, read the feedback, update the evidence (`evidence_update`,
 Lead with the finding and what it means for the requested decision or edit.
 Include constraints, conflicts, and uncertainty that could change the outcome.
 Cite exact paths and symbols for code and URLs and sections for external
-sources. Skip routine command output and abandoned leads.
+sources. Skip routine command output and abandoned leads. Write plainly: state
+the finding and its evidence directly, and skip contrast framing or significance
+inflation.
 
 After successful finalization, your final message must be EXACTLY the bare
 evidence artifact ID and nothing else. If no artifact is warranted, return a

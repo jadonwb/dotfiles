@@ -18,7 +18,7 @@
 //   links a follow-up plan to the completed plan it continues.
 // - evidence: main question/topic plus Summary and Limitations prose, and an
 //   ordered array of detailed findings {id, title, content}. Findings keep
-//   stable IDs for their author only; the IDs never enter the rendered view or
+//   stable IDs for their author; those IDs stay out of the rendered view and
 //   the primary-agent context.
 // - review: machine-readable outcome ("Pass", "Changes required", or
 //   "Blocked"), human-readable Summary prose, and ordered findings {id, title,
@@ -30,14 +30,14 @@
 // authority — the session that created the artifact. Mutations reject any
 // caller that is not the writer. `primaryAuthor` is immutable frontend metadata
 // (a name/label derived from the creating agent); owner/writer/session IDs stay
-// internal routing data and never enter the rendered frontmatter.
+// internal routing data, outside the rendered frontmatter.
 //
 // Readiness: every content mutation clears the `finalized` flag.
 // plan_finalize validates the flat prose fields and marks the plan ready for
 // review (status stays draft); evidence/review finalization validates useful
 // content and transitions the visible draft to `published`. Approval is an
-// optional review marker, not an implementation gate: an approved plan that is
-// edited returns to draft so it can be reviewed again. plan_complete records
+// optional review marker; an approved plan that is edited returns to draft so
+// it can be reviewed again. plan_complete records
 // the outcome and freezes the plan.
 //
 // Design rules:
@@ -45,8 +45,8 @@
 // - Every lookup is scoped to the location recorded on the artifact.
 // - record.json is authoritative and written last; the derived view is written
 //   first so an interrupted write is repairable by regeneration.
-// - Mutations serialize on an exclusive per-artifact lock file (lock_conflict,
-//   never bypassed; a stale lock is removed by hand).
+// - Mutations serialize on an exclusive per-artifact lock file (reported as
+//   lock_conflict; remove a stale lock by hand).
 // - Pure Node (node:*) so `node --test` can exercise it without Bun.
 
 import { randomBytes } from "node:crypto";
@@ -470,8 +470,8 @@ export function createStore(options = {}) {
   }
 
   async function syncDirectory(dir) {
-    // Best effort: some systems refuse directory fsync; atomicity of the
-    // rename itself never depends on this.
+    // Best effort: some systems refuse directory fsync; the rename itself is
+    // atomic.
     try {
       const handle = await open(dir, "r");
       try {
@@ -887,7 +887,7 @@ export function createStore(options = {}) {
       );
     }
     // A reviewed plan that changes is a draft again, so the user can review the
-    // new version. Approval is a marker, not a freeze.
+    // new version. Approval is a review marker.
     if (record.kind === "plan" && record.status === "approved") {
       record.status = "draft";
       record.readAt = null;
@@ -1096,9 +1096,9 @@ export function createStore(options = {}) {
         expectKind: "plan",
       });
       const normalizedLocation = resolvePath(location);
-      // Validate every unique member before mutating anything: location,
-      // kind, and readiness all pass or the whole array add fails with no
-      // membership change, no snapshot append, and no view written.
+      // Validate every unique member before mutating anything: location, kind, and
+      // readiness all pass before anything is written; a failure leaves the
+      // record unchanged.
       const snapshots = [];
       const validated = new Set();
       for (const evidenceID of evidenceIDs) {

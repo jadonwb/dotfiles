@@ -34,8 +34,7 @@ const ERROR_PREFIX = "ARTIFACT_ERROR";
 
 const MAX_ANCESTRY_HOPS = 16;
 
-// Only kinds with a model-facing loader belong here. Search must never return
-// an ID the model has no tool to load.
+// Search returns only kinds with a model-facing loader.
 const SEARCHABLE_KINDS = Object.freeze([
   "plan",
   "evidence",
@@ -254,7 +253,7 @@ export function artifactFeedbackMessage(input: {
     lines.push("", `User question: ${input.question.trim()}`);
   }
   // Exactly one context representation: the quoted excerpt when present,
-  // otherwise the selected line range, otherwise nothing (general feedback).
+  // otherwise the selected line range, otherwise general feedback.
   if (input.selectedText && input.selectedText.length > 0) {
     lines.push(
       "",

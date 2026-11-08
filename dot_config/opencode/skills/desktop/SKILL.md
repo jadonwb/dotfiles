@@ -32,7 +32,7 @@ hyprctl -j monitors | jq -r '.[] | [.name, .x, .y, .width, .height, .scale] | @t
 - `workspace.name` starting with `special:` means the window is on a hidden
   workspace. It still receives input and can be captured.
 - Save the current `activewindow` address before any work so you can confirm it
-  never changed.
+  still matches at the end.
 
 ## Launch a test window in the background
 
@@ -95,7 +95,7 @@ sid=$(hyprctl -j clients | jq -r --arg a "$addr" '.[]|select(.address==$a)|.stab
 grim -T "$sid" /tmp/opencode/window.png
 ```
 
-- `-T` takes the `stableId`, not the address.
+- `-T` takes the `stableId`.
 - Works while the window is unfocused, occluded, on another workspace, or on a
   hidden special workspace.
 - The image is the window's current size times the output scale (a 1254×658

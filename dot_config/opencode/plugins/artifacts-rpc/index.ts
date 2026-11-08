@@ -1,12 +1,12 @@
 // Artifact RPC adapter: the Neovim-facing half of the artifact registry.
 //
-// Storage and agent tools stay in ../artifacts. This plugin
-// only exposes the registry over RPC (personal.artifacts) and registers that
-// domain through the bridge. Keeping the adapter separate means the artifact
-// tools never import bridge code.
+// Storage and agent tools stay in ../artifacts. This plugin only exposes the
+// registry over RPC (personal.artifacts) and registers that domain through the
+// bridge. The adapter stays separate, so the artifact tools remain independent
+// of bridge code.
 //
 // Delivery resolves stored session identities (owner or writer) and records the
-// outcome; mark_read never delivers.
+// outcome; mark_read records the read without a delivery.
 
 import { Artifacts } from "../artifacts/artifact-rpc.ts";
 import { createStore, StoreError } from "../artifacts/store.mjs";
@@ -234,7 +234,7 @@ export default {
           }
           // Recipient is resolved only from the stored session identities and is
           // recorded with the submission; a target that cannot be reached is
-          // recorded as a failed delivery, never silently rerouted.
+          // recorded as a failed delivery.
           const delivery = await deliver({
             submission: "feedback",
             artifactID: submission.artifact.id,
@@ -317,8 +317,7 @@ export default {
           } catch (error) {
             rpcError(context, error);
           }
-          // Evidence/review dismissal only; no deliver, no delivery bookkeeping
-          // — the user's read decision never emits a notification.
+          // Evidence/review dismissal only: the read is recorded locally.
           return {
             requestID: submission.requestID,
             kind: "read",
