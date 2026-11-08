@@ -1,0 +1,7 @@
+# Pinned Strata release. Change version and regenerate both checksums to upgrade.
+# Checksums come from the release's *.tar.gz.sha256 assets:
+# https://github.com/lgse/strata/releases
+[strata]
+version = "1.2.0"
+x86_64_sha256 = "1cb68428d6079473862523f0ff35e48ff092c7ed21cd72b536356f6c51df46e3"
+aarch64_sha256 = "c9b84c32d7c636a5b634f9b336e2399ccdff6e11e8138d8d75b7211f5382d235"

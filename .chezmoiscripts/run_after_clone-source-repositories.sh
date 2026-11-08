@@ -34,5 +34,7 @@ for entry in "${repositories[@]}"; do
 
   mkdir -p "$workspace"
   echo "source: cloning $rel -> $target"
-  git clone "$url" "$target"
+  if ! git clone "$url" "$target"; then
+    echo "source: failed to clone $rel; continuing without it" >&2
+  fi
 done

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Install the pinned Strata release into the user's home. Update the version and
+# checksums in .chezmoidata/strata.toml to upgrade; this is run_onchange, so the
+# next `chezmoi apply` reruns the script after a pin change.
+
+version="{{ .strata.version }}"
+
+case "$(uname -m)" in
+x86_64 | amd64)
+  arch="x86_64"
+  sha256="{{ .strata.x86_64_sha256 }}"
+  ;;
+aarch64 | arm64)
+  arch="aarch64"
+  sha256="{{ .strata.aarch64_sha256 }}"
+  ;;
+*)
+  echo "strata: unsupported architecture: $(uname -m)" >&2
+  exit 1
+  ;;
+esac
+
+asset="strata-${version}-${arch}-unknown-linux-gnu.tar.gz"
+url="https://github.com/lgse/strata/releases/download/v${version}/${asset}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/strata"
+data="${XDG_DATA_HOME:-$HOME/.local/share}"
+dest="$HOME/.local/bin"
+apps="$data/applications"
+icons="$data/icons/hicolor/scalable/apps"
+
+mkdir -p "$cache" "$dest" "$apps" "$icons"
+
+installed=""
+if [[ -x "$dest/strata" ]]; then
+  installed="$("$dest/strata" --version 2>/dev/null || true)"
+fi
+
+desktop_ok=false
+if [[ -f "$apps/io.github.lgse.Strata.desktop" ]] &&
+  grep -Fq "Exec=$dest/strata" "$apps/io.github.lgse.Strata.desktop"; then
+  desktop_ok=true
+fi
+
+if [[ "$installed" == "strata $version" ]] &&
+  [[ "$desktop_ok" == true ]] &&
+  [[ -f "$icons/io.github.lgse.Strata.svg" ]]; then
+  echo "strata: $version already installed"
+else
+  archive="$cache/$asset"
+  echo "strata: downloading $version ($arch)"
+  curl -fL --retry 3 --retry-delay 2 "$url" -o "$archive"
+  printf '%s  %s\n' "$sha256" "$archive" | sha256sum -c -
+
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+
+  tar -xzf "$archive" -C "$tmp"
+  root="$tmp/strata-${version}-${arch}-unknown-linux-gnu"
+
+  install -m 0755 "$root/strata" "$dest/strata"
+  sed "s|^Exec=strata|Exec=$dest/strata|" \
+    "$root/io.github.lgse.Strata.desktop" >"$apps/io.github.lgse.Strata.desktop"
+  chmod 0644 "$apps/io.github.lgse.Strata.desktop"
+  install -m 0644 "$root/io.github.lgse.Strata.svg" "$icons/io.github.lgse.Strata.svg"
+
+  rm -f "$archive"
+  echo "strata: installed $("$dest/strata" --version)"
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$apps" >/dev/null 2>&1 || true
+fi
+
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -f -t "$data/icons/hicolor" >/dev/null 2>&1 || true
+fi
+
+# Let Strata write its per-desktop portal configuration and D-Bus service. The
+# desktop name is normally set in a desktop terminal; fall back to the systemd
+# user environment when applying over SSH.
+desktop="${XDG_CURRENT_DESKTOP:-}"
+if [[ -z "$desktop" ]] && command -v systemctl >/dev/null 2>&1; then
+  desktop="$(systemctl --user show-environment 2>/dev/null | sed -n 's/^XDG_CURRENT_DESKTOP=//p')"
+fi
+
+if [[ -n "$desktop" ]]; then
+  if ! XDG_CURRENT_DESKTOP="$desktop" "$dest/strata" --install-portal; then
+    echo "strata: portal setup failed; run $dest/strata --install-portal from a desktop session" >&2
+  fi
+else
+  echo "strata: portal setup skipped (no desktop session); run $dest/strata --install-portal from a desktop session" >&2
+fi

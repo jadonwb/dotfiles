@@ -15,6 +15,40 @@ Chezmoi deploys each `~/.config/<app>` from the matching `dot_config` path.
 `external_nvim` is a git submodule; the other configs are tracked directly in
 this repository.
 
+## Chezmoi scripts
+
+Scripts in `.chezmoiscripts/` install tools that need to track upstream more
+closely than distro packages. Every file in that directory is treated as a
+script by chezmoi, so keep documentation here rather than in that directory.
+
+| Prefix | When it runs |
+| --- | --- |
+| `run_after_` | After every successful apply. Must be idempotent. |
+| `run_onchange_` | When the rendered script changes, before the `after` scripts. |
+| `run_onchange_after_` | When the rendered script changes, after the `after` scripts. |
+
+Conventions:
+
+- Start with `#!/usr/bin/env bash` and `set -euo pipefail`.
+- Install user tools into `$HOME/.local/bin`; never require `sudo`.
+- Pin a version and verify its SHA-256 before installing. Put the pin in
+  `.chezmoidata/<tool>.toml` and render it from a `.sh.tmpl` script, so changing
+  the pin reruns the script on the next apply.
+- Download into `$HOME/.cache/<tool>` (honouring `XDG_CACHE_HOME`) and clean up
+  temporary directories with a `trap`.
+- Skip optional integrations with a clear warning when prerequisites are
+  absent, rather than failing the whole apply.
+
+### Strata
+
+Strata is installed from the upstream release tarball into `~/.local/bin`, not
+from the Omarchy package, which trails upstream. Update
+`.chezmoidata/strata.toml` (version plus both architecture checksums from the
+release's `.sha256` assets) and run `chezmoi apply`. The script installs the
+binary, desktop entry, icon, and then runs `strata --install-portal` so the
+file chooser follows the same binary. Do not use Strata's in-app updater on a
+chezmoi-managed machine; update the pin instead.
+
 ## Procedure
 
 Run `chezmoi apply` after completed changes; expect a clean apply with live

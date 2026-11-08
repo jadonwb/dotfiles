@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Enable systemd user services for SSH agent.
 # Fails gracefully if systemd user bus isn't available or if
 # the services don't exist on this system.
 
 # Bail gracefully if systemd user bus isn't available (e.g. chroot, SSH w/o linger)
+if ! command -v systemctl >/dev/null 2>&1; then
+    exit 0
+fi
+
 if ! systemctl --user show-environment &>/dev/null; then
     exit 0
 fi

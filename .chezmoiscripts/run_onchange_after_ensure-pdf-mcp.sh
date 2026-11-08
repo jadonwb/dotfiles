@@ -2,8 +2,18 @@
 set -euo pipefail
 
 # pdf-mcp runs locally over stdio; OCR uses the system Tesseract executable.
-command -v pipx >/dev/null || { echo "Install pipx before applying the PDF MCP configuration." >&2; exit 1; }
-if ! command -v pdf-mcp >/dev/null; then
+# Skip instead of failing the whole apply on machines that do not have the
+# optional desktop toolchain installed.
+if ! command -v pipx >/dev/null 2>&1; then
+  echo "pdf-mcp: pipx not found; skipping PDF MCP install" >&2
+  exit 0
+fi
+
+if ! command -v tesseract >/dev/null 2>&1; then
+  echo "pdf-mcp: Tesseract not found; skipping PDF MCP install" >&2
+  exit 0
+fi
+
+if ! command -v pdf-mcp >/dev/null 2>&1; then
   pipx install pdf-mcp
 fi
-command -v tesseract >/dev/null || { echo "Install Tesseract and its OCR language packs for PDF OCR." >&2; exit 1; }

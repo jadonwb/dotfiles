@@ -6,7 +6,13 @@ set -euo pipefail
 
 if ! command -v npm >/dev/null 2>&1; then
   printf 'OpenCode migration skipped: npm is not installed.\n' >&2
-  exit 1
+  exit 0
+fi
+
+prefix="$(npm prefix -g 2>/dev/null || true)"
+if [[ -z "$prefix" || ! -w "$prefix" ]]; then
+  printf 'OpenCode migration skipped: npm global prefix %s is not writable.\n' "${prefix:-unknown}" >&2
+  exit 0
 fi
 
 printf 'Migrating OpenCode to a regular global npm install...\n'
@@ -22,4 +28,4 @@ if command -v mise >/dev/null 2>&1; then
 fi
 
 printf '\nOpenCode is now installed globally with npm.\n'
-printf 'Migration complete. Remove .chezmoiscripts/run_after_ensure-opencode.sh from the chezmoi source.\n'
+printf 'Migration complete. Remove .chezmoiscripts/run_onchange_ensure-opencode.sh from the chezmoi source.\n'

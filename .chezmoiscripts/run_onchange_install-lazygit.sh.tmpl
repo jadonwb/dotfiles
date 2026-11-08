@@ -12,23 +12,27 @@ base_url="https://github.com/jesseduffield/lazygit/releases/download/v${version}
 asset="lazygit_${version}_linux_x86_64.tar.gz"
 
 dest="$HOME/.local/bin"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/lazygit"
+
+mkdir -p "$dest" "$cache"
+archive="$cache/$asset"
+
+echo "lazygit: downloading pinned release ${version}"
+
+if ! curl -fL --retry 3 --retry-delay 2 "$base_url/$asset" -o "$archive"; then
+  echo "lazygit: download failed" >&2
+  exit 1
+fi
+
+echo "${sha256}  $archive" | sha256sum -c -
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-archive="$tmp/$asset"
-
-echo "lazygit: downloading pinned release ${version}"
-
-curl -fL "$base_url/$asset" -o "$archive"
-
-echo "${sha256}  $archive" | sha256sum -c -
-
-mkdir -p "$dest"
-
 tar -xzf "$archive" -C "$tmp" lazygit
 
 install -m 0755 "$tmp/lazygit" "$dest/lazygit"
+rm -f "$archive"
 
 echo "lazygit: installed $("$dest/lazygit" --version)"
 {{- end -}}
