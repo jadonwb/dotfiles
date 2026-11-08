@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # omarchy:summary=Minimize a window to special:minimized, or restore one
-# omarchy:args=minimize [window-address] | restore <window-address> [--here] | prune | previews | label <address> | list
+# omarchy:args=minimize [window-address] | restore <window-address> [--here] | close <window-address> | prune | previews | label <address> | list
 #
 # Hyprland has no minimize. Omarchy hides a window by moving it to the
 # special:minimized workspace, which is what the dock reads. This helper does
@@ -574,6 +574,37 @@ cmd_restore() {
   cmd_prune
 }
 
+# ---------------------------------------------------------------- close
+#
+# A close request is polite: the app may answer with a "save changes" dialog.
+# That dialog is on the hidden workspace, so if the window survives the request
+# it comes back to its origin, focused, with a notification saying why.
+cmd_close() {
+  local address=${1:-}
+  [[ -n $address ]] || die "close needs a window address"
+  [[ $address == 0x* ]] || address="0x$address"
+
+  local window app
+  window=$(window_json "$address")
+  [[ -n $window ]] || return 0
+  app=$(state_get "$address" | jq -r '.app // empty' 2>/dev/null)
+
+  hyprctl dispatch "hl.dsp.window.close({ window = \"address:$address\" })" >/dev/null 2>&1
+  sleep 0.6
+
+  window=$(window_json "$address")
+  if [[ -z $window ]]; then
+    cmd_prune
+    return 0
+  fi
+
+  cmd_restore "$address"
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send -a "Omarchy" "Close needs an answer" \
+      "${app:-The window} is asking before it closes." >/dev/null 2>&1 || true
+  fi
+}
+
 # ---------------------------------------------------------------- reporting
 
 cmd_list() {
@@ -608,6 +639,10 @@ case ${1:-} in
     shift
     cmd_restore "$@"
     ;;
+  close)
+    shift
+    cmd_close "${1:-}"
+    ;;
   prune)
     cmd_prune
     ;;
@@ -622,7 +657,7 @@ case ${1:-} in
     cmd_list
     ;;
   *)
-    printf 'usage: %s {minimize [window-address] | restore <window-address> [--here] | prune | previews | label <address> | list}\n' "$0" >&2
+    printf 'usage: %s {minimize [window-address] | restore <window-address> [--here] | close <window-address> | prune | previews | label <address> | list}\n' "$0" >&2
     exit 2
     ;;
 esac

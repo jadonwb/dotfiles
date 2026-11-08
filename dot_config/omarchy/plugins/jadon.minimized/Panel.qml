@@ -263,12 +263,8 @@ Panel {
 
   function closeWindow(row) {
     if (!row) return
-    Quickshell.execDetached([
-      "hyprctl",
-      "dispatch",
-      "hl.dsp.window.close({ window = \"address:" + row.address + "\" })"
-    ])
-    refreshSoon.restart()
+    root.close()
+    root.runAction(["close", row.address])
   }
 
   function handleText(key, modifiers) {
