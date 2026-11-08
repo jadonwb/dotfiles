@@ -246,7 +246,7 @@ Panel {
   // Ages are rendered from this rather than baked into the rows, so a tick
   // refreshes the text without rebuilding the list under the cursor.
   Timer {
-    interval: 30000
+    interval: 15000
     repeat: true
     running: root.opened
     onTriggered: root.nowMs = Date.now()
@@ -372,7 +372,6 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     text: "󰖮"
-    labelText: root.minimizedCount > 0 ? Commons.I18n.formatNumber(root.minimizedCount) : ""
     opacity: root.minimizedCount > 0 ? 1.0 : 0.55
     tooltipText: root.minimizedCount > 0
       ? strings.tn("minimized.barTooltip", root.minimizedCount).arg(Commons.I18n.formatNumber(root.minimizedCount))
@@ -548,14 +547,14 @@ Panel {
                   source: rowSurface.previewSource
                   visible: status === Image.Ready
                   fillMode: Image.PreserveAspectCrop
-                  asynchronous: true
+                  asynchronous: false
                   cache: false
                   sourceSize: Qt.size(384, 216)
                 }
 
                 Image {
                   anchors.centerIn: parent
-                  visible: previewImage.status !== Image.Ready && rowSurface.iconSource !== ""
+                  visible: previewImage.status === Image.Error && rowSurface.iconSource !== ""
                   source: rowSurface.iconSource
                   sourceSize: Qt.size(48, 48)
                   asynchronous: true
@@ -565,7 +564,7 @@ Panel {
 
                 Text {
                   anchors.centerIn: parent
-                  visible: previewImage.status !== Image.Ready && rowSurface.iconSource === ""
+                  visible: previewImage.status === Image.Error && rowSurface.iconSource === ""
                   textFormat: Text.PlainText
                   text: "󰖯"
                   color: root.dim
