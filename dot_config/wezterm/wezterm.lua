@@ -39,11 +39,6 @@ config.use_ime = false
 
 config.window_close_confirmation = "NeverPrompt"
 
--- OpenCode (and other terminal apps) also notify through their own desktop
--- integration. Showing the terminal OSC notification too duplicates every
--- agent alert.
-config.notification_handling = "NeverShow"
-
 local domains = require("ssh_domains")
 
 config.unix_domains = {
