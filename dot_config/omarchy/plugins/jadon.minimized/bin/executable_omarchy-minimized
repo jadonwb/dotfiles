@@ -579,27 +579,72 @@ cmd_restore() {
 # A close request is polite: the app may answer with a "save changes" dialog.
 # That dialog is on the hidden workspace, so if the window survives the request
 # it comes back to its origin, focused, with a notification saying why.
+# Close every parked window left behind by an app: the main window when it
+# still exists, and a separate modal it opened in the meantime.
+restore_windows() {
+  local json=$1 address
+  while IFS= read -r address; do
+    [[ -n $address ]] || continue
+    cmd_restore "$address" >/dev/null 2>&1
+  done < <(jq -r '.[].address' <<<"$json" 2>/dev/null)
+}
+
 cmd_close() {
   local address=${1:-}
   [[ -n $address ]] || die "close needs a window address"
   [[ $address == 0x* ]] || address="0x$address"
 
-  local window
+  local window pid
   window=$(window_json "$address")
   [[ -n $window ]] || return 0
+  pid=$(jq -r '.pid // empty' <<<"$window")
+  [[ -n $pid ]] || pid=-1
 
   hyprctl dispatch "hl.dsp.window.close({ window = \"address:$address\" })" >/dev/null 2>&1
-  sleep 0.6
 
-  window=$(window_json "$address")
-  if [[ -z $window ]]; then
-    cmd_prune
-    return 0
-  fi
+  local deadline clients workspace leftover
+  deadline=$(($(date +%s%3N) + 3000))
+  while :; do
+    clients=$(clients_json)
+    workspace=$(jq -r --arg a "$address" \
+      'first(.[] | select(.address == $a) | .workspace.name) // empty' <<<"$clients")
 
-  # The app is waiting for an answer on a hidden workspace. Bring it back so
-  # the dialog is in front of the user; the window returning is the signal.
-  cmd_restore "$address"
+    # The toplevel is gone. If the app left a modal behind on the hidden
+    # workspace, bring that back too; otherwise the close really happened.
+    if [[ -z $workspace ]]; then
+      leftover=$(jq -c --argjson pid "$pid" \
+        '[.[] | select(.pid == $pid and .workspace.name == "'"$MINIMIZED_WORKSPACE"'")]' <<<"$clients")
+      if [[ $leftover != "[]" ]]; then
+        restore_windows "$leftover"
+      else
+        cmd_prune
+      fi
+      return
+    fi
+
+    # The app moved the window out itself; it is already in front of the user.
+    if [[ $workspace != "$MINIMIZED_WORKSPACE" ]]; then
+      cmd_prune
+      return
+    fi
+
+    # The process is gone, so the window is already on its way out.
+    if ((pid > 0)) && ! kill -0 "$pid" 2>/dev/null; then
+      cmd_prune
+      return
+    fi
+
+    # Still parked after three seconds: an in-window dialog or a slow save.
+    # Give the app's windows back rather than leave a question hidden.
+    if (($(date +%s%3N) >= deadline)); then
+      leftover=$(jq -c --argjson pid "$pid" \
+        '[.[] | select(.pid == $pid and .workspace.name == "'"$MINIMIZED_WORKSPACE"'")]' <<<"$clients")
+      restore_windows "$leftover"
+      return
+    fi
+
+    sleep 0.12
+  done
 }
 
 # ---------------------------------------------------------------- reporting

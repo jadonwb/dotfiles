@@ -57,10 +57,13 @@ The snapshot lives in `~/.local/state/omarchy/minimized/state.json` and is
 pruned whenever a window leaves the minimized workspace, however it left.
 Thumbnails live in `~/.cache/omarchy/minimized/` and are pruned the same way.
 
-`x` is a close request, not a kill. If the app answers with a save-changes
-dialog, the window comes back to its workspace and is focused, so the question
-is never left on the hidden workspace. The panel never force-closes; that stays
-an explicit manual action.
+`x` is a close request, not a kill. The helper follows the window's Hyprland
+address and the app's PID: a slow teardown gets up to three seconds to finish, a
+separate modal left on the hidden workspace is found by PID and brought back
+with its parent, and an in-window dialog or a save that never finishes is
+brought back at the deadline. A window the app itself moves to a visible
+workspace is left alone. The panel never force-closes; that stays an explicit
+manual action.
 
 ## Settings
 
