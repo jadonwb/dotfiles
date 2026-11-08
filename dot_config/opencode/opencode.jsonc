@@ -1,12 +1,16 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "system",
+  // buffer is the room kept free, so 30% means compaction starts at ~70% of
+  // the window (~700k of 1M). Keep.tokens plus the fixed system prompt must
+  // stay below that trigger, or compaction cannot restore headroom. See
+  // RESEARCH.md.
   "compaction": {
     "auto": true,
     "keep": {
       "tokens": 32000
     },
-    "buffer": "25%"
+    "buffer": "30%"
   },
   "experimental": {
     "subagent_depth": 1,

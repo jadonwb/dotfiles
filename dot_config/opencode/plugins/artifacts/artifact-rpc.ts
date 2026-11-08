@@ -19,14 +19,35 @@ const artifactSummary = {
   type: "object",
   properties: {
     id: { type: "string" },
-    kind: { type: "string", description: "plan, evidence, review, or report" },
+    kind: {
+      type: "string",
+      description: "memory, plan, evidence, review, or report",
+    },
     title: { type: "string" },
     description: { type: ["string", "null"] },
-    primaryAuthor: { type: "string", description: "immutable frontend author label derived from the creating agent" },
-    status: { type: "string", description: "draft, published, approved, or read" },
-    path: { type: "string", description: "the read-only generated view inside the registry" },
-    ownerSessionID: { type: "string", description: "owner-scoping session used only for attached-session filtering" },
-    finalized: { type: "boolean", description: "readiness: false until the writer finalizes the draft" },
+    primaryAuthor: {
+      type: "string",
+      description:
+        "immutable frontend author label derived from the creating agent",
+    },
+    status: {
+      type: "string",
+      description:
+        "draft, published, approved, or read (memory is always published)",
+    },
+    path: {
+      type: "string",
+      description: "the read-only generated view inside the registry",
+    },
+    ownerSessionID: {
+      type: "string",
+      description:
+        "owner-scoping session used only for attached-session filtering",
+    },
+    finalized: {
+      type: "boolean",
+      description: "readiness: false until the writer finalizes the draft",
+    },
     createdAt: { type: "string" },
     updatedAt: { type: "string" },
   },
@@ -44,7 +65,7 @@ const artifactSummary = {
     "updatedAt",
   ],
   additionalProperties: false,
-}
+};
 
 const artifactView = {
   type: "object",
@@ -68,9 +89,15 @@ const artifactView = {
     },
     approval: { type: ["object", "null"] },
   },
-  required: ["location", "content", "feedback", "approval", ...artifactSummary.required],
+  required: [
+    "location",
+    "content",
+    "feedback",
+    "approval",
+    ...artifactSummary.required,
+  ],
   additionalProperties: false,
-}
+};
 
 const delivery = {
   type: "object",
@@ -82,16 +109,26 @@ const delivery = {
   },
   required: ["state", "attemptedAt", "deliveredAt", "error"],
   additionalProperties: false,
-}
+};
 
 const commonErrors = {
   validation: { type: "object", properties: { reason: { type: "string" } } },
   not_found: { type: "object", properties: { artifactID: { type: "string" } } },
-  invalid_kind: { type: "object", properties: { artifactID: { type: "string" }, kind: { type: "string" } } },
-  not_ready: { type: "object", properties: { artifactID: { type: "string" }, status: { type: "string" }, finalized: { type: "boolean" } } },
+  invalid_kind: {
+    type: "object",
+    properties: { artifactID: { type: "string" }, kind: { type: "string" } },
+  },
+  not_ready: {
+    type: "object",
+    properties: {
+      artifactID: { type: "string" },
+      status: { type: "string" },
+      finalized: { type: "boolean" },
+    },
+  },
   lock_conflict: { type: "object", properties: { lock: { type: "string" } } },
   io: { type: "object", properties: { detail: { type: "string" } } },
-}
+};
 
 const Artifacts = {
   id: "personal.artifacts",
@@ -108,7 +145,10 @@ const Artifacts = {
         additionalProperties: false,
       },
       errors: {
-        validation: { type: "object", properties: { reason: { type: "string" } } },
+        validation: {
+          type: "object",
+          properties: { reason: { type: "string" } },
+        },
         io: { type: "object", properties: { detail: { type: "string" } } },
       },
     },
@@ -119,7 +159,12 @@ const Artifacts = {
         required: ["artifactID"],
         additionalProperties: false,
       },
-      output: { type: "object", properties: { artifact: artifactView }, required: ["artifact"], additionalProperties: false },
+      output: {
+        type: "object",
+        properties: { artifact: artifactView },
+        required: ["artifact"],
+        additionalProperties: false,
+      },
       errors: commonErrors,
     },
     feedback: {
@@ -127,20 +172,26 @@ const Artifacts = {
         type: "object",
         properties: {
           artifactID: { type: "string" },
-          requestID: { type: "string", description: "client-generated ID; repeated submissions with the same ID deduplicate" },
+          requestID: {
+            type: "string",
+            description:
+              "client-generated ID; repeated submissions with the same ID deduplicate",
+          },
           recipient: {
             type: "string",
             enum: ["owner", "writer"],
             description:
-              "which stored session identity receives the notification: owner (the Planner) or writer (the artifact's authoring session). Defaults to owner when omitted.",
+              "which stored session identity receives the notification: owner (the primary agent) or writer (the artifact's authoring session). Defaults to owner when omitted.",
           },
           question: {
             type: "string",
-            description: "the user's question about the artifact (at most 16384 UTF-8 bytes)",
+            description:
+              "the user's question about the artifact (at most 16384 UTF-8 bytes)",
           },
           selectedText: {
             type: "string",
-            description: "user-selected Markdown excerpt, when a range was given (at most 65536 UTF-8 bytes)",
+            description:
+              "user-selected Markdown excerpt, when a range was given (at most 65536 UTF-8 bytes)",
           },
           selectedRange: {
             type: "object",
@@ -170,7 +221,11 @@ const Artifacts = {
         type: "object",
         properties: {
           artifactID: { type: "string" },
-          requestID: { type: "string", description: "client-generated ID; repeated submissions with the same ID deduplicate" },
+          requestID: {
+            type: "string",
+            description:
+              "client-generated ID; repeated submissions with the same ID deduplicate",
+          },
         },
         required: ["artifactID"],
         additionalProperties: false,
@@ -194,7 +249,11 @@ const Artifacts = {
         type: "object",
         properties: {
           artifactID: { type: "string" },
-          requestID: { type: "string", description: "client-generated ID; repeated submissions with the same ID deduplicate" },
+          requestID: {
+            type: "string",
+            description:
+              "client-generated ID; repeated submissions with the same ID deduplicate",
+          },
         },
         required: ["artifactID"],
         additionalProperties: false,
@@ -217,7 +276,10 @@ const Artifacts = {
     retry_plan_delivery: {
       input: {
         type: "object",
-        properties: { artifactID: { type: "string" }, requestID: { type: "string" } },
+        properties: {
+          artifactID: { type: "string" },
+          requestID: { type: "string" },
+        },
         required: ["artifactID", "requestID"],
         additionalProperties: false,
       },
@@ -237,11 +299,14 @@ const Artifacts = {
         ...commonErrors,
         not_found: {
           type: "object",
-          properties: { artifactID: { type: "string" }, requestID: { type: "string" } },
+          properties: {
+            artifactID: { type: "string" },
+            requestID: { type: "string" },
+          },
         },
       },
     },
   },
-}
+};
 
-export { Artifacts }
+export { Artifacts };
