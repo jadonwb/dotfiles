@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # omarchy:summary=Minimize a window to special:minimized, or restore one
-# omarchy:args=minimize [window-address] | restore <window-address> [--here] | prune | list
+# omarchy:args=minimize [window-address] | restore <window-address> [--here] | prune | previews | label <address> | list
 #
 # Hyprland has no minimize. Omarchy hides a window by moving it to the
 # special:minimized workspace, which is what the dock reads. This helper does
@@ -16,6 +16,7 @@ set -uo pipefail
 
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/minimized"
 STATE_FILE="$STATE_DIR/state.json"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/omarchy/minimized"
 MINIMIZED_WORKSPACE="special:minimized"
 TAG_PREFIX="omarchy-minimized-from-"
 
@@ -31,7 +32,7 @@ need() {
 need hyprctl
 need jq
 
-mkdir -p "$STATE_DIR"
+mkdir -p "$STATE_DIR" "$CACHE_DIR"
 [[ -s $STATE_FILE ]] || printf '{"version":1,"windows":{}}\n' >"$STATE_FILE"
 
 # One writer at a time. The lock is advisory and kept for the whole command,
@@ -53,6 +54,227 @@ active_address() {
 
 active_workspace_id() {
   hyprctl activeworkspace -j | jq -r '.id // empty'
+}
+
+# ------------------------------------------------------- app labels + previews
+#
+# The row says what the window *is*, not what Hyprland calls its class. GUI apps
+# get their desktop entry name in QML; terminals and Omarchy TUIs get a label
+# here. For a terminal, that means the foreground process on the pane's tty
+# (opencode, nvim, btop), or the Omarchy script the terminal is presenting
+# (omarchy-update). Wezterm windows need `wezterm cli` because the GUI process
+# does not own the shell: its mux server does.
+
+wezterm_tty() {
+  local pid=$1 pane
+  command -v wezterm >/dev/null 2>&1 || return 0
+  pane=$(timeout 2 wezterm cli list-clients --format json 2>/dev/null |
+    jq -r --argjson pid "$pid" '.[] | select(.pid == $pid) | .focused_pane_id' | head -1)
+  [[ -n $pane && $pane != null ]] || return 0
+  timeout 2 wezterm cli list --format json 2>/dev/null |
+    jq -r --argjson pane "$pane" '.[] | select(.pane_id == $pane) | .tty_name' | head -1
+}
+
+# The newest child that leads its own session on a tty is the terminal's shell.
+terminal_tty() {
+  local pid=$1 shell_pid="" children_file child stat session tty_nr
+  for children_file in /proc/"$pid"/task/*/children; do
+    [[ -r $children_file ]] || continue
+    read -ra children <"$children_file" || true
+    for child in "${children[@]}"; do
+      ((child > ${shell_pid:-0})) && shell_pid=$child
+    done
+  done
+  [[ -n $shell_pid ]] || return 0
+  read -r stat <"/proc/$shell_pid/stat" 2>/dev/null || return 0
+  read -r _ _ _ session tty_nr _ <<<"${stat##*) }"
+  ((session == shell_pid && tty_nr != 0)) || return 0
+  readlink -f "/proc/$shell_pid/fd/0" 2>/dev/null
+}
+
+# The foreground process group's leader on a tty, as pid<TAB>comm<TAB>args.
+foreground() {
+  local tty=${1#/dev/} p g t c a
+  while read -r p g t c a; do
+    [[ -n $p && $g == "$t" ]] || continue
+    printf '%s\t%s\t%s\n' "$p" "$c" "$a"
+    return
+  done < <(ps -t "$tty" -o pid=,pgid=,tpgid=,comm=,args= 2>/dev/null)
+}
+
+# Walk up from the foreground process looking for the Omarchy script that owns
+# it, so pacman still reads as "Omarchy Update" rather than "Pacman".
+ancestor_name() {
+  local p=$1 name="" comm args parent tok
+  while [[ $p =~ ^[0-9]+$ ]] && ((p > 1)); do
+    read -r comm args < <(ps -o comm=,args= -p "$p" 2>/dev/null)
+    for tok in $args; do
+      tok=${tok%;}
+      if [[ $tok == *omarchy-* ]]; then
+        if [[ $tok == */* ]]; then name=$(basename "$tok"); else name=$tok; fi
+        break
+      fi
+    done
+    [[ -n $name ]] && break
+    parent=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+    [[ -z $parent || $parent == "$p" ]] && break
+    p=$parent
+  done
+  printf '%s' "$name"
+}
+
+title_case() {
+  printf '%s' "$1" | sed -e 's/[-_]/ /g' -e 's/\b\([a-z]\)/\u\1/g'
+}
+
+omarchy_label() {
+  case $1 in
+    omarchy-update) printf 'Omarchy Update' ;;
+    omarchy-install-app) printf 'Omarchy Install App' ;;
+    omarchy-install-font) printf 'Omarchy Install Font' ;;
+    omarchy-show-logo | omarchy-show-done) printf 'Omarchy' ;;
+    *) printf 'Omarchy %s' "$(title_case "${1#omarchy-}")" ;;
+  esac
+}
+
+display_name() {
+  local name=${1##*/}
+  name=${name%.sh}
+  case $name in
+    nvim | vim) printf 'Neovim' ;;
+    opencode | opencode.exe) printf 'OpenCode' ;;
+    lazygit) printf 'Lazygit' ;;
+    yazi) printf 'Yazi' ;;
+    ssh) printf 'SSH' ;;
+    python | python3) printf 'Python' ;;
+    node) printf 'Node' ;;
+    cargo) printf 'Cargo' ;;
+    npm | pnpm | bun) printf '%s' "$name" ;;
+    tmux | zellij | screen) printf '%s' "$name" ;;
+    omarchy-*) omarchy_label "$name" ;;
+    "") printf '' ;;
+    *) title_case "$name" ;;
+  esac
+}
+
+command_label() {
+  local comm=$1 args=$2 tok name=""
+  case $comm in
+    bash | zsh | fish | sh | dash | nu) ;;
+    *) display_name "$comm"; return ;;
+  esac
+  for tok in $args; do
+    tok=${tok%;}
+    case $tok in
+      -* | bash | zsh | fish | sh | dash | nu) continue ;;
+    esac
+    name=${tok##*/}
+    break
+  done
+  [[ -n $name ]] && display_name "$name"
+}
+
+terminal_name() {
+  case $1 in
+    org.wezfurlong.wezterm) printf 'WezTerm' ;;
+    foot) printf 'Foot' ;;
+    Alacritty | alacritty) printf 'Alacritty' ;;
+    kitty) printf 'Kitty' ;;
+    com.mitchellh.ghostty) printf 'Ghostty' ;;
+    org.gnome.Console) printf 'Console' ;;
+    *) printf '' ;;
+  esac
+}
+
+is_terminal_class() {
+  case $1 in
+    org.wezfurlong.wezterm | foot | Alacritty | alacritty | kitty | com.mitchellh.ghostty | org.gnome.Console) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# What is running inside a terminal, or empty when it is just a shell prompt.
+process_label() {
+  local pid=$1 class=$2 tty fg fg_pid comm args ancestor label
+  [[ -n $pid ]] || return 0
+  case $class in
+    org.wezfurlong.wezterm) tty=$(wezterm_tty "$pid") ;;
+    *) tty=$(terminal_tty "$pid") ;;
+  esac
+  [[ -n $tty ]] || return 0
+  fg=$(foreground "$tty")
+  [[ -n $fg ]] || return 0
+  IFS=$'\t' read -r fg_pid comm args <<<"$fg"
+  ancestor=$(ancestor_name "$fg_pid")
+  if [[ -n $ancestor ]]; then
+    display_name "$ancestor"
+    return
+  fi
+  command_label "$comm" "$args"
+}
+
+omarchy_class_label() {
+  local name=${1#org.omarchy.}
+  case $name in
+    agent) printf 'Omarchy Agent' ;;
+    terminal) printf 'Omarchy Terminal' ;;
+    btop) printf 'btop' ;;
+    nvim) printf 'Neovim' ;;
+    update) printf 'Omarchy Update' ;;
+    about) printf 'About' ;;
+    *) title_case "$name" ;;
+  esac
+}
+
+window_app_label() {
+  local window=$1 class pid label
+  class=$(jq -r '.class // .initialClass // ""' <<<"$window")
+  pid=$(jq -r '.pid // empty' <<<"$window")
+  case $class in
+    org.omarchy.terminal)
+      label=$(process_label "$pid" "$class")
+      printf '%s' "${label:-Omarchy Terminal}"
+      ;;
+    org.omarchy.*) omarchy_class_label "$class" ;;
+    *)
+      if is_terminal_class "$class"; then
+        label=$(process_label "$pid" "$class")
+        printf '%s' "${label:-$(terminal_name "$class")}"
+      fi
+      ;;
+  esac
+}
+
+preview_path() {
+  printf '%s/%s.png' "$CACHE_DIR" "$1"
+}
+
+capture_preview() {
+  local address=$1 stable=$2
+  command -v grim >/dev/null 2>&1 || return 0
+  [[ -n $address && -n $stable && $stable != null ]] || return 0
+  grim -s 0.35 -T "$stable" "$(preview_path "$address")" >/dev/null 2>&1 || true
+}
+
+# Refresh thumbnails of every window still parked, and drop the pictures of
+# windows that have left. Capturing a hidden window works: it is still rendered.
+cmd_previews() {
+  local live=() address stable file name found addr
+  while IFS=$'\t' read -r address stable; do
+    [[ -n $address && -n $stable ]] || continue
+    capture_preview "$address" "$stable"
+    live+=("$address")
+  done < <(clients_json | jq -r '.[] | select(.workspace.name == "'"$MINIMIZED_WORKSPACE"'") | [.address, .stableId] | @tsv')
+
+  for file in "$CACHE_DIR"/*.png; do
+    [[ -e $file ]] || continue
+    name=$(basename "$file" .png)
+    found=0
+    for addr in "${live[@]}"; do
+      [[ $addr == "$name" ]] && found=1 && break
+    done
+    ((found)) || rm -f "$file"
+  done
 }
 
 # ---------------------------------------------------------------- state file
@@ -88,7 +310,7 @@ state_drop() {
 # are stale: closed apps, windows restored from the dock, or windows the user
 # moved out by hand.
 cmd_prune() {
-  local live tmp
+  local live tmp file name found address
   live=$(clients_json | jq -c '[.[] | select(.workspace.name == "'"$MINIMIZED_WORKSPACE"'") | .address]') || return 0
   tmp=$(mktemp "$STATE_DIR/.state.XXXXXX") || return 1
   if jq --argjson live "$live" \
@@ -98,6 +320,16 @@ cmd_prune() {
   else
     rm -f "$tmp"
   fi
+
+  for file in "$CACHE_DIR"/*.png; do
+    [[ -e $file ]] || continue
+    name=$(basename "$file" .png)
+    found=0
+    for address in $(jq -r '.[]' <<<"$live"); do
+      [[ $address == "$name" ]] && found=1 && break
+    done
+    ((found)) || rm -f "$file"
+  done
 }
 
 # ------------------------------------------------------------ workspace keys
@@ -166,15 +398,20 @@ cmd_minimize() {
     hyprctl dispatch "hl.dsp.window.pin({ action = \"disable\", window = \"address:$address\" })" >/dev/null 2>&1
   fi
 
-  local entry
+  local entry app stable
+  stable=$(jq -r '.stableId // empty' <<<"$window")
+  capture_preview "$address" "$stable"
+  app=$(window_app_label "$window")
   entry=$(jq -c \
     --arg monitor "$(monitor_name_for "$(jq -r '.monitor' <<<"$window")")" \
+    --arg app "$app" \
     --argjson now "$(date +%s%3N)" \
     '{
       address,
       class,
       initialClass,
       title,
+      app: $app,
       workspace: { id: (.workspace.id // null), name: (.workspace.name // "") },
       monitor: $monitor,
       monitorId: .monitor,
@@ -351,6 +588,17 @@ cmd_list() {
   ' "$STATE_FILE" 2>/dev/null || printf '[]\n'
 }
 
+cmd_label() {
+  local address=${1:-}
+  [[ -n $address ]] || die "label needs a window address"
+  [[ $address == 0x* ]] || address="0x$address"
+  local window
+  window=$(window_json "$address")
+  [[ -n $window ]] || die "window not found: $address"
+  window_app_label "$window"
+  printf '\n'
+}
+
 case ${1:-} in
   minimize)
     shift
@@ -363,11 +611,18 @@ case ${1:-} in
   prune)
     cmd_prune
     ;;
+  previews)
+    cmd_previews
+    ;;
+  label)
+    shift
+    cmd_label "${1:-}"
+    ;;
   list)
     cmd_list
     ;;
   *)
-    printf 'usage: %s {minimize [window-address] | restore <window-address> [--here] | prune | list}\n' "$0" >&2
+    printf 'usage: %s {minimize [window-address] | restore <window-address> [--here] | prune | previews | label <address> | list}\n' "$0" >&2
     exit 2
     ;;
 esac

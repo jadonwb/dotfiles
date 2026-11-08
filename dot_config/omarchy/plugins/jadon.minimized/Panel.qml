@@ -21,7 +21,11 @@ Panel {
   readonly property string configHome: Quickshell.env("XDG_CONFIG_HOME") || root.home + "/.config"
   readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || root.home + "/.local/state"
   readonly property string statePath: root.stateHome + "/omarchy/minimized/state.json"
+  readonly property string cacheHome: Quickshell.env("XDG_CACHE_HOME") || root.home + "/.cache"
+  readonly property string previewDir: root.cacheHome + "/omarchy/minimized"
   readonly property string scriptPath: root.configHome + "/omarchy/plugins/jadon.minimized/bin/omarchy-minimized"
+
+  property int previewRevision: 0
 
   readonly property color foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
   readonly property color dim: Qt.darker(root.foreground, 1.6)
@@ -80,6 +84,7 @@ Panel {
       root.cursorActive = false
       root.gPending = false
       root.refreshClients()
+      root.refreshPreviews()
       stateFile.reload()
       Qt.callLater(root.clampSelection)
     } else {
@@ -205,6 +210,21 @@ Panel {
     }
   }
 
+  // Thumbnails are captured at minimize time. This refreshes them when the
+  // panel opens, so a window whose content moved on (an update running in the
+  // terminal) shows what it looks like now.
+  Process {
+    id: previewsProc
+    command: [root.scriptPath, "previews"]
+    running: false
+    onExited: root.previewRevision++
+
+    stderr: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: if (text.trim() !== "") console.warn("minimized/previews", text.trim())
+    }
+  }
+
   Timer {
     id: refreshSoon
     interval: 350
@@ -302,6 +322,49 @@ Panel {
     return Quickshell.iconPath(name, true) || ""
   }
 
+  function refreshPreviews() {
+    if (!previewsProc.running) previewsProc.running = true
+  }
+
+  // A version query makes Qt reload the file after a fresh capture instead of
+  // serving the thumbnail it already has in its image cache.
+  function previewSource(address) {
+    return "file://" + root.previewDir + "/" + address + ".png?v=" + root.previewRevision
+  }
+
+  // The snapshot's label is the app or the process inside a terminal. Without
+  // one (a window minimized by the stock command), the desktop entry names the
+  // app; the class is only a last resort.
+  function appLabel(row) {
+    if (!row) return strings.t("minimized.untitled")
+    if (row.app !== "") return row.app
+    return root.desktopAppName(row.className)
+  }
+
+  function desktopAppName(className) {
+    var name = String(className || "")
+    if (name === "") return strings.t("minimized.untitled")
+    try {
+      var entry = DesktopEntries.heuristicLookup(name)
+      if (entry && entry.name) return entry.name
+    } catch (e) {
+      // No entry: name it from the class.
+    }
+    return root.prettyClassName(name)
+  }
+
+  function prettyClassName(className) {
+    var name = String(className || "").replace(/\.desktop$/i, "")
+    if (name.indexOf("org.omarchy.") === 0) name = name.slice("org.omarchy.".length)
+    // Reverse-DNS ids end in the thing a person calls the app:
+    // org.wezfurlong.wezterm is "wezterm".
+    var parts = name.split(".")
+    if (parts.length > 1) name = parts[parts.length - 1]
+    name = name.replace(/[-_]+/g, " ").trim()
+    if (name === "") return strings.t("minimized.untitled")
+    return name.replace(/\b[a-z]/g, function(letter) { return letter.toUpperCase() })
+  }
+
   // ------------------------------------------------------------- bar
 
   BarIconButton {
@@ -329,8 +392,8 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: panel.loadedContent
-    contentWidth: panel.fittedContentWidth(Style.space(430))
-    contentHeight: panel.fittedContentHeight(panel.loadedContentHeight, Style.space(560))
+    contentWidth: panel.fittedContentWidth(Style.space(500))
+    contentHeight: panel.fittedContentHeight(panel.loadedContentHeight, Style.space(620))
 
     content: PanelKeyCatcher {
       id: keyCatcher
@@ -404,7 +467,7 @@ Panel {
         ListView {
           id: listView
           width: parent.width
-          height: Math.min(contentHeight, Style.space(380))
+          height: Math.min(contentHeight, Style.space(480))
           visible: root.rows.length > 0
           spacing: Style.space(4)
           clip: true
@@ -427,10 +490,10 @@ Panel {
 
             readonly property bool chosen: modelData.address === root.selectedAddress
             readonly property string iconSource: root.iconSource(modelData.className)
+            readonly property string appLabel: root.appLabel(modelData)
+            readonly property string previewSource: root.previewSource(modelData.address)
             readonly property string subtitle: {
-              var parts = []
-              if (modelData.className !== "") parts.push(modelData.className)
-              parts.push(modelData.origin)
+              var parts = [modelData.origin, modelData.kind]
               var age = Minimized.ageText(modelData.minimizedAt, root.nowMs, strings)
               if (age !== "") parts.push(age)
               return parts.join("  ·  ")
@@ -465,51 +528,69 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
               anchors.leftMargin: Style.space(8)
               anchors.rightMargin: Style.space(8)
-              height: Math.max(Style.space(22), titleColumn.implicitHeight)
+              height: Math.max(previewFrame.height, titleColumn.implicitHeight)
 
-              Item {
-                id: iconItem
-                width: Style.space(22)
-                height: Style.space(22)
+              Rectangle {
+                id: previewFrame
+                width: Style.space(192)
+                height: Style.space(108)
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
+                radius: Style.cornerRadius
+                color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.06)
+                border.width: 1
+                border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.16)
+                clip: true
 
                 Image {
+                  id: previewImage
                   anchors.fill: parent
-                  visible: rowSurface.iconSource !== ""
+                  source: rowSurface.previewSource
+                  visible: status === Image.Ready
+                  fillMode: Image.PreserveAspectCrop
+                  asynchronous: true
+                  cache: false
+                  sourceSize: Qt.size(384, 216)
+                }
+
+                Image {
+                  anchors.centerIn: parent
+                  visible: previewImage.status !== Image.Ready && rowSurface.iconSource !== ""
                   source: rowSurface.iconSource
                   sourceSize: Qt.size(48, 48)
                   asynchronous: true
                   fillMode: Image.PreserveAspectFit
+                  opacity: 0.7
                 }
 
                 Text {
                   anchors.centerIn: parent
-                  visible: rowSurface.iconSource === ""
+                  visible: previewImage.status !== Image.Ready && rowSurface.iconSource === ""
                   textFormat: Text.PlainText
                   text: "󰖯"
-                  color: root.foreground
+                  color: root.dim
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.icon
+                  font.pixelSize: Style.font.iconLarge
                 }
               }
 
               Column {
                 id: titleColumn
-                anchors.left: iconItem.right
-                anchors.leftMargin: Style.space(10)
-                anchors.right: badge.left
-                anchors.rightMargin: Style.space(10)
+                anchors.left: previewFrame.right
+                anchors.leftMargin: Style.space(14)
+                anchors.right: parent.right
+                anchors.rightMargin: Style.space(8)
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(2)
+                spacing: Style.space(3)
 
                 Text {
                   width: parent.width
                   textFormat: Text.PlainText
-                  text: rowSurface.modelData.title
+                  text: rowSurface.appLabel
                   color: root.foreground
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
+                  font.pixelSize: Style.font.subtitle
+                  font.bold: true
                   elide: Text.ElideRight
                 }
 
@@ -522,17 +603,6 @@ Panel {
                   font.pixelSize: Style.font.caption
                   elide: Text.ElideRight
                 }
-              }
-
-              Text {
-                id: badge
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                textFormat: Text.PlainText
-                text: rowSurface.modelData.kind
-                color: root.dim
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
               }
             }
           }

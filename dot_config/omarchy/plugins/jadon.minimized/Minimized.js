@@ -84,6 +84,7 @@ function buildRows(clients, savedWindows, strings) {
       address: String(client.address || ""),
       title: String(client.title || className || strings.t("minimized.untitled")),
       className: className,
+      app: saved && saved.app ? String(saved.app) : "",
       floating: floating,
       pinned: client.pinned === true || (saved !== null && saved.pinned === true),
       workspace: workspace,

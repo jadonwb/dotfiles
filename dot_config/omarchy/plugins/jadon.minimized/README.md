@@ -27,6 +27,17 @@ plugin works from any workspace and restores each window where it came from.
 Clicking a row restores it; right-clicking closes it. Middle-clicking the bar
 icon refreshes the list.
 
+## What each row shows
+
+A thumbnail of the window, captured with `grim -T` when it is minimized and
+refreshed when the panel opens. The app name replaces the Hyprland class: GUI
+apps use their desktop entry name, Omarchy TUIs use their own (`Omarchy Update`,
+`btop`, `Omarchy Agent`), and a terminal shows what is running in its focused
+pane (`nvim`, `opencode`, `omarchy-update`). Wezterm is read through
+`wezterm cli`; other terminals use the pty's foreground process. A plain shell
+falls back to the terminal's name. The second line is origin workspace, floating
+or tiled, and how long ago it was tucked away.
+
 ## What is remembered
 
 Minimizing snapshots the window before moving it:
@@ -44,6 +55,7 @@ the exact tile slot is the layout's to decide.
 
 The snapshot lives in `~/.local/state/omarchy/minimized/state.json` and is
 pruned whenever a window leaves the minimized workspace, however it left.
+Thumbnails live in `~/.cache/omarchy/minimized/` and are pruned the same way.
 
 ## Settings
 
