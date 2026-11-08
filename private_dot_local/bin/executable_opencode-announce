@@ -2,17 +2,18 @@
 # opencode-announce: tell the user an interactive desktop test is starting,
 # then wait before touching the UI.
 #
-# Usage: opencode-announce "<title>" "<body>" [seconds]
+# Usage: opencode-announce "<title>" "<body>" [buffer-seconds]
 #
 # Styled like the OpenCode server notifications (desktop-notifications.ts):
-# same app name and icon, so it reads as the same system. The wait defaults to
-# two seconds; pass a third argument only when the test needs more lead time.
+# same app name and icon, so it reads as the same system. The wait is a
+# pre-test buffer so the user can stop typing or interacting; it is not the
+# test's duration, which may be longer. Defaults to two seconds.
 
 title=${1:-"OpenCode test"}
 body=${2:-"Touching the desktop for a moment."}
-delay=${3:-2}
-[[ $delay =~ ^[0-9]+([.][0-9]+)?$ ]] || delay=2
+buffer=${3:-2}
+[[ $buffer =~ ^[0-9]+([.][0-9]+)?$ ]] || buffer=2
 
 notify-send --app-name "OpenCode" --icon "ai.opencode.desktop" \
   --urgency normal --expire-time 4000 -- "$title" "$body" 2>/dev/null || true
-sleep "$delay"
+sleep "$buffer"

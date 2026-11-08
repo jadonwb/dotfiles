@@ -22,8 +22,9 @@ Before a command that opens, focuses, moves, or closes a window or panel for a
 test, run:
 
 ```bash
-opencode-announce "Testing <what>" "<what will happen and how long>"
+opencode-announce "Testing <what>" "<what is about to happen>"
 ```
 
-It sends a desktop notification and waits two seconds. Reading window state or
-capturing a window needs no announcement. Details in the `desktop` skill.
+It sends a desktop notification and waits two seconds so you can stop
+interacting; the test itself may take longer. Reading window state or capturing
+a window needs no announcement. Details in the `desktop` skill.

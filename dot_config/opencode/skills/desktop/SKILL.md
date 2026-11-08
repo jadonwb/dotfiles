@@ -24,12 +24,13 @@ Before any command that opens, focuses, moves, or closes a window for a test,
 run:
 
 ```bash
-opencode-announce "Testing the minimized panel" "Closing and reopening it for two seconds."
+opencode-announce "Testing the minimized panel" "The panel will open briefly."
 ```
 
-It sends a normal OpenCode notification (same app name and icon as the server
-notifications) and waits two seconds. Say what you are testing and what will
-happen; the wait defaults to two seconds, and a third argument lengthens it.
+It sends a normal OpenCode notification and waits two seconds. Those two seconds
+are a buffer for the user to stop typing or interacting; the test itself may
+take longer. Say what is about to happen, not how long the test will last. A
+third argument changes the buffer.
 
 Reading window state, checking `hyprctl` output, and capturing a window need no
 announcement. Announce the first action that changes what the user sees.
@@ -37,7 +38,7 @@ announcement. Announce the first action that changes what the user sees.
 If the helper is unavailable, the raw form is:
 
 ```bash
-notify-send --app-name "OpenCode" "Testing the minimized panel" "Closing and reopening it for two seconds." 2>/dev/null || true
+notify-send --app-name "OpenCode" "Testing the minimized panel" "The panel will open briefly." 2>/dev/null || true
 sleep 2
 ```
 
