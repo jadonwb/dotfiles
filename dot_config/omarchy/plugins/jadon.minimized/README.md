@@ -58,12 +58,12 @@ pruned whenever a window leaves the minimized workspace, however it left.
 Thumbnails live in `~/.cache/omarchy/minimized/` and are pruned the same way.
 
 `x` is a close request, not a kill. The helper follows the window's Hyprland
-address and the app's PID: a slow teardown gets up to three seconds to finish, a
-separate modal left on the hidden workspace is found by PID and brought back
-with its parent, and an in-window dialog or a save that never finishes is
-brought back at the deadline. A window the app itself moves to a visible
-workspace is left alone. The panel never force-closes; that stays an explicit
-manual action.
+address and the app's PID: a clean close leaves the list open for the next
+window; a window still parked after 0.8s (an in-window dialog or a slow save)
+is brought back with any separate modal, and the list then closes so the dialog
+is in front. A slow teardown may occasionally be re-opened and close again;
+that is cheaper than waiting. The panel never force-closes; that stays an
+explicit manual action.
 
 ## Settings
 

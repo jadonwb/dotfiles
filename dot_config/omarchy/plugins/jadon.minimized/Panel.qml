@@ -26,6 +26,8 @@ Panel {
   readonly property string scriptPath: root.configHome + "/omarchy/plugins/jadon.minimized/bin/omarchy-minimized"
 
   property int previewRevision: 0
+  property string closingAddress: ""
+  property string closeOutcome: ""
 
   readonly property color foreground: root.bar ? root.bar.foreground : Commons.Color.foreground
   readonly property color dim: Qt.darker(root.foreground, 1.6)
@@ -210,6 +212,23 @@ Panel {
     }
   }
 
+  Process {
+    id: closeProc
+    running: false
+
+    stdout: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: root.closeOutcome = text.trim()
+    }
+
+    stderr: StdioCollector {
+      waitForEnd: true
+      onStreamFinished: if (text.trim() !== "") console.warn("minimized/close", text.trim())
+    }
+
+    onExited: Qt.callLater(root.finishClose)
+  }
+
   // Thumbnails are captured at minimize time. This refreshes them when the
   // panel opens, so a window whose content moved on (an update running in the
   // terminal) shows what it looks like now.
@@ -262,9 +281,19 @@ Panel {
   }
 
   function closeWindow(row) {
-    if (!row) return
-    root.close()
-    root.runAction(["close", row.address])
+    if (!row || closeProc.running) return
+    root.closingAddress = row.address
+    root.closeOutcome = ""
+    closeProc.command = [root.scriptPath, "close", row.address]
+    closeProc.running = true
+  }
+
+  function finishClose() {
+    // A window that came back needs the panel out of its way. One that closed
+    // leaves the list open for the next window.
+    if (root.closeOutcome === "restored" || root.closeOutcome === "visible") root.close()
+    root.refreshClients()
+    refreshSoon.restart()
   }
 
   function handleText(key, modifiers) {
