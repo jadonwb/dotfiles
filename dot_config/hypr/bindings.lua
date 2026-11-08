@@ -1,10 +1,9 @@
 -- Add a new binding.
 -- o.bind("SUPER + SHIFT + R", "SSH", "alacritty -e ssh your-server")
 
--- Change an existing binding by unbinding it first, then binding the key again.
+-- Replace an existing binding with o.rebind, which unbinds the old one first.
 -- This example changes SUPER+SPACE from the launcher to the Omarchy root menu.
--- hl.unbind("SUPER + SPACE")
--- o.bind("SUPER + SPACE", "Omarchy menu", "omarchy-menu toggle root")
+-- o.rebind("SUPER + SPACE", "Omarchy menu", "omarchy-menu toggle root")
 
 -- Disable a default binding without replacing it.
 -- hl.unbind("SUPER + SHIFT + B")
@@ -14,15 +13,11 @@
 -- o.bind("SUPER + H", nil, "voxtype record toggle")
 -- o.bind("SUPER + PERIOD", nil, "omarchy-shell shell toggle omarchy.emojis")
 
-hl.unbind("SUPER + CTRL + T")
-hl.unbind("SUPER + ALT + RETURN")
-hl.unbind("SUPER + RETURN")
-
 local machine = require("hypr.host")
 local window_toggle = require("hypr.window-toggle")
 
-o.bind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar=false start --always-new-process" })
-o.bind("SUPER + ALT + RETURN", "Persistent Terminal", function()
+o.rebind("SUPER + RETURN", "Terminal", { launch = "wezterm --config enable_tab_bar=false start --always-new-process" })
+o.rebind("SUPER + ALT + RETURN", "Persistent Terminal", function()
   local command = "wezterm start --always-new-process --domain $(hostname)"
 
   if not o.shell_succeeds([[pgrep -u "$(id -u)" -f '(^|/)wezterm-mux-server( |$)']]) then
@@ -41,9 +36,9 @@ end
 
 o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
 
-o.bind("SUPER + CTRL + T", "Toggle btop", window_toggle.tui("btop"))
+o.rebind("SUPER + CTRL + T", "Toggle btop", window_toggle.tui("btop"))
 
-o.bind(
+o.rebind(
   "SUPER + Q",
   "Toggle calculator",
   window_toggle.new({
@@ -55,9 +50,7 @@ o.bind(
 
 -- Strata file-manager shortcuts.
 if o.shell_succeeds("command -v strata >/dev/null 2>&1") then
-  hl.unbind("SUPER + SHIFT + F")
-  hl.unbind("SUPER + ALT + SHIFT + F")
-  o.bind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
-  o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)",
+  o.rebind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)",
     "uwsm-app -- strata \"$(omarchy-cmd-terminal-cwd)\"")
 end
