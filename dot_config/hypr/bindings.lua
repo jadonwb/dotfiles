@@ -34,8 +34,7 @@ o.rebind("SUPER + ALT + RETURN", "Persistent Terminal", function()
   hl.exec_cmd(o.launch(command))
 end)
 
--- FIXME!: spawns a blank window, which then intercepts the kill
--- hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd([[notify-send 'click window to kill' && hyprctl kill]]))
+o.rebind("SUPER + SHIFT + X", "Force Kill", [[notify-send 'click window to kill' && hyprctl kill]])
 
 o.bind("SUPER + PERIOD", "Passwords", "1password")
 
