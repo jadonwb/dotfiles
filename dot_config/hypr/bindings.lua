@@ -41,8 +41,6 @@ o.bind("SUPER + PERIOD", "Passwords", "1password")
 
 o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
 
-o.rebind("SUPER + CTRL + T", "Toggle btop", window_toggle.tui("btop"))
-
 o.rebind(
   "SUPER + Q",
   "Toggle calculator",
