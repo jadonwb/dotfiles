@@ -6,17 +6,17 @@ description: Control the live Omarchy desktop from the agent without taking the 
 # Desktop
 
 The desktop is shared. Work in the background by default: Hyprland can launch a
-window without focusing it, deliver keys to an unfocused window, and capture that
-window directly. Do not take the keyboard or the screen from the user unless the
-app requires real focus.
+window without focusing it, deliver keys to an unfocused window, and capture
+that window directly. Do not take the keyboard or the screen from the user
+unless the app requires real focus.
 
 Available: `hyprctl`, `grim`, `slurp`, `wtype`, `wl-copy`, `wl-paste`, `jq`,
 `nvim`. There is no pointer-injection tool (`ydotool`, `dotool`, and `wlrctl`
 are not installed), so input is keyboard-only.
 
-Hyprland 0.57 dispatchers are Lua expressions. Run them through `hyprctl
-dispatch '<expression>'`; the older `dispatcher arg,arg` form is unreliable once
-an argument contains `,` or `:`.
+Hyprland 0.57 dispatchers are Lua expressions. Run them through
+`hyprctl dispatch '<expression>'`; the older `dispatcher arg,arg` form is
+unreliable once an argument contains `,` or `:`.
 
 ## Announce before taking the desktop
 
@@ -51,7 +51,8 @@ hyprctl -j monitors | jq -r '.[] | [.name, .x, .y, .width, .height, .scale] | @t
 ```
 
 - `class` is the app identity and is stable; `title` changes with the document.
-- `address` (e.g. `0x55668531cd30`) targets a window for focus, input, and close.
+- `address` (e.g. `0x55668531cd30`) targets a window for focus, input, and
+  close.
 - `stableId` (e.g. `1800001e`) targets a window for capture.
 - `workspace.name` starting with `special:` means the window is on a hidden
   workspace. It still receives input and can be captured.
@@ -83,7 +84,8 @@ hyprctl dispatch "hl.dsp.window.move({ workspace = \"special:agent-probe\", wind
 ```
 
 - `window.move` focuses the window unless `follow = false`.
-- Never use `focuswindow` for setup; it switches the user's workspace or monitor.
+- Never use `focuswindow` for setup; it switches the user's workspace or
+  monitor.
 
 ## Send keys to an unfocused window
 
@@ -108,8 +110,8 @@ hyprctl dispatch "hl.dsp.send_shortcut({ mods = \"\", key = \"Return\", window =
 - Do not send while the user is actively typing: the routing is momentary but
   real, and a keystroke can land in the test window.
 - Text: one key per character is slow and error-prone for punctuation. Use the
-  app's own channel for anything beyond a short sequence — Neovim RPC, `tmux
-  send-keys`, the `browse` MCP server for browsers, or a CLI.
+  app's own channel for anything beyond a short sequence — Neovim RPC,
+  `tmux send-keys`, the `browse` MCP server for browsers, or a CLI.
 
 ## Capture without focus
 
@@ -171,11 +173,10 @@ hyprctl dispatch "hl.dsp.focus({ window = \"address:$prev\" })"
 
 - `wtype` sends to the focused surface only. Never type without confirming
   `activewindow`.
-- `-d` sets the delay between keys, `-s` sleeps before the next option, `-M`/`-m`
-  press and release a modifier, `-P`/`-p` press and release a key.
-- Do not type secrets, credentials, or payment details. Do not automate
-  password prompts, 2FA, captchas, or destructive confirmations; hand off to the
-  user.
+- `-d` sets the delay between keys, `-s` sleeps before the next option,
+  `-M`/`-m` press and release a modifier, `-P`/`-p` press and release a key.
+- Do not type secrets, credentials, or payment details. Do not automate password
+  prompts, 2FA, captchas, or destructive confirmations; hand off to the user.
 
 ## Live Neovim test
 

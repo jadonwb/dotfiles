@@ -19,16 +19,16 @@ addressed by ID only:
 - `kind` — `plan`, `evidence`, or `review`.
 - `title` / `description` / `primaryAuthor` — short human-facing labels,
   immutable once created.
-- `status` — `draft`, `published`, `approved`, or `read`. Plans use `draft`
-  until finalized, then may be marked `approved` as a review marker; a completed
-  plan also carries `completedAt`. Evidence and reviews are finalized to
-  `published` and dismissed to `read`.
-- `finalized` — readiness. Content mutations clear it; `plan_finalize` makes a
-  plan ready for review, and evidence/review finalization publishes the draft.
+- `status` — `draft`, `published`, or `read`. Plans stay `draft` until
+  `plan_complete`; evidence and reviews are finalized to `published` and
+  dismissed to `read`.
+- `finalized` — readiness for evidence and reviews. Plans are created finalized
+  and stay editable until completion.
 
 ### plan
 
-A plan is an optional working document for multi-step or risky work. It has one
+A plan is the working document for a feature or investigation: goal and scope,
+intended changes, decisions, checks, and evidence links. It has one
 `workingDirectory` plus four flat prose fields: `goalScope` (`# Goal / Scope`),
 `intendedChanges` (`## Intended Changes and Behaviors`), `context`
 (`## Context`), and `checks` (`## Checks`). `plan_create` accepts initial field
@@ -36,12 +36,10 @@ content. `plan_update` replaces any subset of fields atomically, replaces the
 ordered `evidenceIDs` membership, and optionally patches one exact occurrence in
 `intendedChanges` or `context`, so a single bullet or paragraph can change
 without restating the whole field. An evidence membership array snapshots
-`{id, description}` for attached evidence. `plan_finalize` requires non-empty
-Goal/Scope and Intended Changes; checks, context, and evidence stay optional.
-`plan_load` reads any plan and reports status, readiness, and completion. Editing a reviewed plan returns it to draft
-and clears the review marker. `plan_complete` records the outcome summary,
-changed files, verification, and unfinished work, then freezes the plan; later
-content mutations fail and a new plan should reference the completed one with
+`{id, description}` for attached evidence. `plan_load` reads any plan and reports
+status and completion. `plan_complete` records the outcome summary, changed
+files, verification, and unfinished work, then freezes the plan; later content
+mutations fail and a new plan references the completed one with
 `previousPlanID`.
 
 ### evidence
@@ -108,15 +106,14 @@ Authoring returns directly reusable machine values:
   covering fields, evidence membership, and an optional patch.
 - `plan_complete` records the outcome and freezes the plan; it returns
   `art_… completed`.
-- finalize returns `art_… published` for evidence/review and `art_… finalized`
-  for plans.
+- finalize returns `art_… published` for evidence and reviews.
 
 Read tools return compact text; full loaders include the body:
 
 - `artifact_search` — plain-text search across artifact bodies in the project,
   with an optional kind filter, so evidence, plans, and reviews are discoverable
   without IDs.
-- `plan_load` (any status; includes readiness, completion, and previous plan).
+- `plan_load` (any status; includes completion and the previous plan).
 - `evidence_create` (optional question/Summary/Limitations), `evidence_update`
   (overview fields), `evidence_finalize` (optional final overview fields),
   `evidence_load` (full), `evidence_summary` (overview only).
@@ -124,9 +121,8 @@ Read tools return compact text; full loaders include the body:
   Summary), `review_finalize` (optional final outcome/Summary), `review_load`
   (full), `review_summary` (outcome + Summary only).
 
-Plans gate implementation only when the user asked for one. Otherwise the model
-may `plan_load` a draft and act on it, and the user's review is feedback;
-implementation continues.
+Plans guide implementation. The model may `plan_load` any plan and act on it;
+the user's review is feedback, and implementation continues.
 
 ### Typical authoring flows
 
@@ -139,22 +135,21 @@ The setters are available for edits, but the shortest useful flow is:
   `review_finding` per finding → `review_finalize` (optional final
   outcome/Summary).
 - **plan** — `plan_create` with Goal/Scope and Intended Changes → `plan_update`
-  for field changes, evidence membership, or one targeted patch →
-  `plan_finalize`; when the user asked for a plan, stop for approval after
-  finalizing → `plan_complete` with the outcome, changed files, verification,
-  and unfinished work. The completed plan is frozen; a follow-up plan passes
-  `previousPlanID`.
+  for field changes, evidence membership, or one targeted patch → implement →
+  `plan_complete` with the outcome, changed files, verification, and unfinished
+  work. The completed plan is frozen; a follow-up plan passes `previousPlanID`,
+  whether the predecessor is finished or still open.
 
-A draft can be created as soon as its subject is known and filled while the work
-continues; a finalize call is a readiness/publish boundary.
+A plan can be created as soon as its subject is known and filled while the work
+continues. It stays editable until completion.
 
 ### Schema notes
 
 Fields that look redundant are deliberate:
 
 - `status` and `finalized` answer different questions: lifecycle
-  (`draft`/`published`/`approved`/`read`) and readiness. A plan can be finalized
-  and still draft; evidence/review finalization publishes.
+  (`draft`/`published`/`read`) and readiness. Plans are finalized drafts until
+  completion; evidence/review finalization publishes.
 - `ownerSessionID` routes feedback; `writerSessionID` is the sole mutation
   authority. They differ when a worker authors an artifact. Feedback defaults
   to the owner; when the writer is a worker, the owner resumes that worker with
@@ -164,8 +159,7 @@ Fields that look redundant are deliberate:
 - Plan evidence stores an immutable description snapshot so the plan stays
   readable after the evidence artifact changes or is cleaned up.
 - `completedAt` is the plan freeze marker, separate from `status` and
-  `finalized`. A completed plan preserves its approval marker but rejects later
-  content mutations.
+  `finalized`. A completed plan rejects later content mutations.
 
 ## RPC contract
 
@@ -176,14 +170,8 @@ Fields that look redundant are deliberate:
 - `get` — the latest generated view for one artifact ID.
 - `feedback` — question/selection against one artifact ID with an optional
   validated `recipient` (`"owner"` or `"writer"`, default `"owner"`).
-- `approve_plan` — plan only, requires a finalized draft (`not_ready`
-  otherwise), sets `status: approved` as a review marker. Editing the plan
-  clears the marker and returns it to draft. It marks the review; implementation
-  continues regardless.
 - `mark_read` — evidence/review only, sets `status: read` and records the
   dismissal.
-- `retry_plan_delivery` — redeliver a recorded plan-review submission by request
-  ID.
 
 Metadata separation: the wire summary carries frontend metadata plus
 `ownerSessionID` for feedback routing. `writerSessionID` stays
@@ -196,11 +184,11 @@ arbitrary thrown errors.
 ## Feedback and review semantics
 
 - Submissions deduplicate by a client-generated `requestID`.
-- A plan review is a recorded marker plus a synthetic notification. The primary
-  agent may continue working while the user reviews.
-- Editing a `read` or `approved` artifact returns it to the visible `draft`,
-  clears readiness, and clears the review/read marker so it reappears in pickers
-  until re-finalized.
+- Feedback is a synthetic notification to the target session; the primary agent
+  continues working while the user reviews.
+- Editing a `read` evidence or review returns it to the visible `draft`, clears
+  readiness, and clears the read marker so it reappears in pickers until
+  re-finalized.
 - Byte limits: question ≤ 16384 UTF-8 bytes, selected excerpt ≤ 65536 UTF-8
   bytes.
 
@@ -209,10 +197,7 @@ arbitrary thrown errors.
 A submission is persisted first, then durably admitted to the target session via
 `ctx.session.synthetic` with `delivery: "queue"` and `resume: true`. Delivery covers
 review/feedback; `mark_read` records the dismissal on the server (`status:
-read`). Approval text names the
-artifact ID and the record's authoritative
-`kind=plan status=approved finalized=true` payload so the primary agent can
-answer the review without a separate lookup. Delivery is at-least-once.
+read`). Delivery is at-least-once.
 
 ## Stale locks
 
@@ -240,10 +225,7 @@ mise exec -- node --experimental-strip-types --test \
 artifact's generated `current.md` read-only. The picker exposes
 `:OpenCodePlans`, `:OpenCodeEvidence`, `:OpenCodeReviews`, and
 `:OpenCodeArtifacts` on `<leader>ap/ae/ar/aa`. `<M-a>` includes resolved rows and
-`<M-r>` to retry a recorded-but-undelivered plan review. Artifact buffers carry
-`OpenCodeArtifactFeedback`, `OpenCodeArtifactRetryDelivery`, and
-context-sensitively `OpenCodeArtifactApprove` (finalized draft plans) or
-`OpenCodeArtifactMarkRead` (published evidence/reviews), both on `<leader>ay`
-(plus `<leader>af`).
+Artifact buffers carry `OpenCodeArtifactFeedback` and, for published evidence
+and reviews, `OpenCodeArtifactMarkRead` on `<leader>ay` (plus `<leader>af`).
 
 Requests go through `opencode api` with argv lists and JSON-encoded bodies.

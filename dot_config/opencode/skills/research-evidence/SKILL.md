@@ -8,6 +8,12 @@ description: Research source code, documentation, or external sources and publis
 Research serves a decision or an edit. Keep the question narrow, cite the source
 of each fact, and publish only what will be reused.
 
+Create an evidence artifact as you learn, from the primary session or from
+`search`. Attach it to the plan with `evidenceIDs`: the plan carries the goal
+and the decision, the evidence carries the detail. The evidence artifact is the
+session record. Knowledge the repository should keep belongs in a repository
+note.
+
 ## Choose the mode
 
 Do the research yourself when it is one focused read, a single grep, or a
@@ -26,9 +32,9 @@ its output as evidence, not as a decision. Do not delegate a design choice.
 
 Scale the effort to the question. One focused read or grep is enough for a
 simple fact. A broad or multi-file question gets one Search agent. Three to five
-parallel Search agents are justified only for independent subquestions
-with disjoint sources; do not fan out a small question, and do not duplicate a
-search another agent is already doing.
+parallel Search agents are justified only for independent subquestions with
+disjoint sources; do not fan out a small question, and do not duplicate a search
+another agent is already doing.
 
 Start broad, then narrow. Find the landscape and the primary sources first, then
 drill into the specific claim. Prefer primary material over summaries: source
@@ -55,8 +61,8 @@ When the findings will be reused:
 2. `tools.evidence["finding"]({ artifactID, title, content })` — add each
    confirmed finding as you learn it. Use the returned `fin_…` ID to replace it
    later; do not duplicate it.
-3. `tools.evidence["update"]({ artifactID, question, summary, limitations })`
-   — update the overview if it changes.
+3. `tools.evidence["update"]({ artifactID, question, summary, limitations })` —
+   update the overview if it changes.
 4. `tools.evidence["finalize"]({ artifactID, summary?, limitations? })` —
    optionally set the final overview and publish.
 

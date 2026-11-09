@@ -22,15 +22,35 @@ silently returns zero rows.
 ## Find the project scope
 
 A session's `directory` is its working directory, so a worktree has a different
-path. Resolve the shared `project_id` first, then search every session and
-worktree in that project:
+path. Match the longest registered ancestor, then fall back to the checkout root
+from git:
 
 ```bash
 dir=/path/to/current/worktree
-sqlite3 -readonly "$db" \
-  -cmd ".parameter set :dir '$dir'" \
-  "select project_id from project_directory where directory = :dir limit 1;"
+project=$(sqlite3 -readonly "$db" \
+  -cmd ".parameter set :dir '$dir'" <<'SQL'
+select project_id
+from project_directory
+where :dir = directory or :dir like directory || '/%'
+order by length(directory) desc
+limit 1;
+SQL
+)
+
+if [ -z "$project" ]; then
+  root=$(dirname "$(git -C "$dir" rev-parse --path-format=absolute --git-common-dir)")
+  project=$(sqlite3 -readonly "$db" \
+    -cmd ".parameter set :dir '$root'" \
+    "select project_id from project_directory where directory = :dir limit 1;")
+fi
+
+if [ -z "$project" ]; then
+  echo "No project registered for $dir; start a session there."
+fi
 ```
+
+`--git-common-dir` resolves a linked worktree to the main checkout, which is the
+directory OpenCode registers.
 
 ## List sessions in the project
 
@@ -42,13 +62,17 @@ select s.id, s.title, s.directory,
        datetime(s.time_updated/1000, 'unixepoch', 'localtime') as updated
 from session s
 where s.project_id = :project_id
+  and s.parent_id is null
 order by s.time_updated desc
 limit 20;
 SQL
 ```
 
-`title` is usually enough to pick the session. Include subagent sessions only
-when the parent's summary is not enough.
+Drop `and s.parent_id is null` to include subagent sessions, or use
+`and s.parent_id = :session_id` to list one session's children.
+
+`title` is usually enough to pick the session; inspect a subagent session when
+the parent's summary is not enough.
 
 ## Search the text
 

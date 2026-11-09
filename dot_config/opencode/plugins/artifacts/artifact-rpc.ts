@@ -4,9 +4,8 @@
 // `location` deepObject query selects the registered instance.
 //
 // The contract carries `events: {}`, which ctx.rpc.register requires for local
-// dir plugins. Lifecycle is kind-specific: approve_plan applies to plans only;
-// mark_read to evidence and reviews only; retry_plan_delivery redelivers plan
-// approvals only. `list` keeps a strict empty-object input: the client always
+// dir plugins. Lifecycle is kind-specific: plans are living documents completed
+// with plan_complete; mark_read applies to evidence and reviews only. `list` keeps a strict empty-object input: the client always
 // sends the normalized {"input":{}} object body.
 //
 // Metadata separation: the summary carries frontend metadata (title,
@@ -32,7 +31,7 @@ const artifactSummary = {
     status: {
       type: "string",
       description:
-        "draft, published, approved, or read",
+        "draft, published, or read",
     },
     path: {
       type: "string",
@@ -215,34 +214,6 @@ const Artifacts = {
       },
       errors: commonErrors,
     },
-    approve_plan: {
-      input: {
-        type: "object",
-        properties: {
-          artifactID: { type: "string" },
-          requestID: {
-            type: "string",
-            description:
-              "client-generated ID; repeated submissions with the same ID deduplicate",
-          },
-        },
-        required: ["artifactID"],
-        additionalProperties: false,
-      },
-      output: {
-        type: "object",
-        properties: {
-          requestID: { type: "string" },
-          kind: { type: "string" },
-          deduplicated: { type: "boolean" },
-          delivery,
-          artifact: artifactSummary,
-        },
-        required: ["requestID", "kind", "deduplicated", "delivery", "artifact"],
-        additionalProperties: false,
-      },
-      errors: commonErrors,
-    },
     mark_read: {
       input: {
         type: "object",
@@ -271,39 +242,6 @@ const Artifacts = {
         additionalProperties: false,
       },
       errors: commonErrors,
-    },
-    retry_plan_delivery: {
-      input: {
-        type: "object",
-        properties: {
-          artifactID: { type: "string" },
-          requestID: { type: "string" },
-        },
-        required: ["artifactID", "requestID"],
-        additionalProperties: false,
-      },
-      output: {
-        type: "object",
-        properties: {
-          requestID: { type: "string" },
-          kind: { type: "string" },
-          deduplicated: { type: "boolean" },
-          delivery,
-          artifact: artifactView,
-        },
-        required: ["requestID", "kind", "deduplicated", "delivery", "artifact"],
-        additionalProperties: false,
-      },
-      errors: {
-        ...commonErrors,
-        not_found: {
-          type: "object",
-          properties: {
-            artifactID: { type: "string" },
-            requestID: { type: "string" },
-          },
-        },
-      },
     },
   },
 };

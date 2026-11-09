@@ -5,7 +5,8 @@ description: Get an independent correctness review of a change, artifact, or des
 
 # Review workflow
 
-A review is an independent inspection with clean context. Use it when a defect would be costly and the author may be blind to it.
+A review is an independent inspection with clean context. Use it when a defect
+would be costly and the author may be blind to it.
 
 ## When to review
 
@@ -32,8 +33,8 @@ Already checked: <checks the author ran; do not repeat unless code changed>.
 Do not write files; run read-only checks if needed.
 ```
 
-Give the reviewer the concern and the scope; let it reach its own conclusion.
-It loads the artifacts by ID itself. Ask for the strongest failure case or
+Give the reviewer the concern and the scope; let it reach its own conclusion. It
+loads the artifacts by ID itself. Ask for the strongest failure case or
 counterargument. Run the thing as well.
 
 One independent review is the default. A consensus of several reviewers or
@@ -49,9 +50,8 @@ them as two parallel review subagents:
 - **Standards / regressions** — does it fit the repository's conventions and
   avoid adjacent breakage?
 
-Keep the axes separate. A change can pass one and
-fail the other, and combining them hides that. Cap each review at a short,
-actionable summary.
+Keep the axes separate. A change can pass one and fail the other, and combining
+them hides that. Cap each review at a short, actionable summary.
 
 ## Read the result
 
@@ -64,8 +64,8 @@ to act.
 
 - **Pass** — record the result and continue.
 - **Changes required** — apply the correction in scope, rerun the focused check,
-  and update the plan or the progress note. If the correction expands scope, stop
-  and put the decision to the user.
+  and update the progress note; change the plan when scope or criteria change.
+  If the correction expands scope, stop and put the decision to the user.
 - **Blocked** — obtain the missing fact or tell the user what is missing.
 
 Do not argue with a finding without evidence. If you disagree, state the

@@ -107,10 +107,9 @@ correctness, security, regressions, and whether the stated behavior is actually
 implemented. Trace adjacent code only to resolve a specific question. Do not
 turn this into a general audit, style review, or future-feature checklist.
 
-Treat a plan as context. If the code diverges
-from it, say what the code does and whether that matters. Distinguish
-pre-existing changes and unrelated work when evidence allows; state uncertainty
-when ownership is unclear.
+Treat a plan as context. If the code diverges from it, say what the code does
+and whether that matters. Distinguish pre-existing changes and unrelated work
+when evidence allows; state uncertainty when ownership is unclear.
 
 If a missing fact could change the verdict, obtain that specific fact and
 explain why it matters.

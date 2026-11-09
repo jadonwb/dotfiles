@@ -1,6 +1,6 @@
 // Capability-specific artifact tools. Mutations are create/update/finalize per
 // kind and the kind is fixed by the tool:
-// - plan: plan_create, plan_update, plan_complete, plan_finalize, plan_load.
+// - plan: plan_create, plan_update, plan_complete, plan_load.
 // - evidence: evidence_create, evidence_update, evidence_finding,
 //   evidence_finalize, evidence_load, evidence_summary.
 // - review: review_create, review_update, review_finding, review_finalize,
@@ -223,11 +223,8 @@ function truncate(value: string, maxLength: number): string {
     : collapsed.slice(0, maxLength - 1) + "…";
 }
 
-export function artifactDeliveryDescription(input: {
-  action: "feedback" | "approval";
-  title: string;
-}): string {
-  return `${input.action === "approval" ? "Approval" : "Feedback"}: ${truncate(input.title, 80)}`;
+export function artifactDeliveryDescription(title: string): string {
+  return `Feedback: ${truncate(title, 80)}`;
 }
 
 function quoteBlock(text: string): string {
@@ -270,31 +267,20 @@ export function artifactFeedbackMessage(input: {
   return lines.join("\n");
 }
 
-export function artifactApprovalMessage(input: {
-  artifactID: string;
-  kind: string;
-  status: string;
-  finalized: boolean;
-}): string {
-  return `approval delivered: ${input.artifactID} (kind=${input.kind} status=${input.status} finalized=${input.finalized})`;
-}
-
 export function artifactDeliveryMetadata(input: {
   artifactID: string;
   requestID: string;
   kind: string;
-  submission: "feedback" | "approval";
   recipient?: "owner" | "writer";
 }): Record<string, string> {
-  const metadata: Record<string, string> = {
+  return {
     artifactID: input.artifactID,
     requestID: input.requestID,
     kind: input.kind,
-    submission: input.submission,
+    submission: "feedback",
     recipient: input.recipient ?? "owner",
     source: "personal.artifacts",
   };
-  return metadata;
 }
 
 // ---------------------------------------------------------------------------
@@ -386,11 +372,6 @@ export type ArtifactToolDeps = {
       changed?: string;
       verification?: string;
       unfinished?: string;
-    }): Promise<{ artifactID: string } & ArtifactSummary>;
-    planFinalize(input: {
-      artifactID: string;
-      location: string;
-      writerSessionID: string;
     }): Promise<{ artifactID: string } & ArtifactSummary>;
     evidenceOverviewPut(input: {
       artifactID: string;
@@ -533,15 +514,18 @@ function finalizedLabel(finalized: boolean): string {
 }
 
 function summaryHeader(summary: ArtifactSummary, prefix: string): string[] {
-  return [
+  const lines = [
     prefix,
     `Kind: ${summary.kind}`,
     `Status: ${summary.status}`,
     `Title: ${summary.title}`,
     `Artifact: ${summary.id}`,
     `Author: ${summary.primaryAuthor}`,
-    `Finalized: ${finalizedLabel(summary.finalized)}`,
   ];
+  if (summary.kind !== "plan") {
+    lines.push(`Finalized: ${finalizedLabel(summary.finalized)}`);
+  }
+  return lines;
 }
 
 function structureLines(
@@ -598,7 +582,7 @@ export function addArtifactTools(
   editor.namespace({
     name: "plan",
     description:
-      "Creates, modifies, finalizes, and reads plan artifacts. Plans are optional working documents; implementation waits for approval only when the user asked for a plan.",
+      "Creates, modifies, completes, and reads plan artifacts. A plan is the working document for a feature or investigation.",
   });
   editor.namespace({
     name: "evidence",
@@ -737,7 +721,7 @@ export function addArtifactTools(
     name: "create",
     namespace: "plan",
     description:
-      "Create a plan draft with optional initial fields, then update it as scope changes. Returns its ID.",
+      "Create a plan with optional initial fields, then update it as the work and decisions change. Returns its ID.",
     input: {
       type: "object",
       properties: {
@@ -776,7 +760,7 @@ export function addArtifactTools(
         previousPlanID: {
           type: "string",
           description:
-            "Optional completed plan ID this plan continues or supersedes.",
+            "Optional plan ID this plan continues or supersedes.",
         },
       },
       required: ["title", "description", "workingDirectory"],
@@ -886,7 +870,7 @@ export function addArtifactTools(
     name: "complete",
     namespace: "plan",
     description:
-      "Record the plan's completion report and freeze the plan. Requires an outcome summary; changed, verification, and unfinished are optional. The plan keeps its status and approval. Returns `art_… completed`.",
+      "Record the plan's completion report and freeze the plan. Requires an outcome summary; changed, verification, and unfinished are optional. Returns `art_… completed`.",
     input: {
       type: "object",
       properties: {
@@ -928,34 +912,10 @@ export function addArtifactTools(
   });
 
   addTool({
-    name: "finalize",
-    namespace: "plan",
-    description:
-      "Finalize a plan draft: requires non-empty goalScope and intendedChanges; checks, context and evidence are optional. The plan becomes ready for review; implementation waits for approval only when the user asked for a plan. Returns `art_… finalized`.",
-    input: {
-      type: "object",
-      properties: {
-        artifactID: { type: "string", description: "Plan artifact ID." },
-      },
-      required: ["artifactID"],
-      additionalProperties: false,
-    },
-    async handler(input, toolContext) {
-      const writer = await resolveWriter(deps, toolContext);
-      const finalized = await deps.store.planFinalize({
-        artifactID: input.artifactID,
-        location: deps.projectDirectory,
-        writerSessionID: writer,
-      });
-      return { content: bareFinalize(finalized) };
-    },
-  });
-
-  addTool({
     name: "load",
     namespace: "plan",
     description:
-      "Load any plan by ID with its full Markdown content inline, regardless of draft, finalized, or reviewed status. Rejects non-plans with invalid_kind.",
+      "Load any plan by ID with its full Markdown content inline. Rejects non-plans with invalid_kind.",
     input: {
       type: "object",
       properties: {

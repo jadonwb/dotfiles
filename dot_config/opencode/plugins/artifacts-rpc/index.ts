@@ -11,7 +11,6 @@
 import { Artifacts } from "../artifacts/artifact-rpc.ts";
 import { createStore, StoreError } from "../artifacts/store.mjs";
 import {
-  artifactApprovalMessage,
   artifactDeliveryDescription,
   artifactDeliveryMetadata,
   artifactFeedbackMessage,
@@ -66,7 +65,6 @@ export default {
     }
 
     async function deliver(input: {
-      submission: "feedback" | "approval";
       artifactID: string;
       kind: string;
       title: string;
@@ -77,48 +75,27 @@ export default {
       question?: string | null;
       selectedText?: string | null;
       selectedRange?: { start: number; end: number } | null;
-      // The currently frozen approval record's authoritative state; only the
-      // approval branch emits it, always as kind=plan/status=approved/true.
-      status?: string;
-      finalized?: boolean;
     }): Promise<DeliveryState> {
-      const recipient =
-        input.submission === "approval"
-          ? "owner"
-          : input.recipient === "writer"
-            ? "writer"
-            : "owner";
+      const recipient = input.recipient === "writer" ? "writer" : "owner";
       const targetSessionID =
         recipient === "writer"
           ? (input.writerSessionID ?? input.ownerSessionID)
           : input.ownerSessionID;
       const existing = inFlight.get(input.requestID);
       if (existing) return existing;
-      const text =
-        input.submission === "approval"
-          ? artifactApprovalMessage({
-              artifactID: input.artifactID,
-              kind: input.kind,
-              status: input.status ?? "",
-              finalized: input.finalized ?? false,
-            })
-          : artifactFeedbackMessage({
-              kind: input.kind,
-              title: input.title,
-              artifactID: input.artifactID,
-              question: input.question,
-              selectedText: input.selectedText,
-              selectedRange: input.selectedRange,
-            });
-      const description = artifactDeliveryDescription({
-        action: input.submission,
+      const text = artifactFeedbackMessage({
+        kind: input.kind,
         title: input.title,
+        artifactID: input.artifactID,
+        question: input.question,
+        selectedText: input.selectedText,
+        selectedRange: input.selectedRange,
       });
+      const description = artifactDeliveryDescription(input.title);
       const metadata = artifactDeliveryMetadata({
         artifactID: input.artifactID,
         requestID: input.requestID,
         kind: input.kind,
-        submission: input.submission,
         recipient,
       });
       const markDelivery = store.markArtifactDelivery;
@@ -258,53 +235,6 @@ export default {
           };
         },
 
-        approve_plan: async (input, context) => {
-          const requestID = mintRequestID(input.requestID);
-          let submission;
-          try {
-            submission = await store.approveArtifact({
-              artifactID: input.artifactID,
-              location: projectDirectory,
-              requestID,
-            });
-          } catch (error) {
-            rpcError(context, error);
-          }
-          if (
-            submission.deduplicated &&
-            submission.delivery.state === "delivered"
-          ) {
-            return {
-              requestID: submission.requestID,
-              kind: "approval",
-              deduplicated: true,
-              delivery: submission.delivery,
-              artifact: rpcSummaryOf(submission.artifact),
-            };
-          }
-          // The store gates approval to plan kind and readiness (a finalized
-          // draft), so delivery here is always a plan approval to the owner; the
-          // payload carries the frozen record's authoritative fields verbatim.
-          const delivery = await deliver({
-            submission: "approval",
-            artifactID: submission.artifact.id,
-            kind: submission.artifact.kind,
-            title: submission.artifact.title,
-            requestID: submission.requestID,
-            ownerSessionID: submission.artifact.ownerSessionID,
-            writerSessionID: submission.artifact.writerSessionID,
-            status: submission.artifact.status,
-            finalized: submission.artifact.finalized,
-          });
-          return {
-            requestID: submission.requestID,
-            kind: "approval",
-            deduplicated: submission.deduplicated,
-            delivery,
-            artifact: rpcSummaryOf(submission.artifact),
-          };
-        },
-
         mark_read: async (input, context) => {
           const requestID = mintRequestID(input.requestID);
           let submission;
@@ -326,68 +256,6 @@ export default {
           };
         },
 
-        retry_plan_delivery: async (input, context) => {
-          let record;
-          try {
-            record = await store.getArtifact({
-              artifactID: input.artifactID,
-              location: projectDirectory,
-            });
-          } catch (error) {
-            rpcError(context, error);
-          }
-          if (record.kind !== "plan") {
-            throw context.error(
-              "invalid_kind",
-              `Retry delivery applies to plan approvals only; ${input.artifactID} is a ${record.kind}`,
-              {
-                artifactID: input.artifactID,
-                kind: record.kind,
-              },
-            );
-          }
-          const entry =
-            record.approval && record.approval.requestID === input.requestID
-              ? record.approval
-              : undefined;
-          if (!entry) {
-            throw context.error(
-              "not_found",
-              `No plan-approval submission with request ID ${input.requestID}`,
-              {
-                artifactID: input.artifactID,
-                requestID: input.requestID,
-              },
-            );
-          }
-          if (entry.delivery.state === "delivered") {
-            return {
-              requestID: input.requestID,
-              kind: "approval",
-              deduplicated: true,
-              delivery: entry.delivery,
-              artifact: rpcViewOf(record),
-            };
-          }
-          const delivery = await deliver({
-            submission: "approval",
-            artifactID: record.id,
-            kind: record.kind,
-            title: record.title,
-            requestID: input.requestID,
-            ownerSessionID: record.ownerSessionID,
-            writerSessionID: record.writerSessionID,
-            status: record.status,
-            finalized: record.finalized,
-          });
-          return {
-            requestID: input.requestID,
-            kind: "approval",
-            deduplicated: false,
-            delivery,
-            artifact: rpcViewOf(record),
-          };
-        },
       },
     });
   },

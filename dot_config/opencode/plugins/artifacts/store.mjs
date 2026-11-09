@@ -15,7 +15,7 @@
 //   patch_conflict unless the old text occurs exactly once. A completed plan
 //   adds completedAt plus reportSummary, reportChanged, reportVerification,
 //   and reportUnfinished, and becomes immutable. previousPlanID optionally
-//   links a follow-up plan to the completed plan it continues.
+//   links a follow-up plan to the plan it continues or supersedes.
 // - evidence: main question/topic plus Summary and Limitations prose, and an
 //   ordered array of detailed findings {id, title, content}. Findings keep
 //   stable IDs for their author; those IDs stay out of the rendered view and
@@ -32,13 +32,11 @@
 // (a name/label derived from the creating agent); owner/writer/session IDs stay
 // internal routing data, outside the rendered frontmatter.
 //
-// Readiness: every content mutation clears the `finalized` flag.
-// plan_finalize validates the flat prose fields and marks the plan ready for
-// review (status stays draft); evidence/review finalization validates useful
-// content and transitions the visible draft to `published`. Approval is an
-// optional review marker; an approved plan that is edited returns to draft so
-// it can be reviewed again. plan_complete records
-// the outcome and freezes the plan.
+// Readiness: content mutations clear the `finalized` flag for evidence and
+// reviews; plans are created finalized and stay editable until completion.
+// Evidence/review finalization validates useful content and transitions the
+// visible draft to `published`. plan_complete records the outcome and freezes
+// the plan.
 //
 // Design rules:
 // - All paths are derived internally from the store root plus generated IDs.
@@ -132,12 +130,6 @@ export const PLAN_COMPLETION_FIELDS = Object.freeze([
   "reportChanged",
   "reportVerification",
   "reportUnfinished",
-]);
-
-/** Flat fields that must contain text before a plan may be finalized. */
-export const REQUIRED_PLAN_FIELDS = Object.freeze([
-  "goalScope",
-  "intendedChanges",
 ]);
 
 /** Error with a stable machine-readable code used by tools and RPC handlers. */
@@ -777,6 +769,7 @@ export function createStore(options = {}) {
       record.evidence = [];
       record.previousPlanID = previousPlanID ?? null;
       record.completedAt = null;
+      record.finalized = true; // plans are living documents; no finalize step
       for (const field of PLAN_COMPLETION_FIELDS) {
         record[field] = "";
       }
@@ -886,20 +879,14 @@ export function createStore(options = {}) {
         { artifactID },
       );
     }
-    // A reviewed plan that changes is a draft again, so the user can review the
-    // new version. Approval is a review marker.
-    if (record.kind === "plan" && record.status === "approved") {
-      record.status = "draft";
-      record.readAt = null;
-      if (record.approval) record.approval = null;
-    }
-    // Evidence/reviews reset to the visible draft on edit.
+    // Evidence/reviews reset to the visible draft on edit. Plans are living
+    // documents and stay editable until completion.
     if (record.kind !== "plan") {
       record.status = "draft";
       record.readAt = null;
       if (record.approval) record.approval = null;
     }
-    record.finalized = false;
+    record.finalized = record.kind === "plan" ? true : false;
     return record;
   }
 
@@ -1371,8 +1358,8 @@ export function createStore(options = {}) {
   /**
    * Record a plan's completion report and freeze the plan. The completion
    * summary is required; changed, verification, and unfinished are optional.
-   * Completion preserves status, readiness, and approval; it only records the
-   * outcome. A completed plan rejects all later content mutations.
+   * Completion records the outcome and closes the plan; later content
+   * mutations start a new plan.
    */
   async function planComplete({
     artifactID,
@@ -1429,66 +1416,6 @@ export function createStore(options = {}) {
         typeof verification === "string" ? verification : "";
       record.reportUnfinished =
         typeof unfinished === "string" ? unfinished : "";
-      return commitMutation(artifactID, record);
-    });
-  }
-
-  /**
-   * Validate and finalize a plan draft. Requires non-empty Goal/Scope,
-   * Intended Changes (Checks, Context and evidence stay optional) and
-   * validates the flat record. Success makes the draft ready for review (status
-   * stays draft); it does not emit delivery or change status.
-   */
-  async function planFinalize({ artifactID, location, writerSessionID }) {
-    assertArtifactID(artifactID);
-    const normalizedLocation = normalizeLocation(location);
-    assertNonEmptyString(
-      writerSessionID,
-      "writerSessionID",
-      MAX_SESSION_LENGTH,
-    );
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await loadScoped(artifactID, normalizedLocation, {
-        label: "plan artifact",
-      });
-      if (record.kind !== "plan") {
-        throw new StoreError(
-          "invalid_kind",
-          `Plan finalization applies to plans only; ${artifactID} is a ${record.kind}`,
-          { artifactID, kind: record.kind },
-        );
-      }
-      if (record.writerSessionID !== writerSessionID) {
-        throw new StoreError(
-          "forbidden",
-          `Plan finalization is restricted to the writer session (${record.writerSessionID})`,
-          { artifactID, writerSessionID: record.writerSessionID },
-        );
-      }
-      for (const required of REQUIRED_PLAN_FIELDS) {
-        if (
-          typeof record[required] !== "string" ||
-          record[required].length === 0
-        ) {
-          throw new StoreError(
-            "validation",
-            `Plan finalization requires non-empty ${required}`,
-            { artifactID, field: required },
-          );
-        }
-      }
-      for (const entry of record.evidence) {
-        if (!isArtifactIDListEntry(entry)) {
-          throw new StoreError(
-            "validation",
-            "Plan finalization requires valid evidence membership entries",
-            { artifactID },
-          );
-        }
-      }
-      record.finalized = true;
       return commitMutation(artifactID, record);
     });
   }
@@ -2482,66 +2409,6 @@ export function createStore(options = {}) {
   }
 
   /**
-   * Approval core. PLAN-ONLY: approval is an optional review marker, not an
-   * implementation gate. An edited plan returns to draft for re-review. Only a finalized plan can be marked reviewed: incomplete
-   * drafts are rejected with not_ready before the gate can be reached.
-   * Evidence and reviews are marked read via markArtifactRead, never
-   * approved. An existing approval is the recorded decision and is never
-   * replaced; a repeated approval returns it.
-   */
-  async function approveArtifact({ artifactID, location, requestID }) {
-    assertArtifactID(artifactID);
-    const normalizedLocation = normalizeLocation(location);
-    assertRequestID(requestID);
-
-    await ensureDirectories();
-    return withLock(artifactID, async () => {
-      const record = await loadScoped(artifactID, normalizedLocation);
-      if (record.kind !== "plan") {
-        throw new StoreError(
-          "invalid_kind",
-          `Approval applies to plans only; ${artifactID} is a ${record.kind}. Evidence and reviews use mark-read.`,
-          { artifactID, kind: record.kind },
-        );
-      }
-      if (record.approval) {
-        return {
-          requestID: record.approval.requestID,
-          deduplicated: true,
-          delivery: record.approval.delivery,
-          approval: record.approval,
-          artifact: artifactSummaryOf(record),
-        };
-      }
-      if (record.finalized !== true || record.status !== "draft") {
-        throw new StoreError(
-          "not_ready",
-          `Plan ${artifactID} is not ready for approval (finalized=${record.finalized}, status=${record.status}); finalize it first`,
-          { artifactID, status: record.status, finalized: record.finalized },
-        );
-      }
-      const createdAt = nowISO();
-      const approval = { requestID, delivery: freshDelivery(), createdAt };
-      record.approval = approval;
-      record.status = "approved";
-      record.updatedAt = createdAt;
-      await writeCurrentView(artifactID, record);
-      await writeFileAtomic(
-        recordPathOf(artifactID),
-        serializeRecord(record),
-        FILE_MODE,
-      );
-      return {
-        requestID,
-        deduplicated: false,
-        delivery: approval.delivery,
-        approval,
-        artifact: artifactSummaryOf(record),
-      };
-    });
-  }
-
-  /**
    * Mark-read core. EVIDENCE/REVIEW (never plans): the editor's
    * dismissal of a finalized evidence or review artifact. There is NO
    * approval record and NO delivery bookkeeping; the record carries only a
@@ -2687,7 +2554,6 @@ export function createStore(options = {}) {
     planEvidenceRemove,
     planUpdate,
     planComplete,
-    planFinalize,
     evidenceOverviewPut,
     evidenceFindingPut,
     evidenceFindingRemove,
@@ -2708,7 +2574,6 @@ export function createStore(options = {}) {
     getEvidenceSummary,
     getReviewSummary,
     addArtifactFeedback,
-    approveArtifact,
     markArtifactRead,
     markArtifactDelivery,
   };

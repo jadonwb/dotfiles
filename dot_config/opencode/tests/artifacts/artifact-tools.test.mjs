@@ -38,7 +38,6 @@ const EXPECTED_TOOL_NAMES = [
   "evidence_update",
   "plan_complete",
   "plan_create",
-  "plan_finalize",
   "plan_load",
   "plan_update",
   "review_create",
@@ -244,7 +243,7 @@ test("registration declares plan/evidence/review namespaces and the exact effect
 // Plan tools: end-to-end chain with directly reusable bare IDs
 // ---------------------------------------------------------------------------
 
-test("plan tools: create→update→evidence membership→finalize returns directly reusable machine values", async (t) => {
+test("plan tools: create→update→evidence membership returns directly reusable machine values", async (t) => {
   const { store } = await makeStore(t);
   const sessions = {
     [PRIMARY_SESSION]: sessionInfo(),
@@ -328,16 +327,6 @@ test("plan tools: create→update→evidence membership→finalize returns direc
   );
   assert.match(conflicted, /^ARTIFACT_ERROR\npatch_conflict:/);
 
-  // Approving an unfinished draft is blocked at the store (readiness gate).
-  await assert.rejects(
-    store.approveArtifact({
-      artifactID: planID,
-      location: DIRECTORY,
-      requestID: "req_approve-plan-0001",
-    }),
-    (error) => error instanceof StoreError && error.code === "not_ready",
-  );
-
   // Checks are optional and can be cleared with an empty string.
   assert.equal(
     await execTool(
@@ -348,14 +337,6 @@ test("plan tools: create→update→evidence membership→finalize returns direc
     ),
     planID,
   );
-
-  const ready = await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.equal(ready, `${planID} finalized`);
 
   // Publish evidence, attach it by artifact ID, and verify the snapshot list.
   const evidenceID = await execTool(
@@ -387,18 +368,7 @@ test("plan tools: create→update→evidence membership→finalize returns direc
     planID,
     "plan_update evidenceIDs returns the bare plan artifact ID",
   );
-  assert.equal(
-    await execTool(
-      tools,
-      "plan_finalize",
-      { artifactID: planID },
-      toolContext(PRIMARY_SESSION, "system"),
-    ),
-    `${planID} finalized`,
-    "evidence membership is a content edit, so the plan is finalized again",
-  );
-
-  // plan_load is the compact read; it includes status/readiness and the body.
+  // plan_load is the compact read; it includes status and the body.
   const loaded = await execTool(
     tools,
     "plan_load",
@@ -407,7 +377,6 @@ test("plan tools: create→update→evidence membership→finalize returns direc
   );
   assert.match(loaded, /^ARTIFACT_CONTENT\n/);
   assert.match(loaded, /Status: draft/);
-  assert.match(loaded, /Finalized: true/);
   assert.match(loaded, /Kind: plan/);
   assert.match(loaded, /Title: Shared plan/);
   assert.match(loaded, /Author: System/);
@@ -423,19 +392,6 @@ test("plan tools: create→update→evidence membership→finalize returns direc
     /Owner: ses_/,
     "full loaders never render session identities",
   );
-
-  await store.approveArtifact({
-    artifactID: planID,
-    location: DIRECTORY,
-    requestID: "req_approve-plan-0001",
-  });
-  const approved = await execTool(
-    tools,
-    "plan_load",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.match(approved, /Status: approved/);
 
   // A nonexistent ID is a clean not_found from a loader.
   const missing = await execTool(
@@ -465,7 +421,6 @@ test("plan completion freezes the plan and a new plan can reference it", async (
     },
     ctx,
   );
-  await execTool(tools, "plan_finalize", { artifactID: planID }, ctx);
   const completed = await execTool(
     tools,
     "plan_complete",
@@ -1030,7 +985,7 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
   );
   assert.equal(list.artifacts.length, 1);
   const artifact = list.artifacts[0];
-  assert.equal(artifact.finalized, false, "list carries readiness");
+  assert.equal(artifact.finalized, true, "plans are living documents");
   assert.equal(
     artifact.primaryAuthor,
     "System",
@@ -1107,205 +1062,6 @@ test("RPC surface exposes frontend metadata only, strips the writer session, and
   );
   assert.equal(duplicate.deduplicated, true);
   assert.equal(syntheticCalls.length, 1);
-
-  // Non-finalized plans cannot be approved: not_ready, no delivery.
-  await assert.rejects(
-    rpc.approve_plan(
-      { artifactID: planID, requestID: "req_approve-mocked-1" },
-      {
-        error: (code, message, data) => {
-          throw new StoreError(code, message, data);
-        },
-      },
-    ),
-    (error) => error.code === "not_ready",
-  );
-  assert.equal(syntheticCalls.length, 1);
-
-  await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  const approved = await rpc.approve_plan(
-    { artifactID: planID, requestID: "req_approve-mocked-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(approved.kind, "approval");
-  assert.equal(approved.delivery.state, "delivered");
-  assert.equal(approved.artifact.status, "approved");
-  assert.equal(approved.artifact.finalized, true);
-  assert.equal(
-    approved.artifact.writerSessionID,
-    undefined,
-    "approve output strips the writer identity too",
-  );
-  assert.equal(syntheticCalls.length, 2);
-  const approvalCall = syntheticCalls[1];
-  assert.equal(approvalCall.description, "Approval: Shared plan");
-  assert.equal(
-    approvalCall.text,
-    `approval delivered: ${planID} (kind=plan status=approved finalized=true)`,
-    "the approval payload carries the frozen fields the primary agent needs for review",
-  );
-  assert.equal(approvalCall.metadata.recipient, "owner");
-
-  const again = await rpc.approve_plan(
-    { artifactID: planID, requestID: "req_approve-mocked-2" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(again.deduplicated, true);
-  assert.equal(again.requestID, "req_approve-mocked-1");
-  assert.equal(syntheticCalls.length, 2);
-
-  const retried = await rpc.retry_plan_delivery(
-    { artifactID: planID, requestID: "req_approve-mocked-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(retried.requestID, "req_approve-mocked-1");
-  assert.equal(
-    retried.deduplicated,
-    true,
-    "already-delivered submissions are not re-sent",
-  );
-  assert.equal(retried.kind, "approval");
-
-  // Feedback is NOT retryable under the plan-only contract.
-  await assert.rejects(
-    rpc.retry_plan_delivery(
-      { artifactID: planID, requestID: "req_feedback-mocked-1" },
-      {
-        error: (code, message, data) => {
-          throw new StoreError(code, message, data);
-        },
-      },
-    ),
-    (error) => error.code === "not_found",
-  );
-  await assert.rejects(
-    rpc.retry_plan_delivery(
-      { artifactID: planID, requestID: "req_unknown-mocked-1" },
-      {
-        error: (code, message, data) => {
-          throw new StoreError(code, message, data);
-        },
-      },
-    ),
-    (error) => error.code === "not_found",
-  );
-});
-
-test("retried plan-approval delivery re-emits the same authoritative approval payload", async (t) => {
-  await makeTempStateRoot(t);
-  const tools = [];
-  const contracts = [];
-  const syntheticCalls = [];
-  const sessions = { [PRIMARY_SESSION]: sessionInfo() };
-  let admit = false;
-  const ctx = {
-    location: { directory: DIRECTORY },
-    session: {
-      get: async ({ sessionID }) => sessions[sessionID],
-      synthetic: async (input) => {
-        if (!admit) {
-          admit = true;
-          throw new Error("unavailable session");
-        }
-        syntheticCalls.push(input);
-        return { id: "msg_mocked" };
-      },
-    },
-    tool: {
-      transform: async (fn) => {
-        fn({ namespace: () => {}, add: (tool) => tools.push(tool) });
-      },
-    },
-    rpc: {
-      register: async (contract, handlers) => {
-        contracts.push({ contract, handlers });
-      },
-    },
-  };
-  await plugin.setup(ctx);
-  await rpcPlugin.setup(ctx);
-  const rpc = contracts.find(
-    (entry) => entry.contract.id === "personal.artifacts",
-  ).handlers;
-
-  const planID = await execTool(
-    tools,
-    "plan_create",
-    {
-      title: "Shared plan",
-      description: "A shared plan artifact.",
-      workingDirectory: DIRECTORY,
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_update",
-    {
-      artifactID: planID,
-      goalScope: "- Goal.",
-      intendedChanges: "- Change.",
-      checks: "Run tests.",
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-
-  // The first admission fails, so the approval is recorded but undelivered.
-  const approved = await rpc.approve_plan(
-    { artifactID: planID, requestID: "req_approve-retry-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(approved.delivery.state, "failed");
-  assert.equal(
-    syntheticCalls.length,
-    0,
-    "nothing was admitted on the failed attempt",
-  );
-
-  // Retry re-emits the same current authoritative payload from the frozen record.
-  const retried = await rpc.retry_plan_delivery(
-    { artifactID: planID, requestID: "req_approve-retry-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(retried.delivery.state, "delivered");
-  assert.equal(retried.deduplicated, false);
-  assert.equal(syntheticCalls.length, 1);
-  assert.equal(
-    syntheticCalls[0].text,
-    `approval delivered: ${planID} (kind=plan status=approved finalized=true)`,
-    "retry re-emits the same deterministic authoritative payload",
-  );
 });
 
 test("writer feedback routes to the stored writer session; approval stays plan-only", async (t) => {
@@ -1383,30 +1139,6 @@ test("writer feedback routes to the stored writer session; approval stays plan-o
   assert.equal(read.artifact.status, "read");
   assert.equal(syntheticCalls.length, 1, "mark_read never notifies");
 
-  // Approving evidence is a wrong-kind error.
-  await assert.rejects(
-    rpc.approve_plan(
-      { artifactID: evidenceID, requestID: "req_approve-evidence-1" },
-      {
-        error: (code, message, data) => {
-          throw new StoreError(code, message, data);
-        },
-      },
-    ),
-    (error) => error.code === "invalid_kind",
-  );
-  await assert.rejects(
-    rpc.retry_plan_delivery(
-      { artifactID: evidenceID, requestID: "req_read-evidence-1" },
-      {
-        error: (code, message, data) => {
-          throw new StoreError(code, message, data);
-        },
-      },
-    ),
-    (error) => error.code === "invalid_kind",
-  );
-
 });
 
 test("unavailable writer delivery fails visibly and stays recorded; it is never rerouted", async (t) => {
@@ -1476,152 +1208,6 @@ test("unavailable writer delivery fails visibly and stays recorded; it is never 
   assert.ok(recorded, "the decision is recorded durably");
   assert.equal(recorded.recipient, "writer");
   assert.equal(recorded.delivery.state, "failed");
-});
-
-test("plan approval is a review marker; edits return to draft; evidence edits after mark-read return to the visible draft", async (t) => {
-  const sessions = {
-    [PRIMARY_SESSION]: sessionInfo(),
-    [SEARCH_SESSION]: sessionInfo({
-      id: SEARCH_SESSION,
-      agent: "search",
-      parentID: PRIMARY_SESSION,
-    }),
-  };
-  const { contracts, tools } = await setupPlugin(t, { sessions });
-  const rpc = contracts.find(
-    (entry) => entry.contract.id === "personal.artifacts",
-  ).handlers;
-
-  const planID = await execTool(
-    tools,
-    "plan_create",
-    {
-      title: "Shared plan",
-      description: "A shared plan artifact.",
-      workingDirectory: DIRECTORY,
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_update",
-    {
-      artifactID: planID,
-      goalScope: "- Goal.",
-      intendedChanges: "- Change.",
-      checks: "Run tests.",
-    },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await execTool(
-    tools,
-    "plan_finalize",
-    { artifactID: planID },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  await rpc.approve_plan(
-    { artifactID: planID, requestID: "req_approve-plan-1" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-
-  // Approval no longer freezes the plan. A later edit is allowed and returns
-  // the plan to draft so the user can review the new version.
-  const editedPlan = await execTool(
-    tools,
-    "plan_update",
-    { artifactID: planID, goalScope: "Late edit." },
-    toolContext(PRIMARY_SESSION, "system"),
-  );
-  assert.equal(editedPlan, planID);
-  const planView = await rpc.get(
-    { artifactID: planID },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(planView.artifact.status, "draft");
-  assert.equal(planView.artifact.finalized, false);
-  assert.equal(
-    planView.artifact.approval,
-    null,
-    "editing a reviewed plan clears the review marker",
-  );
-
-  // Evidence mark-read -> overview edit returns to the visible draft and must be
-  // finalized again before the editor can mark it read.
-  const evidenceID = await execTool(
-    tools,
-    "evidence_create",
-    { title: "Search note", description: "Evidence artifact." },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  await execTool(
-    tools,
-    "evidence_update",
-    { artifactID: evidenceID, summary: "# Note\n" },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  await execTool(
-    tools,
-    "evidence_finalize",
-    { artifactID: evidenceID },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  await rpc.mark_read(
-    { artifactID: evidenceID, requestID: "req_read-evidence-2" },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-
-  const edited = await execTool(
-    tools,
-    "evidence_update",
-    { artifactID: evidenceID, summary: "Revised." },
-    toolContext(SEARCH_SESSION, "search"),
-  );
-  assert.equal(edited, evidenceID);
-  const listed = await rpc.list(
-    {},
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(listed.artifacts.length, 2);
-  assert.ok(
-    listed.artifacts.every((entry) => entry.content === undefined),
-    "list reads do not fetch content",
-  );
-  const evidenceView = await rpc.get(
-    { artifactID: evidenceID },
-    {
-      error: () => {
-        throw new Error("no");
-      },
-    },
-  );
-  assert.equal(evidenceView.artifact.status, "draft");
-  assert.equal(evidenceView.artifact.finalized, false);
-  assert.equal(
-    evidenceView.artifact.readAt,
-    undefined,
-    "the read marker is not part of the RPC view",
-  );
-  assert.equal(
-    evidenceView.artifact.writerSessionID,
-    undefined,
-    "get output strips the writer identity",
-  );
 });
 
 test("create and finalize accept initial content so a draft can be filled incrementally", async (t) => {

@@ -25,54 +25,51 @@ Skills are advertised by name and description; the body loads only when the task
 matches. The always-loaded system prompt names the core workflow skills and
 otherwise stays out of the way.
 
-| Skill               | Load when                                              |
-| ------------------- | ------------------------------------------------------ |
-| `planning`          | the user asks to plan, or a scope decision is expensive to reverse |
-| `research-evidence` | source/documentation research that should be reused    |
-| `review-workflow`   | an independent correctness check, or the user asks     |
+| Skill                | Load when                                              |
+| -------------------- | ------------------------------------------------------ |
+| `planning`           | a feature or investigation needs an organizing plan    |
+| `research-evidence`  | source/documentation research that should be reused    |
+| `review-workflow`    | an independent correctness check, or the user asks     |
 | `past-conversations` | the user asks to recall an earlier session or decision |
-| `mermaid-diagrams`  | a flow, architecture, state machine, or sequence       |
+| `mermaid-diagrams`   | a flow, architecture, state machine, or sequence       |
 
-Past-conversation recall is a skill (`past-conversations`): it
-queries the local session database only when the user asks to recall
-something. Other discovered skills
-(`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …) load when
-their descriptions match.
+Past-conversation recall is a skill (`past-conversations`): it queries the local
+session database only when the user asks to recall something. Other discovered
+skills (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …)
+load when their descriptions match.
 
-A system prompt defines permanent behavior and policy; a skill defines a repeatable procedure for a task that only
-applies sometimes. Durable project knowledge belongs in `AGENTS.md` and in the
-repository.
+A system prompt defines permanent behavior and policy; a skill defines a
+repeatable procedure for a task that only applies sometimes. Durable project
+knowledge belongs in `AGENTS.md` and in the repository.
 
-A skill has a specific what-and-when description with trigger terms, a body well under 500 lines, the workflow and
-tool sequence with supporting detail only where it changes behavior. The always-loaded prompt stays stable
-so the provider can reuse its cached prefix; per-session state lives outside
-it.
+A skill has a specific what-and-when description with trigger terms, a body well
+under 500 lines, the workflow and tool sequence with supporting detail only
+where it changes behavior. The always-loaded prompt stays stable so the provider
+can reuse its cached prefix; per-session state lives outside it.
 
 ## Artifacts
 
 `plugins/artifacts/` is a standalone filesystem-backed registry and the
 `personal.artifacts` RPC used by Neovim. Kinds:
 
-- `plan` — an optional working document; an approval gate only when the user
-  asked for a plan. A completed plan records its outcome, changed files,
-  verification, and unfinished work, then freezes. Later work starts a new plan
-  with `previousPlanID`.
+- `plan` — the working document for a feature or investigation: goal, scope,
+  decisions, checks, and evidence links. It is created early, updated as choices
+  resolve, and completed at the end. Completion freezes it; later work starts a
+  new plan with `previousPlanID`.
 - `evidence` — reusable research with self-contained findings.
 - `review` — an independent outcome and findings.
 
-Create artifacts early. `plan_create`, `evidence_create`, and
-`review_create` accept initial content, so a draft can be filled incrementally
-as the work teaches you something. `artifact_search` finds existing artifact
-text, so discovery works from the text itself. `plan_update` accepts whole
-fields, an ordered `evidenceIDs` list, and an optional `patch` object for one
-exact occurrence, so a plan bullet can change without restating the field.
+Create artifacts early. `plan_create`, `evidence_create`, and `review_create`
+accept initial content, so a draft can be filled incrementally as the work
+teaches you something. `artifact_search` finds existing artifact text, so
+discovery works from the text itself. `plan_update` accepts whole fields, an
+ordered `evidenceIDs` list, and an optional `patch` object for one exact
+occurrence, so a plan bullet can change without restating the field.
 `plan_complete` records the outcome and freezes the plan.
 
-The user can review artifacts in Neovim, select text, and send feedback. When
-the user asks for a plan, approval is the signal to start implementing. When
-they did not ask, approval is a review marker; implementation continues.
-Editing a reviewed artifact returns it to draft for re-review; a completed plan
-cannot be edited.
+The user can review artifacts in Neovim, select text, and send feedback.
+Feedback is a review; implementation continues. Editing an artifact returns
+evidence or a review to draft for re-review; a completed plan cannot be edited.
 
 ## Compaction
 
@@ -101,8 +98,8 @@ cannot be edited.
 
 ## Bridge
 
-The Neovim <-> OpenCode channel is its own layer, so it can grow into session control and editor UI commands on its
-own:
+The Neovim <-> OpenCode channel is its own layer, so it can grow into session
+control and editor UI commands on its own:
 
 - `personal.bridge.describe` returns `{ protocol, domains }` — the handshake a
   frontend uses before calling a domain. It is plumbing only; it carries no
