@@ -15,6 +15,13 @@ Chezmoi deploys each `~/.config/<app>` from the matching `dot_config` path.
 `external_nvim` is a git submodule; the other configs are tracked directly in
 this repository.
 
+## Setup notes
+
+Non-deployed setup notes live in `docs/`. They are tracked by git but listed in
+`.chezmoiignore`, so chezmoi never deploys them to `$HOME`. Use this for
+per-machine or per-tool setup steps that should travel with the dotfiles, such
+as `docs/op/KEYRING.md`.
+
 ## Chezmoi scripts
 
 Scripts in `.chezmoiscripts/` install tools that need to track upstream more

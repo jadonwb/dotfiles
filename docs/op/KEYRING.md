@@ -2,6 +2,15 @@
 
 One-time per machine, after the 1Password CLI is signed in (`op whoami` works).
 
+## 0. Prerequisites
+
+Install the 1Password CLI and `secret-tool` (`libsecret-tools` on Ubuntu,
+`libsecret` on Arch):
+
+```sh
+sudo apt install 1password-cli libsecret-tools
+```
+
 ## 1. Copy the secret reference
 
 In the 1Password item, use **Copy Secret Reference**. It has the form:
@@ -30,19 +39,19 @@ secret-tool lookup service desktop-mcp key typesafe_api_key >/dev/null && echo o
 
 Expected: `ok`.
 
-## How the shell uses it
+## How the key reaches desktop-mcp
 
-`.zshrc` reads the keyring once per shell and exports it:
+The opencode config gives the MCP server a credential command, so it reads the
+keyring itself and does not depend on the shell that launched opencode:
 
-```zsh
-if [[ -z ${TYPESAFE_API_KEY:-} ]] && (( $+commands[secret-tool] )); then
-  TYPESAFE_API_KEY="$(secret-tool lookup service desktop-mcp key typesafe_api_key 2>/dev/null)"
-  [[ -n $TYPESAFE_API_KEY ]] && export TYPESAFE_API_KEY
-fi
+```jsonc
+"environment": {
+  "TYPESAFE_API_KEY_COMMAND": "/usr/bin/secret-tool lookup service desktop-mcp key typesafe_api_key"
+}
 ```
 
-The MCP server only sees `TYPESAFE_API_KEY`; it has no 1Password or keyring
-code.
+The command is an argv list run without a shell; only its stdout (the key) is
+used, and it is never logged.
 
 ## Rotate
 
@@ -54,3 +63,5 @@ value.
 - Do not put the key or the secret reference in a tracked file.
 - If `op read` prompts on every command, that is 1Password's CLI authorization,
   not the keyring. The keyring is read locally without `op`.
+- `op signin` must be run in the same shell session that calls any `op` command
+  or it will continually prompt.

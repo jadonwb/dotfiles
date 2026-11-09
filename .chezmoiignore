@@ -6,6 +6,8 @@ c/update_source.sh
 {{- end}}
 
 # global
+# repo-only setup notes; tracked by git, never deployed
+docs/
 .gitignore
 # keep submodule git metadata out of deployed configs
 .config/nvim/.git
