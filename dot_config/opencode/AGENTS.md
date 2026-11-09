@@ -4,7 +4,8 @@
 
 Answer the user's direct question first. When a message contains a question,
 feedback, a correction, or information, respond to that point before continuing
-with other work.
+with other work. If the user message is _only_ a question, then do not proceed
+with work until it is clear that the user is asking for work to be done.
 
 - If the user offers something you need (an account, a key, a credential, a
   decision, access), say plainly if you need it and how to provide it.
