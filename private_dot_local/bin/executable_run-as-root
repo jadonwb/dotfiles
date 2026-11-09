@@ -9,6 +9,8 @@ usage: run-as-root [--] COMMAND [ARG...]
 Runs COMMAND as root via the Omarchy Quickshell polkit password dialog.
 The working directory is preserved and the root environment is sanitized
 (system PATH, no user variables); pass values explicitly with `env`.
+An opencode-announce notification precedes the dialog; set RUN_AS_ROOT_NOTE
+to a short description (never a secret) when the command name is not enough.
 
   0    success
   126  authorization dialog dismissed
@@ -31,6 +33,16 @@ if [ "$#" -eq 0 ]; then usage >&2; exit 64; fi
 # Already root: run directly instead of prompting for a password.
 if [ "$(id -u)" -eq 0 ]; then
   exec "$@"
+fi
+
+# Announce the dialog before it maps, as desktop tests do. Show only the
+# command's basename: arguments may carry credentials. Callers can add a short
+# RUN_AS_ROOT_NOTE; never put a secret in it.
+if command -v opencode-announce >/dev/null 2>&1 &&
+  [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]; then
+  announce="A password dialog will appear to run ${1##*/}."
+  [ -z "${RUN_AS_ROOT_NOTE:-}" ] || announce="$announce $RUN_AS_ROOT_NOTE"
+  opencode-announce "Root access requested" "$announce" 2 || true
 fi
 
 pkexec --disable-internal-agent --keep-cwd "$@"

@@ -11,8 +11,11 @@ description:
 `run-as-root <command> [args...]` is on PATH and runs the command as root
 through the Quickshell polkit password dialog.
 
-- The dialog is the approval. Say it will appear, then run the command. Do not
-  pre-test pkexec/polkit or ask for confirmation twice.
+- The wrapper shows an `opencode-announce` notification before the polkit
+  dialog, then waits two seconds. Say it will appear, then run the command. Do
+  not pre-test pkexec/polkit or ask for confirmation twice.
+- Set `RUN_AS_ROOT_NOTE="install libcap-dev"` (a short description) when the
+  command's basename alone would not tell the user what is about to happen.
 - Each call prompts once. Bundle related commands into one `sh -c '...'`.
 - If the user dismisses the dialog (exit 126), stop and ask; do not retry.
 - Allow time to type: set a shell timeout of 120s or more.
