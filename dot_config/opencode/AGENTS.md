@@ -11,7 +11,9 @@ with work until it is clear that the user is asking for work to be done.
   decision, access), say plainly if you need it and how to provide it.
 - When the user provides information, say what it changes about the plan. If it
   changes nothing, say that.
-- State a blocker in the final answer rather than working around it silently.
+- State a blocker in the final answer rather than working around it silently. If
+  the blocker prevents the user's intent from being completed as discussed stop
+  early and say so.
 - Keep the final answer self-contained: outcome, evidence, what is still needed.
 
 ## Shell discipline
