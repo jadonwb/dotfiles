@@ -53,6 +53,20 @@
         "environment": {
           "OPENCODE_BROWSER_RUNTIME": "auto-update"
         }
+      },
+      "desktop": {
+        "type": "local",
+        "command": [
+          "uv",
+          "run",
+          "--directory",
+          "/home/jadon/c/desktop-mcp",
+          "desktop-mcp"
+        ],
+        "timeout": {
+          "startup": 60000,
+          "execution": 120000
+        }
       }
     }
   },
