@@ -1,5 +1,18 @@
 # Global agent guidance
 
+## Communication
+
+Answer the user's direct question first. When a message contains a question,
+feedback, a correction, or information, respond to that point before continuing
+with other work.
+
+- If the user offers something you need (an account, a key, a credential, a
+  decision, access), say plainly if you need it and how to provide it.
+- When the user provides information, say what it changes about the plan. If it
+  changes nothing, say that.
+- State a blocker in the final answer rather than working around it silently.
+- Keep the final answer self-contained: outcome, evidence, what is still needed.
+
 ## Shell discipline
 
 Never run interactive commands through the shell tool. Pagers, editors,
