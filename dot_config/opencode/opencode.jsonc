@@ -57,12 +57,11 @@
       "desktop": {
         "type": "local",
         "command": [
-          "uv",
-          "run",
-          "--directory",
-          "/home/jadon/c/desktop-mcp",
-          "desktop-mcp"
+          "/home/jadon.brutcher/.local/bin/desktop-mcp"
         ],
+        "environment": {
+          "TYPESAFE_API_KEY_COMMAND": "/usr/bin/secret-tool lookup service desktop-mcp key typesafe_api_key"
+        },
         "timeout": {
           "startup": 60000,
           "execution": 120000
