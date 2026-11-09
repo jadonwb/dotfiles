@@ -29,15 +29,19 @@ confirmation prompts and TUI pickers block the session and hide progress.
   form.
 - Prefer the dedicated read/edit/glob/grep tools over shell paging.
 
-## Desktop tests
+## Desktop work
 
-Before a command that opens, focuses, moves, or closes a window or panel for a
-test, run:
+**Anything beyond a single one- or two-step desktop action MUST go through the
+desktop MCP `op=goal` tool**, with Jev deciding each step. Use a primitive only
+for one simple action or to repair a failed goal.
+
+Before a goal or command that opens, focuses, moves, or closes a window or panel
+for a test, announce it:
 
 ```bash
 opencode-announce "Testing <what>" "<what is about to happen>"
 ```
 
-It sends a desktop notification and waits two seconds so you can stop
-interacting; the test itself may take longer. Reading window state or capturing
-a window needs no announcement. Details in the `desktop` skill.
+The notification waits two seconds so the user can stop interacting; the test
+itself may take longer. Reading state or capturing a window needs no
+announcement. Details in the `desktop` skill.
