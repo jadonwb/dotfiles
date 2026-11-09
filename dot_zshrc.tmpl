@@ -216,13 +216,10 @@ umask 007
 # WezTerm integration
 [[ -f "$HOME/.local/share/wezterm/shell-integration.sh" ]] && source "$HOME/.local/share/wezterm/shell-integration.sh"
 
-# 1Password service account token for prompt-less CLI access.
-if [[ -z ${OP_SERVICE_ACCOUNT_TOKEN:-} && -r "$HOME/.config/op/service-account-token" ]]; then
-  export OP_SERVICE_ACCOUNT_TOKEN="$(< "$HOME/.config/op/service-account-token")"
-fi
-
-# TypeSafe/Jev key: fetch fresh from 1Password in each new shell so key rotation
-# is picked up automatically. The server only sees TYPESAFE_API_KEY.
-if [[ -z ${TYPESAFE_API_KEY:-} && -n ${OP_SERVICE_ACCOUNT_TOKEN:-} && -r "$HOME/.config/op/desktop-mcp-ref" ]] && (( $+commands[op] )); then
-  export TYPESAFE_API_KEY="$(op read "$(< "$HOME/.config/op/desktop-mcp-ref")" 2>/dev/null)"
+# 1Password Environment: locally mounted .env file (named pipe, not plaintext).
+# One authorization per 1Password unlock; new shells reuse the unlocked value.
+if [[ -z ${TYPESAFE_API_KEY:-} && -r "$HOME/.config/op/desktop-mcp.env" ]]; then
+  set -a
+  source "$HOME/.config/op/desktop-mcp.env"
+  set +a
 fi
