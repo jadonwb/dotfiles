@@ -216,10 +216,13 @@ umask 007
 # WezTerm integration
 [[ -f "$HOME/.local/share/wezterm/shell-integration.sh" ]] && source "$HOME/.local/share/wezterm/shell-integration.sh"
 
-# TypeSafe/Jev key for desktop-mcp, read from the login keyring.
-# The server only sees TYPESAFE_API_KEY; it never calls op or secret-tool.
-if [[ -z ${TYPESAFE_API_KEY:-} ]] && (( $+commands[secret-tool] )); then
-  _typesafe_key="$(secret-tool lookup service desktop-mcp key typesafe_api_key 2>/dev/null)"
-  [[ -n $_typesafe_key ]] && export TYPESAFE_API_KEY="$_typesafe_key"
-  unset _typesafe_key
+# 1Password service account token for prompt-less CLI access.
+if [[ -z ${OP_SERVICE_ACCOUNT_TOKEN:-} && -r "$HOME/.config/op/service-account-token" ]]; then
+  export OP_SERVICE_ACCOUNT_TOKEN="$(< "$HOME/.config/op/service-account-token")"
+fi
+
+# TypeSafe/Jev key: fetch fresh from 1Password in each new shell so key rotation
+# is picked up automatically. The server only sees TYPESAFE_API_KEY.
+if [[ -z ${TYPESAFE_API_KEY:-} && -n ${OP_SERVICE_ACCOUNT_TOKEN:-} && -r "$HOME/.config/op/desktop-mcp-ref" ]] && (( $+commands[op] )); then
+  export TYPESAFE_API_KEY="$(op read "$(< "$HOME/.config/op/desktop-mcp-ref")" 2>/dev/null)"
 fi
