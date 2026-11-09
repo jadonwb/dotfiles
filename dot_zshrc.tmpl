@@ -215,9 +215,3 @@ umask 007
 
 # WezTerm integration
 [[ -f "$HOME/.local/share/wezterm/shell-integration.sh" ]] && source "$HOME/.local/share/wezterm/shell-integration.sh"
-
-# TypeSafe/Jev key for desktop-mcp, from the login keyring.
-if [[ -z ${TYPESAFE_API_KEY:-} ]] && (( $+commands[secret-tool] )); then
-  TYPESAFE_API_KEY="$(secret-tool lookup service desktop-mcp key typesafe_api_key 2>/dev/null)"
-  [[ -n $TYPESAFE_API_KEY ]] && export TYPESAFE_API_KEY
-fi
