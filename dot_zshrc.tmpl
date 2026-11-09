@@ -216,8 +216,7 @@ umask 007
 # WezTerm integration
 [[ -f "$HOME/.local/share/wezterm/shell-integration.sh" ]] && source "$HOME/.local/share/wezterm/shell-integration.sh"
 
-# 1Password Environment: locally mounted .env file (named pipe, not plaintext).
-# One authorization per 1Password unlock; new shells reuse the unlocked value.
+# 1Password Environment: locally mounted .env file.
 if [[ -z ${TYPESAFE_API_KEY:-} && -r "$HOME/.config/op/desktop-mcp.env" ]]; then
   set -a
   source "$HOME/.config/op/desktop-mcp.env"
