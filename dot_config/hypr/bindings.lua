@@ -37,9 +37,7 @@ end)
 -- FIXME!: spawns a blank window, which then intercepts the kill
 -- hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd([[notify-send 'click window to kill' && hyprctl kill]]))
 
-if machine.is_personal then
-  o.bind("SUPER + PERIOD", "Passwords", "1password")
-end
+o.bind("SUPER + PERIOD", "Passwords", "1password")
 
 o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
 
@@ -58,6 +56,5 @@ o.rebind(
 -- Strata file-manager shortcuts.
 if o.shell_succeeds("command -v strata >/dev/null 2>&1") then
   o.rebind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
-  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)",
-    "uwsm-app -- strata \"$(omarchy-cmd-terminal-cwd)\"")
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", 'uwsm-app -- strata "$(omarchy-cmd-terminal-cwd)"')
 end
