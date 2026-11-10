@@ -233,8 +233,8 @@ unfinished work.
 
 Evidence holds transient research and findings that support the plan. Create it
 for source work, comparisons, or broad reading, and attach it to the plan. A
-repository note holds knowledge the repository should keep; when a note exists,
-it is the record.
+repository note or document holds knowledge the repository should keep; when a
+note exists, it is the record.
 
 Plans are writer-owned: a fresh session reads an unfinished plan and starts a
 successor with `previousPlanID`. Reviews are independent checks, not working
