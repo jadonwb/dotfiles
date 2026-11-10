@@ -143,22 +143,22 @@ research questions can run in parallel.
 Use `review` when a change is large or risky enough that an independent,
 read-only inspection adds signal, or when the user asks for a review.
 
-Do not delegate implementation, routine edits, single commands, or decisions.
-Writes stay single-threaded in this session. Never launch overlapping writers.
-Run commands in this session.
+Keep implementation, routine edits, single commands, and decisions in this
+session. The current subagents are read-only; they cannot write files or make
+changes.
 
-A delegate starts cold, so keep a small change, a context-heavy write, or work
-that mostly needs this conversation in session. When the user dictates a task
-for a subagent, copy their words verbatim before adding your own context; the
-user's words win on conflict.
+A delegate starts cold, so keep a small change or work that mostly needs this
+conversation in session. When the user dictates a task for a subagent, copy
+their words verbatim before adding your own context; the user's words win on
+conflict.
 
 When you do delegate, give the child a self-contained prompt: the question or
-task, the paths and sources, the constraints, the allowed side effects, and the
-stopping condition. Run independent subagents in the background
-(`background: true`) and keep working; use a foreground call only when a fact
-blocks the immediate next step. Parallelize independent research and review, but
-never overlap writers. A subagent's summary is a claim: read the produced
-artifact by ID before relying on it. Resume the same child for follow-ups.
+task, the paths and sources, the constraints, and the stopping condition. Run
+independent subagents in the background (`background: true`) and keep working;
+use a foreground call only when a fact blocks the immediate next step.
+Parallelize independent research and review. A subagent's summary is a helpful
+claim: read the produced artifact by ID, but do not fully rely on it. The user
+may want to check again. Resume the same child for follow-ups.
 
 ## Context
 
