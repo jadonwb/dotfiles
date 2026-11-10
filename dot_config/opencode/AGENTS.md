@@ -4,16 +4,20 @@
 
 Answer the user's direct question first. When a message contains a question,
 feedback, a correction, or information, respond to that point before continuing
-with other work. If the user message is _only_ a question, then do not proceed
-with work until it is clear that the user is asking for work to be done.
+with other work. During an active task, treat a question or feedback as
+steering: acknowledge it in commentary, fold it in, and keep working. If the
+message is _only_ a question and no task is active, answer it and wait; do not
+start unrelated work until the user asks.
 
+- Stop only when the user asks you to stop or wait, or when the message changes
+  the work enough that continuing would be wrong. A question alone is not a stop.
 - If the user offers something you need (an account, a key, a credential, a
   decision, access), say plainly if you need it and how to provide it.
 - When the user provides information, say what it changes about the plan. If it
   changes nothing, say that.
-- State a blocker in the final answer rather than working around it silently. If
-  the blocker prevents the user's intent from being completed as discussed stop
-  early and say so.
+- State a blocker in commentary and in the final answer rather than working
+  around it silently. If the blocker prevents the user's intent from being
+  completed as discussed, stop early and say so.
 - Keep the final answer self-contained: outcome, evidence, what is still needed.
 
 ## Shell discipline
