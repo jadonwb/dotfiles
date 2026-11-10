@@ -16,6 +16,12 @@ isolation.
 - `review` — read-only independent correctness review. Used for large or risky
   changes, or when the user asks. It has clean context.
 
+`system`'s wording lives in `prompts/system.md`, not in the agent body.
+`plugins/system-prompt/` appends it to OpenCode's own base prompt at request
+time. A non-empty agent body replaces that base prompt, which drops the tool
+guidance OpenCode generates from the enabled tools, so `agents/system.md` stays
+frontmatter only.
+
 `plan`, `build`, `general`, and `explore` are disabled. The built-in
 `compaction`, `title`, and `summary` agents remain.
 
