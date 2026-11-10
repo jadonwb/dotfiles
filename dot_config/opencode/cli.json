@@ -5,8 +5,8 @@
         "mode": "system"
     },
     "scroll": {
-        "speed": 5,
-        "acceleration": true
+        "speed": 6.5,
+        "acceleration": false
     },
     "keybinds": {
         "app.exit": "alt+q",
@@ -34,10 +34,16 @@
         "sound": false
     },
     "session": {
-        "sidebar": "hide"
+        "sidebar": "hide",
+        "grouping": "auto",
+        "verbosity": "low",
+        "thinking": "hide"
     },
     "terminal": {
         "title": false
     },
-    "plugins": ["./herdr-opencode"]
+    "animations": true,
+    "cursor": {
+        "style": "line"
+    }
 }
