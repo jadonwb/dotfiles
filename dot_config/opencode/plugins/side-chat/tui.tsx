@@ -10,7 +10,7 @@ import {
 import { createEffect, createSignal, onMount, Show } from "solid-js"
 
 // Replaces the built-in opencode.btw plugin, which is disabled in cli.json.
-const PANEL = "jadon.btw-panel"
+const PANEL = "jadon.side-chat"
 const MAX_HISTORY_TURNS = 8
 
 const DEFAULT_KEYS = {
@@ -25,8 +25,8 @@ const DEFAULT_KEYS = {
   lineDown: "alt+j",
   messagePrevious: "alt+shift+k",
   messageNext: "alt+shift+j",
-  home: "home",
-  end: "end",
+  home: "g,home",
+  end: "shift+g,end",
   dialogCancel: "escape",
 } as const
 type PanelKeys = Record<keyof typeof DEFAULT_KEYS, string | false>
@@ -48,10 +48,11 @@ type Thread = {
 type State = { threads: Record<string, Thread> }
 
 export default Plugin.define({
-  id: "jadon.btw-panel",
+  id: "jadon.side-chat",
   setup(context) {
     const [state, update] = context.storage.store<State>("aside", { initial: { threads: {} } })
     const [panelFocused, setPanelFocused] = createSignal(false)
+    let focusPanelAction: (() => void) | undefined
     const [dialogOpen, setDialogOpen] = createSignal(false)
     const overrides = (context.options.keys ?? {}) as Record<string, string | false>
     const key = (id: string, fallback: string) => overrides[id] ?? fallback
@@ -212,6 +213,7 @@ export default Plugin.define({
     // the user can keep working while the side question stays visible.
     const focusSession = () => {
       setTimeout(() => {
+        setPanelFocused(false)
         try {
           context.keymap.dispatch("pane.focus.left")
         } catch {
@@ -392,7 +394,9 @@ export default Plugin.define({
           bind: keys.focus,
           run: () => {
             if (context.ui.panel.current()?.name !== PANEL) return
-            context.keymap.dispatch(panelFocused() ? "pane.focus.left" : "pane.focus.right")
+            // The panel's own focus action is more reliable than dispatching
+            // the host pane command from a plugin keymap layer.
+            focusPanelAction?.()
           },
         },
       ],
@@ -424,6 +428,7 @@ export default Plugin.define({
             onAsk={() => ask()}
             onClose={() => closeSide(panel.sessionID, state.threads[panel.sessionID])}
             onFocus={setPanelFocused}
+            onReady={(focus) => (focusPanelAction = focus)}
             dialogOpen={dialogOpen}
             keys={keys}
           />
@@ -589,6 +594,7 @@ function AsidePanel(props: {
   onAsk: () => void
   onClose: () => void
   onFocus: (focused: boolean) => void
+  onReady: (focus: () => void) => void
   dialogOpen: () => boolean
   keys: PanelKeys
 }) {
@@ -598,6 +604,7 @@ function AsidePanel(props: {
   const labelColor = () => (focused() ? props.theme.text.muted : props.theme.text.action.primary.disabled)
   const dim = () => (focused() ? undefined : TextAttributes.DIM)
   createEffect(() => props.onFocus(props.panel.focused))
+  onMount(() => props.onReady(props.panel.focus))
   const header = () =>
     `${props.context.data.session.get(props.panel.sessionID)?.title ?? "Session"} - side chat`
   let scroll: ScrollBoxRenderable | undefined
@@ -619,24 +626,6 @@ function AsidePanel(props: {
         : [...positions].reverse().find((position) => position < current - 1)
     scroll.scrollTo(target ?? (direction > 0 ? scroll.scrollHeight : 0))
   }
-  const toBottom = () => {
-    const run = () => {
-      if (!scroll || scroll.isDestroyed) return
-      scroll.scrollTo(scroll.scrollHeight)
-    }
-    // The panel mounts and the markdown reflows over the next few frames.
-    // Scroll after each phase so reopening a long thread lands at the bottom.
-    setTimeout(run, 0)
-    setTimeout(run, 50)
-    setTimeout(run, 200)
-  }
-  onMount(toBottom)
-  createEffect(() => {
-    thread()?.turns.length
-    thread()?.pending
-    toBottom()
-  })
-
   props.context.keymap.layer(() => ({
     mode: "global",
     priority: 10,
@@ -742,6 +731,7 @@ function AsidePanel(props: {
         flexGrow={1}
         minHeight={0}
         stickyScroll
+        stickyStart="bottom"
         verticalScrollbarOptions={{
           paddingLeft: 1,
           visible: true,
