@@ -1,6 +1,6 @@
 ---
 name: Planning
-description: Create and keep a working plan for a feature or investigation so the goal, decisions, checks, and evidence stay in one place. Use at the start of a feature, a multi-stage refactor, or a research-and-plan session, and to guide implementation. Triggers: plan, design, scope, feature, approach, refactor, investigation.
+description: Create and keep a working plan for a feature or investigation so the goal, decisions, checks, and evidence stay in one place. Use at the start of a feature, a multi-stage refactor, or a research-and-plan session, and to guide implementation. Triggers: plan, design, scope, feature, approach, refactor, investigation, flesh out, expand upon, detail this out.
 ---
 
 # Planning

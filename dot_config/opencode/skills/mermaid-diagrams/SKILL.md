@@ -1,6 +1,6 @@
 ---
 name: Mermaid diagrams
-description: Use when an explanation involves a flow, sequence, state machine, architecture, class model, or ER model. Emit a Mermaid fenced code block so the client renders it inline. Triggers: diagram, flowchart, sequence diagram, state machine, architecture, ER diagram, class diagram, visualize, draw, mermaid. Do not use when prose or a short list is clearer.
+description: Use when an explanation involves a flow, sequence, state machine, architecture, class model, or ER model. Emit a Mermaid fenced code block so the client renders it inline. Triggers: diagram, flowchart, sequence diagram, state machine, architecture, ER diagram, class diagram, visualize, visually explain, demonstrate, visual flow, draw, mermaid. Do not use when prose or a short list is clearer.
 ---
 
 # Mermaid diagrams

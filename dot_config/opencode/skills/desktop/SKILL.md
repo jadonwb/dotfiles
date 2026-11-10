@@ -1,6 +1,6 @@
 ---
 name: Desktop
-description: Guidance for using the desktop MCP. Choose one `op=goal` call for any workflow beyond a single one- or two-step action, let Jev decide each step, and verify every objective. The MCP tool description is authoritative for schema. Triggers: desktop, UI test, live test, desktop automation, goal, Jev, omacalc.
+description: Guidance for using the desktop MCP. Choose one `op=goal` call for any workflow beyond a single one- or two-step action, let Jev decide each step, and verify every objective. The MCP tool description is authoritative for schema. Triggers: desktop, UI test, click, computer control, computer use, live test, desktop automation, Jev.
 ---
 
 # Desktop
@@ -11,10 +11,10 @@ and schema.
 
 ## Hard rule
 
-**Anything beyond a single one- or two-step desktop action MUST be one
-`op=goal` call.** Do not build the workflow out of primitive calls. If you are
-about to make a second or third primitive call for one task, stop and rewrite it
-as a goal.
+**Anything beyond a single one- or two-step desktop action MUST be one `op=goal`
+call.** Do not build the workflow out of primitive calls. If you are about to
+make a second or third primitive call for one task, stop and rewrite it as a
+goal.
 
 ## Pick the entry point
 

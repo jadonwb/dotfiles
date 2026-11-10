@@ -17,7 +17,9 @@ through the Quickshell polkit password dialog.
 - Set `RUN_AS_ROOT_NOTE="install libcap-dev"` (a short description) when the
   command's basename alone would not tell the user what is about to happen.
 - Each call prompts once. Bundle related commands into one `sh -c '...'`.
-- If the user dismisses the dialog (exit 126), stop and ask; do not retry.
+- If the user dismisses the dialog (exit 126), stop and ask why.
+- Do not avoid retrying after the first failure or rejection, but find out why
+  first.
 - Allow time to type: set a shell timeout of 120s or more.
 - Use non-interactive flags (`-y`, `DEBIAN_FRONTEND=noninteractive`); root
   commands cannot answer prompts.

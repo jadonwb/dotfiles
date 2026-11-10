@@ -1,6 +1,6 @@
 ---
 name: Review workflow
-description: Get an independent correctness review of a change, artifact, or design and act on the findings. Use this skill whenever the user asks for a review, audit, second opinion, or sanity check, or when a change is large, security-sensitive, hard to reverse, or touches data/concurrency. Triggers: review, audit, check, verify correctness, regression, risky change, second opinion, security. Do not use for a trivial local edit.
+description: Get an independent correctness review of a change, artifact, or design and act on the findings. Use this skill whenever the user asks for a review, audit, second opinion, or sanity check, or when a change is large, security-sensitive, hard to reverse, or touches data/concurrency. Triggers: review, audit, check, verify correctness, validate, regression, risky change, second opinion, security. Do not use for a trivial local edit.
 ---
 
 # Review workflow

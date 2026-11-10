@@ -1,6 +1,6 @@
 ---
 name: Past conversations
-description: Recall what was said or decided in an earlier OpenCode session by querying the local session database. Use when the user asks to remember, recall, find, or check a past conversation, an earlier decision, or work from another session or worktree. Triggers: recall, past conversation, earlier session, previous decision, what did we say, opencode.db.
+description: Recall what was said or decided in an earlier OpenCode session by querying the local session database. Use when the user asks to remember, recall, find, or check a past conversation, an earlier decision, or work from another session or worktree. Triggers: recall, past conversation, earlier session, another session, previous decision, what did we say, opencode.db.
 ---
 
 # Past conversations

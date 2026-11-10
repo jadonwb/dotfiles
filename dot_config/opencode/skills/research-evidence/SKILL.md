@@ -1,6 +1,6 @@
 ---
 name: Research and evidence
-description: Research source code, documentation, or external sources and publish reusable evidence artifacts. Use this skill whenever the user asks to research, investigate, compare, verify, cite, survey, or find out what the docs/source actually say, or when several independent questions can run in parallel. Triggers: research, investigate, sources, docs, compare, evidence, citations, survey, fact-check, verify. Do not use for a single fact you can answer with one read.
+description: Research source code, documentation, or external sources and publish reusable evidence artifacts. Use this skill whenever the user asks to research, investigate, compare, verify, cite, survey, or find out what the docs/source actually say, or when several independent questions can run in parallel. Triggers: research, investigate, sources, docs, compare, evidence, citations, survey, fact-check, verify, deeply explore. Do not use for a single fact you can answer with one read.
 ---
 
 # Research and evidence
