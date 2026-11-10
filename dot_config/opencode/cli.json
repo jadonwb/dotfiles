@@ -23,6 +23,8 @@
         "composer.subagent.up": "k,up,ctrl+p",
         "composer.subagent.down": "j,down,ctrl+n",
         "session.child.first": "tab",
+        "session.message.user.next": "alt+shift+j",
+        "session.message.user.previous": "alt+shift+k",
         "prompt.history.previous": "none",
         "prompt.history.next": "none"
     },
@@ -42,6 +44,10 @@
     "terminal": {
         "title": false
     },
+    "plugins": [
+        "-opencode.btw",
+        "./plugins/btw-panel"
+    ],
     "animations": true,
     "cursor": {
         "style": "line"
