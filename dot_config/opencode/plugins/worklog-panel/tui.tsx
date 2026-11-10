@@ -2,15 +2,17 @@ import { Plugin } from "@opencode/plugin/tui"
 import type { Context, PanelInput } from "@opencode/plugin/tui/context"
 import type {
   SessionMessageAssistant,
+  SessionMessageAssistantReasoning,
   SessionMessageAssistantTool,
   SessionMessageInfo,
 } from "@opencode/client"
 import { SyntaxStyle, TextAttributes, type BoxRenderable, type ScrollBoxRenderable } from "@opentui/core"
-import { createEffect, createMemo, createSignal, For, on, onMount, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show, Switch } from "solid-js"
+import { createStore, reconcile } from "solid-js/store"
 
 const PANEL = "jadon.worklog"
 const TOGGLE_KEY = "alt+w"
-const FILTERS = ["all", "commands", "files", "reads", "other"] as const
+const FILTERS = ["all", "commands", "files", "reads", "thoughts", "other"] as const
 type Filter = (typeof FILTERS)[number]
 
 type WorkItem = {
@@ -27,9 +29,26 @@ type WorkItem = {
   message?: SessionMessageAssistant
   call?: ExecuteCall
   turn: string
+  thought?: { text: string }
 }
 
-type WorkTurn = { key: string; at: number; items: WorkItem[] }
+type WorkTurn = {
+  key: string
+  at: number
+  kind: "user" | "assistant"
+  items: WorkItem[]
+}
+
+type ItemRow = { key: string; kind: "item"; turnKey: string; item: WorkItem }
+type DividerRow = {
+  key: string
+  kind: "divider"
+  turnKey: string
+  at: number
+  variant: "user" | "assistant"
+  counts: string
+}
+type Row = ItemRow | DividerRow
 
 type ExecuteCall = {
   tool: string
@@ -39,6 +58,7 @@ type ExecuteCall = {
 
 const EXPLORATION = new Set(["read", "glob", "grep", "webfetch", "websearch"])
 const FILES = new Set(["edit", "write", "patch"])
+const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 export default Plugin.define({
   id: "jadon.worklog",
@@ -92,13 +112,7 @@ export default Plugin.define({
       append: "session.panel",
       render: (panel) => (
         <Show when={panel.name === PANEL}>
-          <WorklogPanel
-            context={context}
-            panel={panel}
-            syntax={syntax}
-            theme={theme}
-            onFocus={setPanelFocused}
-          />
+          <WorklogPanel context={context} panel={panel} syntax={syntax} theme={theme} onFocus={setPanelFocused} />
         </Show>
       ),
     })
@@ -121,6 +135,53 @@ function WorklogPanel(props: {
   const dim = () => (focused() ? undefined : TextAttributes.DIM)
 
   createEffect(() => props.onFocus(props.panel.focused))
+
+  const history = props.context.data.session.message as typeof props.context.data.session.message & {
+    more?: (sessionID: string) => boolean
+    loadMore?: (sessionID: string, options?: { all?: boolean }) => Promise<void>
+  }
+  const messages = createMemo(() => props.context.data.session.message.list(props.panel.sessionID) ?? [])
+  const turns = createMemo(() => buildTurns(messages()))
+  const [filter, setFilter] = createSignal<Filter>("all")
+  const projected = createMemo(() => buildRows(turns(), filter()))
+  const [rows, setRows] = createStore<Row[]>([])
+  createEffect(
+    on(projected, (next) => {
+      setRows(reconcile(next, { key: "key" }))
+    }),
+  )
+
+  const [selectedKey, setSelectedKey] = createSignal<string>()
+  const [detailKey, setDetailKey] = createSignal<string>()
+
+  const itemRows = createMemo(() => rows.filter((row): row is ItemRow => row.kind === "item"))
+  const dividerRows = createMemo(() => rows.filter((row): row is DividerRow => row.kind === "divider"))
+  const selectedIndex = createMemo(() => {
+    const items = itemRows()
+    const index = items.findIndex((row) => row.key === selectedKey())
+    return index >= 0 ? index : Math.max(0, items.length - 1)
+  })
+  const selectedRow = createMemo(() => itemRows()[selectedIndex()])
+  const selected = createMemo(() => selectedRow()?.item)
+  const selectedTurn = createMemo(() => selectedRow()?.turnKey)
+  const currentTurn = createMemo(() => {
+    const key = selectedTurn()
+    return key ? turns().find((turn) => turn.key === key) : undefined
+  })
+
+  let initialized = false
+  createEffect(() => {
+    const items = itemRows()
+    if (!initialized) {
+      if (items.length > 0) {
+        initialized = true
+        setSelectedKey(items.at(-1)!.key)
+      }
+      return
+    }
+    if (items.length > 0 && !items.some((row) => row.key === selectedKey())) setSelectedKey(items.at(-1)!.key)
+  })
+
   let ensuredBatches = false
   const ensureBatches = async () => {
     // The session route owns the initial sync. Only extend the window, never
@@ -137,84 +198,54 @@ function WorklogPanel(props: {
     ensuredBatches = true
     void ensureBatches()
   })
-  onMount(() => {
-    // Message history can land after the panel mounts; settle the initial
-    // selection when the list has had time to lay out.
-    setTimeout(() => reveal(selectedKey()), 800)
-    setTimeout(() => reveal(selectedKey()), 1800)
-  })
 
-  const history = props.context.data.session.message as typeof props.context.data.session.message & {
-    more?: (sessionID: string) => boolean
-    loadMore?: (sessionID: string, options?: { all?: boolean }) => Promise<void>
-  }
-  const messages = createMemo(() => props.context.data.session.message.list(props.panel.sessionID) ?? [])
-  const turns = createMemo(() => buildTurns(messages()))
-  const [filter, setFilter] = createSignal<Filter>("all")
-  const [selectedKey, setSelectedKey] = createSignal<string>()
-  const [detailKey, setDetailKey] = createSignal<string>()
-
-  const visibleTurns = createMemo(() =>
-    turns()
-      .map((turn) => ({ ...turn, items: turn.items.filter((item) => matches(item, filter())) }))
-      .filter((turn) => turn.items.length > 0),
+  const [spinnerTick, setSpinnerTick] = createSignal(0)
+  const hasRunningThought = createMemo(() =>
+    itemRows().some((row) => row.item.tool === "thought" && row.item.status === "running"),
   )
-  const flat = createMemo(() => visibleTurns().flatMap((turn) => turn.items))
-  const selectedIndex = createMemo(() => {
-    const items = flat()
-    const index = items.findIndex((item) => item.key === selectedKey())
-    return index >= 0 ? index : Math.max(0, items.length - 1)
-  })
-  const selected = createMemo(() => flat()[selectedIndex()])
-  const selectedTurn = createMemo(() => {
-    const item = selected()
-    if (item) return item.turn
-    return visibleTurns().at(-1)?.key ?? turns().at(-1)?.key
-  })
+  createEffect(
+    on(hasRunningThought, (running) => {
+      if (!running) return
+      const timer = setInterval(() => setSpinnerTick((value) => value + 1), 80)
+      onCleanup(() => clearInterval(timer))
+    }),
+  )
+  const spinner = () => SPINNER[spinnerTick() % SPINNER.length]!
 
   let scroll: ScrollBoxRenderable | undefined
-  const rows = new Map<string, BoxRenderable>()
+  const nodes = new Map<string, BoxRenderable>()
   const registerRow = (key: string, node: BoxRenderable | undefined) => {
-    if (node) rows.set(key, node)
-    else rows.delete(key)
+    if (node) nodes.set(key, node)
+    else nodes.delete(key)
   }
   let scrollGeneration = 0
   const schedule = (delays: readonly number[], run: () => void) => {
     const generation = ++scrollGeneration
-    for (const delay of delays) setTimeout(() => {
-      if (generation === scrollGeneration) run()
-    }, delay)
+    for (const delay of delays)
+      setTimeout(() => {
+        if (generation === scrollGeneration) run()
+      }, delay)
   }
   const reveal = (key?: string) => {
     const target = key ?? selected()?.key
     if (!target) return
-    schedule([0, 150, 400, 900, 1600], () => {
-      const row = rows.get(target)
-      if (!row || row.isDestroyed || !scroll || scroll.isDestroyed) return
-      const top = scroll.scrollTop + row.y - scroll.viewport.y
-      const bottom = top + row.height
+    schedule([0, 50, 150], () => {
+      const node = nodes.get(target)
+      if (!node || node.isDestroyed || !scroll || scroll.isDestroyed) return
+      const top = scroll.scrollTop + node.y - scroll.viewport.y
+      const bottom = top + node.height
       if (top < scroll.scrollTop) scroll.scrollTo(Math.max(0, top))
       else if (bottom > scroll.scrollTop + scroll.height) scroll.scrollTo(Math.max(0, bottom - scroll.height))
     })
   }
   const revealDetail = (key: string) => {
-    schedule([0, 80, 200], () => {
-      const row = rows.get(key)
-      if (!row || row.isDestroyed || !scroll || scroll.isDestroyed) return
-      const top = scroll.scrollTop + row.y - scroll.viewport.y
+    schedule([0, 60, 160], () => {
+      const node = nodes.get(key)
+      if (!node || node.isDestroyed || !scroll || scroll.isDestroyed) return
+      const top = scroll.scrollTop + node.y - scroll.viewport.y
       if (top > scroll.scrollTop + scroll.height / 2) scroll.scrollTo(Math.max(0, top - 1))
     })
   }
-  let initialized = false
-  createEffect(() => {
-    const items = flat()
-    if (!initialized && items.length > 0) {
-      initialized = true
-      setSelectedKey(items.at(-1)!.key)
-    }
-  })
-  createEffect(on(selectedKey, (key) => reveal(key), { defer: true }))
-
   const select = (key: string | undefined) => {
     if (!key) return
     setSelectedKey(key)
@@ -222,28 +253,30 @@ function WorklogPanel(props: {
     reveal(key)
   }
   const move = (delta: number) => {
-    const items = flat()
+    const items = itemRows()
     if (items.length === 0) return
     const next = items[Math.min(items.length - 1, Math.max(0, selectedIndex() + delta))]
     select(next?.key)
   }
   const page = (direction: 1 | -1) => {
-    const items = flat()
+    const items = itemRows()
     if (items.length === 0) return
     select(items[Math.min(items.length - 1, Math.max(0, selectedIndex() + direction * 10))]?.key)
   }
-  const top = () => select(flat()[0]?.key)
-  const bottom = () => select(flat().at(-1)?.key)
+  const top = () => select(itemRows()[0]?.key)
+  const bottom = () => select(itemRows().at(-1)?.key)
   const toggleDetail = () => {
     const item = selected()
     if (!item) return
-    // The in-place child work log is a later pass; subagent rows are intentionally inert.
-    if (item.tool === "subagent") return
+    // Thoughts and the in-place child work log are later passes; their rows are
+    // intentionally inert for now.
+    if (item.tool === "subagent" || item.tool === "thought") return
     const open = detailKey() !== item.key
     setDetailKey(open ? item.key : undefined)
     if (open) revealDetail(item.key)
     else reveal(item.key)
   }
+
   const [loadingOlder, setLoadingOlder] = createSignal(false)
   const loadOlder = async () => {
     if (loadingOlder()) return
@@ -254,15 +287,14 @@ function WorklogPanel(props: {
       for (let page = 0; page < 12; page++) {
         if (!history.more?.(props.panel.sessionID)) break
         await history.loadMore?.(props.panel.sessionID).catch(() => undefined)
-        const list = visibleTurns()
-        const currentKey = flat().find((item) => item.key === anchor)?.turn
-        const position = list.findIndex((turn) => turn.key === currentKey)
+        const list = dividerRows()
+        const currentKey = itemRows().find((row) => row.key === anchor)?.turnKey
+        const position = list.findIndex((row) => row.turnKey === currentKey)
         if (position > 0) {
-          select(list[position - 1]?.items[0]?.key)
+          const first = itemRows().find((row) => row.turnKey === list[position - 1]!.turnKey)
+          select(first?.key)
           break
         }
-        // A page boundary can split the current turn; keep loading until the
-        // turn before it is available or history is exhausted.
         if (position < 0) break
       }
       reveal(selectedKey())
@@ -271,25 +303,28 @@ function WorklogPanel(props: {
     }
   }
   const jumpTurn = (direction: 1 | -1) => {
-    const list = visibleTurns()
+    const list = dividerRows()
     if (list.length === 0) return
-    const current = list.findIndex((turn) => turn.key === selectedTurn())
+    const current = list.findIndex((row) => row.turnKey === selectedTurn())
     const index = (current < 0 ? list.length - 1 : current) + direction
     if (index < 0) {
       void loadOlder()
       return
     }
     if (index >= list.length) return
-    const target = list[index]
-    if (!target) return
-    select(target.items[0]?.key)
+    const target = list[index]!
+    const first = itemRows().find((row) => row.turnKey === target.turnKey)
+    select(first?.key)
   }
   const cycleFilter = () => {
     const index = FILTERS.indexOf(filter())
-    setFilter(FILTERS[(index + 1) % FILTERS.length]!)
+    const next = FILTERS[(index + 1) % FILTERS.length]!
+    setFilter(next)
     setDetailKey(undefined)
-    const items = flat()
-    if (!items.some((item) => item.key === selectedKey())) setSelectedKey(items.at(-1)?.key)
+    const projectedRows = projected()
+    setRows(reconcile(projectedRows, { key: "key" }))
+    const items = projectedRows.filter((row): row is ItemRow => row.kind === "item")
+    if (!items.some((row) => row.key === selectedKey())) setSelectedKey(items.at(-1)?.key)
     reveal()
   }
 
@@ -306,11 +341,49 @@ function WorklogPanel(props: {
         group: "Work log",
         run: () => move(-1),
       },
-      { id: "session.worklog.detail", bind: "return", title: "Toggle work item detail", group: "Work log", run: toggleDetail },
-      { id: "session.worklog.page.down", bind: "pagedown,ctrl+d", title: "Next page", group: "Work log", run: () => page(1) },
-      { id: "session.worklog.page.up", bind: "pageup,ctrl+u", title: "Previous page", group: "Work log", run: () => page(-1) },
+      {
+        id: "session.worklog.detail",
+        bind: "return",
+        title: "Toggle work item detail",
+        group: "Work log",
+        run: toggleDetail,
+      },
+      {
+        id: "session.worklog.page.down",
+        bind: "pagedown,ctrl+d",
+        title: "Next page",
+        group: "Work log",
+        run: () => page(1),
+      },
+      {
+        id: "session.worklog.page.up",
+        bind: "pageup,ctrl+u",
+        title: "Previous page",
+        group: "Work log",
+        run: () => page(-1),
+      },
       { id: "session.worklog.top", bind: "g,home", title: "First work item", group: "Work log", run: top },
-      { id: "session.worklog.bottom", bind: "shift+g,end", title: "Last work item", group: "Work log", run: bottom },
+      {
+        id: "session.worklog.bottom",
+        bind: "shift+g,end",
+        title: "Last work item",
+        group: "Work log",
+        run: bottom,
+      },
+      {
+        id: "session.worklog.scroll.down",
+        bind: "alt+j",
+        title: "Scroll work log down",
+        group: "Work log",
+        run: () => scroll?.scrollBy(2),
+      },
+      {
+        id: "session.worklog.scroll.up",
+        bind: "alt+k",
+        title: "Scroll work log up",
+        group: "Work log",
+        run: () => scroll?.scrollBy(-2),
+      },
       {
         id: "session.worklog.turn.previous",
         bind: "[",
@@ -325,28 +398,41 @@ function WorklogPanel(props: {
         group: "Work log",
         run: () => jumpTurn(1),
       },
-      { id: "session.worklog.filter", bind: "t", title: "Cycle work log filter", group: "Work log", run: cycleFilter },
-      { id: "session.worklog.fullscreen", bind: "f", title: "Toggle work log fullscreen", group: "Work log", run: () => props.panel.toggleFullscreen() },
-      { id: "session.worklog.hide", bind: "escape,q", title: "Hide work log", group: "Work log", run: () => props.panel.close() },
+      {
+        id: "session.worklog.filter",
+        bind: "t",
+        title: "Cycle work log filter",
+        group: "Work log",
+        run: cycleFilter,
+      },
+      {
+        id: "session.worklog.fullscreen",
+        bind: "f",
+        title: "Toggle work log fullscreen",
+        group: "Work log",
+        run: () => props.panel.toggleFullscreen(),
+      },
+      {
+        id: "session.worklog.hide",
+        bind: "escape,q",
+        title: "Hide work log",
+        group: "Work log",
+        run: () => props.panel.close(),
+      },
     ],
   }))
 
   const sessionTitle = () =>
     `${props.context.data.session.get(props.panel.sessionID)?.title ?? "Session"} - work log`
-  const currentTurn = () => {
-    const key = selectedTurn()
-    if (key === undefined) return
-    return turns().find((turn) => turn.key === key)
-  }
   const turnLabel = () => {
     const turn = currentTurn()
     if (!turn) return "No work yet"
-    const list = visibleTurns()
-    const position = list.findIndex((item) => item.key === turn.key)
+    const list = dividerRows()
+    const position = list.findIndex((row) => row.turnKey === turn.key)
     const numbering = position >= 0 ? `Batch ${position + 1}/${list.length} · ` : "Batch · "
     return `${numbering}${timeLabel(turn.at)} · ${countLabel(turn)}`
   }
-  const emptyLabel = () => (filter() === "all" ? "No tool calls yet." : `No ${filter()} in this session.`)
+  const emptyLabel = () => (filter() === "all" ? "No work yet." : `No ${filter()} in this session.`)
 
   return (
     <box flexDirection="column" flexGrow={1} minHeight={0} backgroundColor={theme.background.base}>
@@ -362,13 +448,13 @@ function WorklogPanel(props: {
         </text>
       </box>
       <box flexDirection="row" flexShrink={0} paddingLeft={2} paddingRight={2} paddingBottom={1} gap={1}>
-        <text fg={labelColor()} attributes={dim()} wrapMode="none" truncate>
+        <text fg={labelColor()} attributes={dim()} wrapMode="none" truncate flexGrow={1} minWidth={0}>
           {turnLabel()}
         </text>
-        <text fg={labelColor()} attributes={dim()}>
+        <text fg={labelColor()} attributes={dim()} flexShrink={0}>
           ·
         </text>
-        <text fg={labelColor()} attributes={dim()}>
+        <text fg={labelColor()} attributes={dim()} flexShrink={0}>
           {filterLabel(filter())}
         </text>
         <Show when={loadingOlder()}>
@@ -382,6 +468,9 @@ function WorklogPanel(props: {
         ref={(value) => (scroll = value)}
         flexGrow={1}
         minHeight={0}
+        stickyScroll
+        stickyStart="bottom"
+        viewportCulling={false}
         verticalScrollbarOptions={{
           paddingLeft: 1,
           visible: true,
@@ -391,55 +480,56 @@ function WorklogPanel(props: {
           },
         }}
       >
-        <box flexDirection="column" paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
+        <box flexDirection="column" paddingLeft={2} paddingRight={2} paddingTop={1}>
           <Show
-            when={flat().length > 0}
+            when={rows.length > 0}
             fallback={
               <box paddingLeft={1} paddingTop={1}>
                 <text fg={theme.text.muted}>{emptyLabel()}</text>
               </box>
             }
           >
-            <For each={visibleTurns()}>
-              {(turn) => (
-                <box flexDirection="column">
-                  <box border={["top"]} borderColor={theme.decrease(theme.background.base)} marginTop={1} paddingTop={1}>
-                    <text fg={theme.text.muted} attributes={TextAttributes.DIM} wrapMode="none" truncate>
-                      Batch · {timeLabel(turn.at)} · {countLabel(turn)}
-                    </text>
-                  </box>
-                  <For each={turn.items}>
-                    {(item) => (
-                      <>
-                        <WorkRow
-                          item={item}
-                          selected={selected()?.key === item.key}
-                          theme={theme}
-                          context={props.context}
-                          syntax={props.syntax}
-                          register={(node) => registerRow(item.key, node)}
-                          onSelect={() => {
-                            select(item.key)
-                            props.panel.focus()
-                          }}
-                          onToggle={() => {
-                            if (selected()?.key !== item.key) select(item.key)
-                            toggleDetail()
-                          }}
-                        />
-                        <Show when={detailKey() === item.key}>
-                          <WorkDetail item={item} theme={theme} context={props.context} syntax={props.syntax} width={props.panel.width} />
-                        </Show>
-                      </>
-                    )}
-                  </For>
-                </box>
+            <For each={rows}>
+              {(row) => (
+                <Switch>
+                  <Match when={row.kind === "divider"}>
+                    <BatchDivider row={row as DividerRow} theme={theme} />
+                  </Match>
+                  <Match when={row.kind === "item"}>
+                    <WorkRow
+                      row={row as ItemRow}
+                      selected={selectedRow()?.key === row.key}
+                      theme={theme}
+                      context={props.context}
+                      spinner={spinner}
+                      register={(node) => registerRow(row.key, node)}
+                      onSelect={() => {
+                        select(row.key)
+                        props.panel.focus()
+                      }}
+                      onToggle={() => {
+                        if (selected()?.key !== row.key) select(row.key)
+                        toggleDetail()
+                      }}
+                    />
+                    <Show when={detailKey() === row.key}>
+                      <WorkDetail
+                        item={(row as ItemRow).item}
+                        theme={theme}
+                        context={props.context}
+                        syntax={props.syntax}
+                        width={props.panel.width}
+                      />
+                    </Show>
+                  </Match>
+                </Switch>
               )}
             </For>
           </Show>
-          <box height={1} flexShrink={0} />
         </box>
       </scrollbox>
+
+      <box height={2} flexShrink={0} />
 
       <box
         flexDirection="row"
@@ -451,6 +541,8 @@ function WorklogPanel(props: {
         gap={1}
       >
         <KeyHint key="j/k" label="move" focused={focused()} theme={theme} />
+        <Dot focused={focused()} theme={theme} />
+        <KeyHint key="alt+j/k" label="scroll" focused={focused()} theme={theme} />
         <Dot focused={focused()} theme={theme} />
         <KeyHint key="enter" label="detail" focused={focused()} theme={theme} />
         <Dot focused={focused()} theme={theme} />
@@ -466,29 +558,46 @@ function WorklogPanel(props: {
   )
 }
 
+function BatchDivider(props: { row: DividerRow; theme: Context["theme"] }) {
+  return (
+    <box
+      border={["top"]}
+      borderColor={props.theme.decrease(props.theme.background.base)}
+      marginTop={1}
+      paddingTop={1}
+    >
+      <text fg={props.theme.text.muted} attributes={TextAttributes.DIM} wrapMode="none" truncate>
+        {props.row.variant === "assistant" ? "Assistant" : "Batch"} · {timeLabel(props.row.at)} ·{" "}
+        {props.row.counts}
+      </text>
+    </box>
+  )
+}
+
 function WorkRow(props: {
-  item: WorkItem
+  row: ItemRow
   selected: boolean
   theme: Context["theme"]
   context: Context
-  syntax: SyntaxStyle
+  spinner: () => string
   register: (node: BoxRenderable | undefined) => void
   onSelect: () => void
   onToggle: () => void
 }) {
-  const item = () => props.item
+  const item = () => props.row.item
+  const thought = () => item().tool === "thought"
   const color = () => {
+    if (thought()) return props.theme.text.feedback.warning.base
     if (item().status === "error") return props.theme.text.feedback.error.base
     if (props.selected) return props.theme.text.base
     return props.theme.text.muted
   }
-  const duration = () => {
-    const start = item().time.ran ?? item().time.created
-    const end = item().time.completed
-    if (start === undefined || end === undefined) return ""
-    return formatDuration(Math.max(0, end - start))
+  const duration = () => (thought() ? "" : itemDuration(item()))
+  const summary = () => summarize(item(), props.context).replace(/\s+/g, " ").trim()
+  const rowIcon = () => {
+    if (!thought()) return icon(item())
+    return item().status === "running" ? props.spinner() : "✻"
   }
-  const summary = () => summarize(item(), props.context, props.theme).replace(/\s+/g, " ").trim()
   return (
     <box
       ref={(node) => props.register(node)}
@@ -505,15 +614,10 @@ function WorkRow(props: {
         {props.selected ? "▌" : " "}
       </text>
       <text width={2} fg={color()}>
-        {icon(item())}
+        {rowIcon()}
       </text>
       <box paddingLeft={item().depth > 0 ? 2 : 0} flexGrow={1} minWidth={0}>
-        <text
-          fg={color()}
-          wrapMode="none"
-          truncate
-          attributes={props.selected ? TextAttributes.BOLD : undefined}
-        >
+        <text fg={color()} wrapMode="none" truncate attributes={props.selected ? TextAttributes.BOLD : undefined}>
           {summary()}
         </text>
       </box>
@@ -650,8 +754,67 @@ function WorkDetail(props: {
           </text>
         </Show>
 
-        <Show when={item().tool === "subagent"}>
-          <text fg={theme().text.muted}>Child work log is not implemented yet.</text>
+        <Show when={item().tool === "execute"}>
+          <text fg={theme().text.muted} attributes={TextAttributes.BOLD}>
+            Code
+          </text>
+          <Show when={executeCode(item())} fallback={<text fg={theme().text.muted}>Waiting for code…</text>}>
+            {(code) => (
+              <line_number fg={theme().text.muted} minWidth={3} paddingRight={1}>
+                <code
+                  conceal={false}
+                  fg={theme().text.base}
+                  filetype="typescript"
+                  syntaxStyle={props.syntax}
+                  content={capLines(code(), 200)}
+                />
+              </line_number>
+            )}
+          </Show>
+          <text fg={theme().text.muted} attributes={TextAttributes.BOLD}>
+            Output
+          </text>
+          <Show
+            when={!item().error}
+            fallback={
+              <text fg={theme().text.feedback.error.base} wrapMode="word">
+                {item().error}
+              </text>
+            }
+          >
+            <Show when={item().output} fallback={<text fg={theme().text.muted}>No output</text>}>
+              <Show
+                when={jsonOutput(item().output)}
+                fallback={
+                  <text
+                    fg={item().status === "error" ? theme().text.feedback.error.base : theme().text.base}
+                    wrapMode="word"
+                  >
+                    {capLines(item().output, 300)}
+                  </text>
+                }
+              >
+                {(parsed) => (
+                  <>
+                    <line_number fg={theme().text.muted} minWidth={3} paddingRight={1}>
+                      <code
+                        conceal={false}
+                        fg={theme().text.base}
+                        filetype="json"
+                        syntaxStyle={props.syntax}
+                        content={parsed().json}
+                      />
+                    </line_number>
+                    <Show when={parsed().rest}>
+                      <text fg={theme().text.base} wrapMode="word">
+                        {parsed().rest}
+                      </text>
+                    </Show>
+                  </>
+                )}
+              </Show>
+            </Show>
+          </Show>
         </Show>
 
         <Show when={item().tool === "skill"}>
@@ -660,22 +823,25 @@ function WorkDetail(props: {
           </text>
         </Show>
 
-        <Show when={item().tool === "execute"}>
-          <For each={executeCalls(item().metadata.toolCalls)}>
-            {(call) => (
-              <text fg={call.status === "error" ? theme().text.feedback.error.base : theme().text.muted} wrapMode="none" truncate>
-                › {executeCallSummary(call)}
-              </text>
-            )}
-          </For>
-          <Show when={item().output}>
-            <text fg={theme().text.muted} wrapMode="word">
-              {capLines(item().output, 200)}
-            </text>
-          </Show>
-        </Show>
-
-        <Show when={!["shell", "edit", "patch", "write", "read", "glob", "grep", "webfetch", "websearch", "subagent", "execute", "skill"].includes(item().tool)}>
+        <Show
+          when={
+            ![
+              "shell",
+              "edit",
+              "patch",
+              "write",
+              "read",
+              "glob",
+              "grep",
+              "webfetch",
+              "websearch",
+              "subagent",
+              "thought",
+              "execute",
+              "skill",
+            ].includes(item().tool)
+          }
+        >
           <For each={Object.entries(item().input)}>
             {([key, value]) => (
               <box flexDirection="row">
@@ -695,7 +861,7 @@ function WorkDetail(props: {
           </Show>
         </Show>
 
-        <Show when={item().error}>
+        <Show when={item().error && item().tool !== "execute"}>
           <text fg={theme().text.feedback.error.base} wrapMode="word">
             {item().error}
           </text>
@@ -708,10 +874,16 @@ function WorkDetail(props: {
 function KeyHint(props: { key: string; label: string; focused: boolean; theme: Context["theme"] }) {
   return (
     <>
-      <text fg={props.focused ? props.theme.text.base : props.theme.text.action.primary.disabled} attributes={props.focused ? undefined : TextAttributes.DIM}>
+      <text
+        fg={props.focused ? props.theme.text.base : props.theme.text.action.primary.disabled}
+        attributes={props.focused ? undefined : TextAttributes.DIM}
+      >
         {props.key}
       </text>
-      <text fg={props.focused ? props.theme.text.muted : props.theme.text.action.primary.disabled} attributes={props.focused ? undefined : TextAttributes.DIM}>
+      <text
+        fg={props.focused ? props.theme.text.muted : props.theme.text.action.primary.disabled}
+        attributes={props.focused ? undefined : TextAttributes.DIM}
+      >
         {props.label}
       </text>
     </>
@@ -720,7 +892,10 @@ function KeyHint(props: { key: string; label: string; focused: boolean; theme: C
 
 function Dot(props: { focused: boolean; theme: Context["theme"] }) {
   return (
-    <text fg={props.focused ? props.theme.text.muted : props.theme.text.action.primary.disabled} attributes={props.focused ? undefined : TextAttributes.DIM}>
+    <text
+      fg={props.focused ? props.theme.text.muted : props.theme.text.action.primary.disabled}
+      attributes={props.focused ? undefined : TextAttributes.DIM}
+    >
       ·
     </text>
   )
@@ -732,44 +907,82 @@ function Dot(props: { focused: boolean; theme: Context["theme"] }) {
 function buildTurns(messages: readonly SessionMessageInfo[]): WorkTurn[] {
   const turns: WorkTurn[] = []
   let current: WorkTurn | undefined
-  const ensure = (at: number, key: string) => {
-    if (!current) {
-      current = { key, at, items: [] }
-      turns.push(current)
-    }
+  const start = (key: string, at: number, kind: WorkTurn["kind"]) => {
+    current = { key, at, kind, items: [] }
+    turns.push(current)
     return current
   }
+  const ensure = (at: number, key: string) => current ?? start(key, at, "assistant")
+
   for (const message of messages) {
     if (message.type === "user") {
-      current = { key: message.id, at: message.time.created, items: [] }
-      turns.push(current)
+      start(message.id, message.time.created, "user")
       continue
     }
     if (message.type !== "assistant") continue
-    const turn = ensure(message.time.created, `start:${message.id}`)
+    let textOrdinal = 0
+    let reasoningOrdinal = 0
     for (const part of message.content) {
-      if (part.type !== "tool") continue
-      const key = `${message.id}:${part.id}`
-      turn.items.push(itemFromPart(part, message, key, 0, turn.key))
-      if (canonicalToolName(part.name) !== "execute") continue
-      const calls = executeCalls(part.state.status === "streaming" ? undefined : part.state.metadata?.toolCalls)
-      calls.forEach((call, index) => {
-        turn.items.push({
-          key: `${key}:call:${index}`,
-          depth: 1,
-          tool: canonicalToolName(call.tool),
-          status: call.status,
-          input: call.input ?? {},
-          metadata: {},
-          output: "",
-          time: {},
-          call,
-          turn: turn.key,
+      if (part.type === "tool") {
+        const turn = ensure(message.time.created, `start:${message.id}`)
+        const key = `${message.id}:${part.id}`
+        turn.items.push(itemFromPart(part, message, key, 0, turn.key))
+        if (canonicalToolName(part.name) !== "execute") continue
+        const calls = executeCalls(part.state.status === "streaming" ? undefined : part.state.metadata?.toolCalls)
+        calls.forEach((call, index) => {
+          turn.items.push({
+            key: `${key}:call:${index}`,
+            depth: 1,
+            tool: canonicalToolName(call.tool),
+            status: call.status,
+            input: call.input ?? {},
+            metadata: {},
+            output: "",
+            time: {},
+            call,
+            turn: turn.key,
+          })
         })
-      })
+        continue
+      }
+      if (part.type === "reasoning") {
+        const text = part.text.replace("[REDACTED]", "").trim()
+        if (!text) continue
+        const turn = ensure(message.time.created, `start:${message.id}`)
+        const key = `${message.id}:reasoning:${reasoningOrdinal++}`
+        turn.items.push(thoughtFromPart(part, message, key, turn.key))
+        continue
+      }
+      if (part.type === "text") {
+        if (!part.text.trim()) continue
+        textOrdinal++
+        // A text part closes the current activity group in the native
+        // transcript. Keep the break only once the current batch has work.
+        if (current && current.items.length > 0) {
+          start(`text:${message.id}:${textOrdinal}`, message.time.created, "assistant")
+        }
+      }
     }
   }
   return turns
+}
+
+function buildRows(turns: readonly WorkTurn[], filter: Filter): Row[] {
+  const rows: Row[] = []
+  for (const turn of turns) {
+    const items = turn.items.filter((item) => matches(item, filter))
+    if (items.length === 0) continue
+    rows.push({
+      key: `divider:${turn.key}`,
+      kind: "divider",
+      turnKey: turn.key,
+      at: turn.at,
+      variant: turn.kind,
+      counts: countLabel(turn),
+    })
+    for (const item of items) rows.push({ key: item.key, kind: "item", turnKey: turn.key, item })
+  }
+  return rows
 }
 
 function itemFromPart(
@@ -796,21 +1009,46 @@ function itemFromPart(
   }
 }
 
+function thoughtFromPart(
+  part: SessionMessageAssistantReasoning,
+  message: SessionMessageAssistant,
+  key: string,
+  turn: string,
+): WorkItem {
+  const completed = part.time.completed !== undefined || message.time.completed !== undefined
+  return {
+    key,
+    depth: 0,
+    tool: "thought",
+    status: completed ? "completed" : "running",
+    input: {},
+    metadata: {},
+    output: "",
+    time: part.time,
+    message,
+    turn,
+    thought: { text: part.text },
+  }
+}
+
 function matches(item: WorkItem, filter: Filter) {
   if (filter === "all") return true
   if (filter === "commands") return item.tool === "shell" || item.tool === "execute"
   if (filter === "files") return FILES.has(item.tool)
   if (filter === "reads") return EXPLORATION.has(item.tool)
-  return !["shell", "execute", ...FILES, ...EXPLORATION].includes(item.tool)
+  if (filter === "thoughts") return item.tool === "thought"
+  return !["shell", "execute", ...FILES, ...EXPLORATION, "thought"].includes(item.tool)
 }
 
 // ---------------------------------------------------------------------------
 // Native-like summaries
 
-function summarize(item: WorkItem, context: Context, theme: Context["theme"]) {
+function summarize(item: WorkItem, context: Context) {
   if (item.call) return executeCallSummary(item.call)
   const input = item.input
   switch (item.tool) {
+    case "thought":
+      return item.status === "running" ? "Thinking…" : `Thought${itemDuration(item) ? ` · ${itemDuration(item)}` : ""}`
     case "shell":
       return shellCommand(item, context)
     case "edit":
@@ -834,9 +1072,9 @@ function summarize(item: WorkItem, context: Context, theme: Context["theme"]) {
     case "execute":
       return `execute${executeCalls(item.metadata.toolCalls).length ? ` · ${executeCalls(item.metadata.toolCalls).length} call${executeCalls(item.metadata.toolCalls).length === 1 ? "" : "s"}` : ""}`
     case "todowrite":
-      return `TodoWrite`
+      return "TodoWrite"
     case "question":
-      return `Question`
+      return "Question"
     case "skill":
       return `Skill${stringValue(input.id) ?? stringValue(input.name) ? ` ${stringValue(input.id) ?? stringValue(input.name)}` : ""}`
     default:
@@ -876,6 +1114,13 @@ function countMatches(item: WorkItem) {
   return `${count} ${count === 1 ? "match" : "matches"}`
 }
 
+function itemDuration(item: WorkItem) {
+  const start = item.time.ran ?? item.time.created ?? item.message?.time.created
+  const end = item.time.completed ?? item.message?.time.completed
+  if (start === undefined || end === undefined) return ""
+  return formatDuration(Math.max(0, end - start))
+}
+
 function isBackground(item: WorkItem) {
   return item.status === "completed" && item.metadata.status === "running"
 }
@@ -883,6 +1128,7 @@ function isBackground(item: WorkItem) {
 function icon(item: WorkItem) {
   if (item.status === "error") return "✗"
   if (item.status === "streaming" || item.status === "running") return "│"
+  if (item.tool === "thought") return "✻"
   if (item.tool === "read") return "→"
   if (item.tool === "glob" || item.tool === "grep") return "✱"
   if (item.tool === "webfetch") return "%"
@@ -894,18 +1140,21 @@ function icon(item: WorkItem) {
 
 function countLabel(turn: WorkTurn | undefined) {
   if (!turn) return "0 work items"
-  const counts = { command: 0, edit: 0, read: 0, tool: 0 }
+  const counts = { command: 0, edit: 0, read: 0, thought: 0, tool: 0 }
   const top = turn.items.filter((item) => item.depth === 0)
   for (const item of top.length > 0 ? top : turn.items) {
-    if (item.tool === "shell") counts.command++
+    if (item.tool === "thought") counts.thought++
+    else if (item.tool === "shell") counts.command++
     else if (FILES.has(item.tool)) counts.edit++
     else if (EXPLORATION.has(item.tool)) counts.read++
     else counts.tool++
   }
-  return Object.entries(counts)
-    .filter(([, count]) => count > 0)
-    .map(([name, count]) => `${count} ${name}${count === 1 ? "" : "s"}`)
-    .join(" · ") || "0 work items"
+  return (
+    Object.entries(counts)
+      .filter(([, count]) => count > 0)
+      .map(([name, count]) => `${count} ${name}${count === 1 ? "" : "s"}`)
+      .join(" · ") || "0 work items"
+  )
 }
 
 function filterLabel(filter: Filter) {
@@ -918,6 +1167,8 @@ function filterLabel(filter: Filter) {
       return "Files"
     case "reads":
       return "Reads"
+    case "thoughts":
+      return "Thoughts"
     case "other":
       return "Other"
   }
@@ -971,6 +1222,23 @@ function executeCalls(value: unknown): ExecuteCall[] {
 function executeCallSummary(call: ExecuteCall) {
   const args = primitiveInputSummary(call.input ?? {}).replace(/\s+/g, " ")
   return `${call.tool}${args ? ` ${args}` : ""}`
+}
+
+function executeCode(item: WorkItem) {
+  return stringValue(item.input.code)
+}
+
+function jsonOutput(text: string) {
+  const trimmed = text.trim()
+  if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return
+  const end = trimmed.search(/\n\n(Warnings|Logs):\n/)
+  const json = end === -1 ? trimmed : trimmed.slice(0, end)
+  try {
+    JSON.parse(json)
+  } catch {
+    return
+  }
+  return { json, rest: end === -1 ? undefined : trimmed.slice(json.length).trim() || undefined }
 }
 
 function parseApplyPatchFiles(value: unknown) {
