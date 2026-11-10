@@ -88,20 +88,23 @@ function notify(title: string, body: string) {
 }
 
 /**
- * Events worth a desktop notification. Only the user's own interactive
- * sessions notify: events from subagent child sessions and from archived
- * sessions (side threads, retired sessions) are dropped.
+ * Events worth a desktop notification. A finished run only matters for the
+ * user's own interactive top-level sessions. Forms and permission prompts
+ * notify from child sessions too, since a blocked subagent stalls the parent
+ * run. Archived sessions never notify.
  */
-const OUTCOMES: Record<string, { body: (event: any) => string }> = {
+const OUTCOMES: Record<string, { body: (event: any) => string; childSessions?: boolean }> = {
   "session.execution.succeeded": { body: () => "Session done" },
   "session.execution.failed": { body: () => "Session failed" },
   "session.execution.interrupted": { body: () => "Session interrupted" },
   "form.created": {
     body: (event) => text(event.data?.form?.title) || "Input needed",
+    childSessions: true,
   },
   "permission.asked": {
     body: (event) =>
       text(event.data?.message) || `Permission needed: ${text(event.data?.action) || "action"}`,
+    childSessions: true,
   },
 }
 
@@ -148,7 +151,7 @@ export default {
             trace(`skip session ${sessionID}: not found`)
             continue
           }
-          if (session.parentID) {
+          if (!outcome.childSessions && session.parentID) {
             trace(`skip child session ${sessionID}`)
             continue
           }
