@@ -88,33 +88,29 @@ function notify(title: string, body: string) {
 }
 
 /**
- * Events worth a desktop notification. A finished run only matters for the
- * primary session; a form or a permission prompt blocks that session, so its
- * child sessions notify too.
+ * Events worth a desktop notification. Only the user's own interactive
+ * sessions notify: events from subagent child sessions and from archived
+ * sessions (side threads, retired sessions) are dropped.
  */
-const OUTCOMES: Record<
-  string,
-  {
-    body: (event: any) => string
-    childSessions: boolean
-  }
-> = {
-  "session.execution.succeeded": { body: () => "Session done", childSessions: false },
-  "session.execution.failed": { body: () => "Session failed", childSessions: false },
-  "session.execution.interrupted": { body: () => "Session interrupted", childSessions: false },
+const OUTCOMES: Record<string, { body: (event: any) => string }> = {
+  "session.execution.succeeded": { body: () => "Session done" },
+  "session.execution.failed": { body: () => "Session failed" },
+  "session.execution.interrupted": { body: () => "Session interrupted" },
   "form.created": {
     body: (event) => text(event.data?.form?.title) || "Input needed",
-    childSessions: true,
   },
   "permission.asked": {
     body: (event) =>
       text(event.data?.message) || `Permission needed: ${text(event.data?.action) || "action"}`,
-    childSessions: true,
   },
 }
 
 function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : ""
+}
+
+function isArchived(session: any): boolean {
+  return Boolean(session?.time?.archived ?? session?.archived)
 }
 
 function sessionIDOf(event: any): string | undefined {
@@ -148,8 +144,16 @@ export default {
               return undefined
             })
 
-          if (!outcome.childSessions && session?.parentID) {
+          if (!session) {
+            trace(`skip session ${sessionID}: not found`)
+            continue
+          }
+          if (session.parentID) {
             trace(`skip child session ${sessionID}`)
+            continue
+          }
+          if (isArchived(session)) {
+            trace(`skip archived session ${sessionID}`)
             continue
           }
 
@@ -161,7 +165,7 @@ export default {
             continue
           }
 
-          const title = text(session?.title) || "OpenCode"
+          const title = text(session.title) || "OpenCode"
           notify(title, outcome.body(event))
         }
         trace("event stream ended")
