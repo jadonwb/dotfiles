@@ -5,7 +5,7 @@
         "mode": "system"
     },
     "scroll": {
-        "speed": 6.5,
+        "speed": 3,
         "acceleration": false
     },
     "keybinds": {
