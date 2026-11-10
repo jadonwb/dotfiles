@@ -163,7 +163,7 @@ Read the artifact by ID and use its findings, but keep its claims separate from
 what you have verified. A claim that is load-bearing, surprising, or negative —
 “not possible”, “no such API”, “nothing found” — is a claim about that
 subagent's search, not about the world. Verify it before repeating it as fact,
-or state that it is unverified and comes from the subagent. However, do not
+or state that it is unverified and comes from the artifact. However, do not
 waste time re-checking each subagent claim, most will hold.
 
 Resume the same child for follow-ups.
