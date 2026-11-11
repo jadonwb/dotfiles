@@ -10,8 +10,8 @@ Replaces the built-in `opencode.btw` dialog. The built-in plugin is disabled in
 | `/side <question>`       | Starts a temporary side thread, or continues the existing one.        |
 | `/side --new <question>` | Deletes the current side fork and starts over.                        |
 | `/side --close`          | Deletes the side fork, clears the thread, and closes the panel.       |
-| `session.aside.toggle`   | Hide/show. Opening focuses the panel. Default: `alt+l`.               |
-| `session.aside.focus`    | Focus the open panel. Default: `alt+h`.                                |
+| `session.aside.toggle`   | Open/close. Opening focuses the panel. Default: `alt+l`.              |
+| `session.aside.focus`    | Toggle focus on the open panel. Default: `alt+f`.                     |
 
 The side thread is an archived fork of the main session. The fork keeps the full
 conversation context, streams answer text like a normal session, and is hidden
@@ -36,7 +36,7 @@ instead, using the same `session.aside.*` IDs. The defaults are shown below.
       "keys": {
         "session.aside": "alt+a",
         "session.aside.toggle": "alt+l",
-        "session.aside.focus": "alt+h"
+        "session.aside.focus": "alt+f"
       }
     }
   }
@@ -46,8 +46,8 @@ instead, using the same `session.aside.*` IDs. The defaults are shown below.
 | ID                               | Default       | Action                                      |
 | -------------------------------- | ------------- | ------------------------------------------- |
 | `session.aside`                  | `alt+a`       | Ask side chat question (opens the popup).   |
-| `session.aside.toggle`           | `alt+l`       | Hide/show the panel; opening focuses it.    |
-| `session.aside.focus`            | `alt+h`       | Focus the open panel.                       |
+| `session.aside.toggle`           | `alt+l`       | Open/close the panel; opening focuses it.   |
+| `session.aside.focus`            | `alt+f`       | Toggle focus on the open panel.             |
 | `session.aside.ask`              | `a`           | Ask another side question.                  |
 | `session.aside.hide`             | `escape,q`    | Hide the panel; the thread stays.           |
 | `session.aside.close`            | `x`           | Delete the side thread and close the panel. |
@@ -60,7 +60,7 @@ instead, using the same `session.aside.*` IDs. The defaults are shown below.
 | `session.aside.end`              | `shift+g,end` | Jump to the bottom.                         |
 | `session.aside.dialog.cancel`    | `escape`      | Cancel the question dialog.                 |
 
-`alt+h` focuses the panel so its keys are active; click the prompt to return. `g`/`G` jump to the top and bottom of the side chat, matching the work log.
+`alt+f` toggles focus on the panel so its keys are active; click the prompt to return. `g`/`G` jump to the top and bottom of the side chat, matching the work log. `alt+k` stops at the first row and `alt+j` at the last, so the view cannot be scrolled past either end.
 
 `/side` remains the main-session slash command, and `session.aside` is available
 in the command menu. In the main session, `alt+shift+j`/`alt+shift+k` are bound
@@ -77,10 +77,12 @@ to `session.message.user.next`/`previous` in `cli.json`.
   surface. Answers use the normal markdown renderer on the base background.
 - Answers stream into the panel as text deltas arrive.
 - The panel opens already scrolled to the bottom, without a top-to-bottom
-  animation. The footer has one line of padding before the last answer row.
+  animation. The scroll area stays transparent until that position is applied,
+  so the first visible frame is already at the bottom. The footer has one line
+  of padding before the last answer row.
 - The scrollbar track is transparent; only the thumb is colored, using one
   neutral step lighter than muted (`theme.hue.neutral[700]`).
-- `alt+l` opens the panel and focuses it; closing returns focus to the session.
+- `alt+l` opens the panel and focuses it, and closes it whether or not it has focus. `alt+f` toggles focus without closing.
 - While the `a` question dialog is open, panel keymaps are disabled so typing
   inside the dialog cannot trigger another panel action.
 - The question dialog is extra-wide and uses a word-wrapped textarea between 2

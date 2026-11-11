@@ -7,7 +7,7 @@ import {
   type ScrollBoxRenderable,
   type TextareaRenderable,
 } from "@opentui/core"
-import { createEffect, createSignal, onMount, Show } from "solid-js"
+import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js"
 
 // Replaces the built-in opencode.btw plugin, which is disabled in cli.json.
 const PANEL = "jadon.side-chat"
@@ -16,7 +16,7 @@ const MAX_HISTORY_TURNS = 8
 const DEFAULT_KEYS = {
   ask: "alt+a",
   toggle: "alt+l",
-  focus: "alt+h",
+  focus: "alt+f",
   panelAsk: "a",
   hide: "escape,q",
   close: "x",
@@ -392,11 +392,23 @@ export default Plugin.define({
           group: "Session",
           palette: true,
           bind: keys.focus,
+          enabled: () => context.ui.panel.current()?.name === PANEL,
           run: () => {
-            if (context.ui.panel.current()?.name !== PANEL) return
-            // The panel's own focus action is more reliable than dispatching
-            // the host pane command from a plugin keymap layer.
-            focusPanelAction?.()
+            if (panelFocused()) {
+              focusSession()
+              return
+            }
+            if (focusPanelAction) {
+              // The panel's own focus action is more reliable than dispatching
+              // the host pane command from a plugin keymap layer.
+              focusPanelAction()
+              return
+            }
+            try {
+              context.keymap.dispatch("pane.focus.right")
+            } catch {
+              // The pane command is unavailable on narrow fullscreen panels.
+            }
           },
         },
       ],
@@ -599,6 +611,7 @@ function AsidePanel(props: {
   keys: PanelKeys
 }) {
   const thread = () => props.state.threads[props.panel.sessionID]
+  const [ready, setReady] = createSignal(false)
   const focused = () => props.panel.focused
   const keyColor = () => (focused() ? props.theme.text.base : props.theme.text.action.primary.disabled)
   const labelColor = () => (focused() ? props.theme.text.muted : props.theme.text.action.primary.disabled)
@@ -608,6 +621,45 @@ function AsidePanel(props: {
   const header = () =>
     `${props.context.data.session.get(props.panel.sessionID)?.title ?? "Session"} - side chat`
   let scroll: ScrollBoxRenderable | undefined
+  const maxScroll = () => Math.max(0, (scroll?.scrollHeight ?? 0) - (scroll?.viewport.height ?? 0))
+  const resetScrollSettling = () => {
+    const target = scroll as unknown as {
+      resetScrollAccumulators?: () => void
+      scrollAccel?: { reset?: () => void }
+    }
+    target?.resetScrollAccumulators?.()
+    target?.scrollAccel?.reset?.()
+  }
+  const clampScrollBy = (delta: number) => {
+    if (!scroll || scroll.isDestroyed) return
+    const limit = maxScroll()
+    const next = Math.max(0, Math.min(limit, scroll.scrollTop + delta))
+    scroll.scrollTo(next)
+    if (next === 0 || next === limit) resetScrollSettling()
+  }
+  onMount(() => {
+    let tries = 0
+    let settled = 0
+    const timer = setInterval(() => {
+      if (!scroll || scroll.isDestroyed) return
+      if (scroll.scrollHeight <= 0 && tries < 30) {
+        tries++
+        return
+      }
+      scroll.scrollTo(maxScroll())
+      if (settled++ < 2) return
+      setReady(true)
+      clearInterval(timer)
+    }, 16)
+    const fallback = setTimeout(() => {
+      setReady(true)
+      clearInterval(timer)
+    }, 800)
+    onCleanup(() => {
+      clearInterval(timer)
+      clearTimeout(fallback)
+    })
+  })
   const turnRows: BoxRenderable[] = []
   let pendingRow: BoxRenderable | undefined
   const jumpMessage = (direction: 1 | -1) => {
@@ -664,14 +716,14 @@ function AsidePanel(props: {
         bind: props.keys.lineDown,
         title: "Scroll side chat down",
         group: "/side",
-        run: () => scroll?.scrollBy(1),
+        run: () => clampScrollBy(1),
       },
       {
         id: "session.aside.line.up",
         bind: props.keys.lineUp,
         title: "Scroll side chat up",
         group: "/side",
-        run: () => scroll?.scrollBy(-1),
+        run: () => clampScrollBy(-1),
       },
       {
         id: "session.aside.message.next",
@@ -692,7 +744,11 @@ function AsidePanel(props: {
         bind: props.keys.home,
         title: "Jump to top of side chat",
         group: "/side",
-        run: () => scroll?.scrollTo(0),
+        run: () => {
+          if (!scroll || scroll.isDestroyed) return
+          scroll.scrollTo(0)
+          resetScrollSettling()
+        },
       },
       {
         id: "session.aside.end",
@@ -702,6 +758,7 @@ function AsidePanel(props: {
         run: () => {
           if (!scroll || scroll.isDestroyed) return
           scroll.scrollTo(scroll.scrollHeight)
+          resetScrollSettling()
         },
       },
     ],
@@ -712,9 +769,10 @@ function AsidePanel(props: {
       flexDirection="column"
       flexGrow={1}
       minHeight={0}
+      marginTop={-1}
       backgroundColor={props.theme.background.base}
     >
-      <box flexDirection="row" flexShrink={0} paddingLeft={2} paddingRight={2} paddingTop={1} gap={1}>
+      <box flexDirection="row" flexShrink={0} paddingLeft={2} paddingRight={2} gap={1}>
         <text
           attributes={focused() ? TextAttributes.BOLD : TextAttributes.BOLD | TextAttributes.DIM}
           fg={keyColor()}
@@ -727,11 +785,20 @@ function AsidePanel(props: {
       </box>
 
       <scrollbox
-        ref={(value) => (scroll = value)}
+        ref={(value) => {
+          scroll = value
+          if (value) {
+            value.handleKeyPress = () => false
+            value.verticalScrollBar.handleKeyPress = () => false
+            value.horizontalScrollBar.handleKeyPress = () => false
+          }
+        }}
         flexGrow={1}
         minHeight={0}
+        focusable={false}
         stickyScroll
         stickyStart="bottom"
+        opacity={ready() ? 1 : 0}
         verticalScrollbarOptions={{
           paddingLeft: 1,
           visible: true,
