@@ -46,7 +46,7 @@
     },
     "plugins": [
         "-opencode.btw",
-        "./plugins/btw-panel"
+        "./plugins/side-chat"
     ],
     "animations": true,
     "cursor": {
