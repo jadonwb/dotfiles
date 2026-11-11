@@ -21,7 +21,8 @@ focus.
 | `[` / `]` | Jump to the previous or next work batch |
 | `t` | Open the tool filter popup |
 | `f` | Toggle fullscreen |
-| `esc` / `q` | Hide the panel |
+| `esc` / `q` | Hide the panel, or go back one level from a child work log |
+| `backspace` | Go back to the parent work log |
 
 Rows are also clickable: click selects and toggles the item. Clicking a long
 shell block expands or collapses it. The list keeps its scroll position when new
@@ -39,10 +40,13 @@ last, so neither end can be scrolled past.
   top-to-bottom flash. It extends the loaded history until it can show a batch
   split; `[` at the oldest loaded batch loads older history.
 - `t` opens a checkbox popup for the tool groups: Commands, Edits / writes,
-  Explored, Thoughts, Execute, and Other. Reads, searches, and fetches share the
-  Explored group because they render as one Explored row. `j`/`k` and `space`
-  toggle a row; `a` shows all, `n` hides all, and `esc` closes. The selection is
-  stored per session, so hidden groups stay hidden after reopening the panel.
+  Explored, Subagents, Thoughts, Execute, and Other. Reads, searches, and fetches
+  share the Explored group because they render as one Explored row; subagent
+  calls have their own category. `j`/`k` and `space` toggle a row; `a` shows all,
+  `n` hides all, and `esc` closes. The selection is stored per session, so hidden
+  groups stay hidden after reopening the panel. Saved selections are left alone:
+  a session that predates the Subagents group keeps it hidden until it is toggled
+  on.
 - Thought rows appear in place, initially as non-expandable stubs. A running
   thought shows Thinking… with a spinner; a finished one shows Thought · duration.
   Normal assistant text is not rendered; it breaks the batch like the main
@@ -50,6 +54,11 @@ last, so neither end can be scrolled past.
 - Consecutive reads, searches, and fetches collapse into one `Explored:` row,
   matching the main transcript. `enter` or a click expands it into single-line
   child rows; the group itself has no detail block.
+- `enter` or a click on a subagent row opens that child session as a nested
+  work log with the same rows, detail, filter, and scrolling. The stats line
+  shows `‹ back`, and `esc`, `q`, or `backspace` returns to the parent. The
+  parent's selection, open detail, and scroll position are restored. Nested
+  subagents stack, so back walks up one level at a time.
 - One detail is open at a time, inline under its row, mirroring the native
   blocks: shell command and output, edit diff, write code, and generic
   input/output. Execute detail shows labeled Code and Output sections with
@@ -66,9 +75,12 @@ last, so neither end can be scrolled past.
   output.
 - Output is capped at 300 lines and write content at 200 lines; the tail is
   marked with a `… N more lines` note.
-- Subagent rows currently render as `Subagent called`; thought, subagent, and
-  skill rows are intentionally non-expandable. Skill content is static, so there
-  is no detail to show. The in-place child work log is the next planned pass.
+- Subagent rows match the main transcript (`<Agent> Subagent — description`, with
+  the native `✓`/`↳`/`│` icon) and navigate into the child session. Batch
+  counts keep subagents in the generic tool count, as the main session does;
+  the Subagents filter only controls their visibility. Thought and skill rows
+  are intentionally non-expandable; skill content is static, so there is no
+  detail to show.
 - Background shell output is not polled yet. A still-running background shell
   gets a `Background` badge and shows the output captured in the tool part.
 

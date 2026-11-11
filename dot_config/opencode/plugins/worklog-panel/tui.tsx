@@ -14,11 +14,12 @@ import { homedir } from "node:os"
 
 const PANEL = "jadon.worklog"
 const TOGGLE_KEY = "alt+w"
-type ToolGroup = "commands" | "edits" | "explored" | "thoughts" | "execute" | "other"
+type ToolGroup = "commands" | "edits" | "explored" | "subagents" | "thoughts" | "execute" | "other"
 const GROUPS: readonly { id: ToolGroup; label: string }[] = [
   { id: "commands", label: "Commands" },
   { id: "edits", label: "Edits / writes" },
   { id: "explored", label: "Explored" },
+  { id: "subagents", label: "Subagents" },
   { id: "thoughts", label: "Thoughts" },
   { id: "execute", label: "Execute" },
   { id: "other", label: "Other" },
@@ -79,6 +80,15 @@ type DividerRow = {
   counts: string
 }
 type Row = ItemRow | DividerRow
+
+type WorkView = {
+  sessionID: string
+  title?: string
+  selectedKey?: string
+  detailKey?: string
+  scrollTop?: number
+  atBottom?: boolean
+}
 
 type ExecuteCall = {
   tool: string
@@ -222,23 +232,27 @@ function WorklogPanel(props: {
 
   createEffect(() => props.onFocus(props.panel.focused))
 
+  const [path, setPath] = createSignal<WorkView[]>([{ sessionID: props.panel.sessionID }])
+  const activeView = () => path().at(-1)!
+  const activeSessionID = () => activeView().sessionID
+  const isChild = () => path().length > 1
   const history = props.context.data.session.message as typeof props.context.data.session.message & {
     more?: (sessionID: string) => boolean
     loadMore?: (sessionID: string, options?: { all?: boolean }) => Promise<void>
   }
-  const messages = createMemo(() => props.context.data.session.message.list(props.panel.sessionID) ?? [])
+  const messages = createMemo(() => props.context.data.session.message.list(activeSessionID()) ?? [])
   const turns = createMemo(() => buildTurns(messages()))
   const [filters, updateFilters] = props.context.storage.store<FilterState>("filters", {
     initial: { sessions: {} },
   })
   const selectedGroups = createMemo(() => {
-    const stored = filters.sessions[props.panel.sessionID]
+    const stored = filters.sessions[activeSessionID()]
     return new Set(stored === undefined ? DEFAULT_GROUPS : normalizeGroups(stored))
   })
   const projected = createMemo(() => buildRows(turns(), selectedGroups()))
   const setGroups = (next: ToolGroup[]) => {
     void updateFilters((draft) => {
-      draft.sessions[props.panel.sessionID] = next
+      draft.sessions[activeSessionID()] = next
     })
   }
   const toggleGroup = (id: ToolGroup) => {
@@ -275,6 +289,7 @@ function WorklogPanel(props: {
   const [detailKey, setDetailKey] = createSignal<string>()
   const [expandedShells, setExpandedShells] = createSignal<Set<string>>(new Set())
   const [ready, setReady] = createSignal(false)
+  const [loadingOlder, setLoadingOlder] = createSignal(false)
 
   const itemRows = createMemo(() => rows.filter((row): row is ItemRow => row.kind === "item"))
   const dividerRows = createMemo(() => rows.filter((row): row is DividerRow => row.kind === "divider"))
@@ -310,13 +325,13 @@ function WorklogPanel(props: {
     // replace it, so the native transcript keeps whatever history it loaded.
     for (let page = 0; page < 20; page++) {
       if (messages().filter((message) => message.type === "user").length >= 2) break
-      if (!history.more?.(props.panel.sessionID)) break
-      await history.loadMore?.(props.panel.sessionID).catch(() => undefined)
+      if (!history.more?.(activeSessionID())) break
+      await history.loadMore?.(activeSessionID()).catch(() => undefined)
     }
     reveal(selectedKey())
   }
   createEffect(() => {
-    if (ensuredBatches || messages().length === 0) return
+    if (isChild() || ensuredBatches || messages().length === 0) return
     ensuredBatches = true
     void ensureBatches()
   })
@@ -450,19 +465,101 @@ function WorklogPanel(props: {
     })
   }
   const bottom = () => select(itemRows().at(-1)?.key)
+  let viewGeneration = 0
+  const saveCurrentView = () => {
+    const stack = path()
+    const current = stack.at(-1)
+    if (!current) return
+    const atBottom = scroll && !scroll.isDestroyed ? scroll.scrollTop >= maxScroll() - 1 : undefined
+    const updated: WorkView = {
+      ...current,
+      selectedKey: selectedKey(),
+      detailKey: detailKey(),
+      scrollTop: scroll && !scroll.isDestroyed ? scroll.scrollTop : undefined,
+      atBottom,
+    }
+    setPath([...stack.slice(0, -1), updated])
+  }
+  const settleView = (target: "bottom" | number) => {
+    setReady(false)
+    const generation = ++viewGeneration
+    const apply = () => {
+      if (generation !== viewGeneration) return
+      if (!scroll || scroll.isDestroyed) return
+      const limit = maxScroll()
+      scroll.scrollTo(target === "bottom" ? limit : Math.max(0, Math.min(limit, target)))
+    }
+    for (const delay of [0, 60, 160]) setTimeout(apply, delay)
+    setTimeout(() => {
+      if (generation !== viewGeneration) return
+      apply()
+      setReady(true)
+    }, 220)
+  }
+  createEffect(
+    on(
+      () => props.panel.sessionID,
+      (sessionID, previous) => {
+        if (previous === undefined || previous === sessionID) return
+        initialized = false
+        ensuredBatches = false
+        setPath([{ sessionID }])
+        setSelectedKey(undefined)
+        setDetailKey(undefined)
+        setLoadingOlder(false)
+        settleView("bottom")
+      },
+      { defer: true },
+    ),
+  )
+  const goBack = () => {
+    const stack = path()
+    if (stack.length <= 1) return
+    const parent = stack[stack.length - 2]!
+    setPath(stack.slice(0, -1))
+    setSelectedKey(parent.selectedKey)
+    setDetailKey(parent.detailKey)
+    settleView(parent.atBottom ? "bottom" : parent.scrollTop ?? "bottom")
+  }
+  const enterChild = async (sessionID: string, title?: string) => {
+    saveCurrentView()
+    setPath((previous) => [...previous, { sessionID, title }])
+    setSelectedKey(undefined)
+    setDetailKey(undefined)
+    setLoadingOlder(false)
+    setReady(false)
+    let failed = false
+    await Promise.all([
+      props.context.data.session.sync(sessionID).catch(() => {
+        failed = true
+      }),
+      props.context.data.session.message.sync(sessionID).catch(() => {
+        failed = true
+      }),
+    ])
+    if (activeSessionID() !== sessionID) return
+    if (failed) {
+      props.context.ui.toast.show({ message: "Subagent session could not be loaded", variant: "warning" })
+      goBack()
+      return
+    }
+    settleView("bottom")
+  }
   const toggleDetail = () => {
     const item = selected()
     if (!item) return
-    // Thoughts and the in-place child work log are later passes; their rows are
-    // intentionally inert for now. Exploration groups use the same disclosure
-    // key to expand into single-line child rows.
-    if (
-      item.tool === "subagent" ||
-      item.tool === "thought" ||
-      item.tool === "skill" ||
-      EXPLORATION.has(item.tool)
-    )
+    // Subagents open their child session as a nested work log. The other
+    // non-expandable rows stay inert; exploration groups expand inline.
+    if (item.tool === "subagent") {
+      const child = subagentSessionID(item)
+      if (!child) {
+        props.context.ui.toast.show({ message: "Subagent session is not available", variant: "warning" })
+        return
+      }
+      void enterChild(child, stringValue(item.input.description))
       return
+    }
+    if (item.tool === "thought" || item.tool === "skill" || EXPLORATION.has(item.tool)) return
     const open = detailKey() !== item.key
     setDetailKey(open ? item.key : undefined)
     if (open) revealExpanded(item.key)
@@ -490,16 +587,15 @@ function WorklogPanel(props: {
     }
   }
 
-  const [loadingOlder, setLoadingOlder] = createSignal(false)
   const loadOlder = async () => {
     if (loadingOlder()) return
     const anchor = selected()?.key
-    if (!history.more?.(props.panel.sessionID)) return
+    if (!history.more?.(activeSessionID())) return
     setLoadingOlder(true)
     try {
       for (let page = 0; page < 12; page++) {
-        if (!history.more?.(props.panel.sessionID)) break
-        await history.loadMore?.(props.panel.sessionID).catch(() => undefined)
+        if (!history.more?.(activeSessionID())) break
+        await history.loadMore?.(activeSessionID()).catch(() => undefined)
         const list = dividerRows()
         const currentKey = itemRows().find((row) => row.key === anchor)?.turnKey
         const position = list.findIndex((row) => row.turnKey === currentKey)
@@ -621,17 +717,31 @@ function WorklogPanel(props: {
         run: () => props.panel.toggleFullscreen(),
       },
       {
+        id: "session.worklog.back",
+        bind: "backspace",
+        title: "Back to parent work log",
+        group: "Work log",
+        enabled: () => isChild(),
+        run: goBack,
+      },
+      {
         id: "session.worklog.hide",
         bind: "escape,q",
         title: "Hide work log",
         group: "Work log",
-        run: () => props.panel.close(),
+        run: () => {
+          if (isChild()) goBack()
+          else props.panel.close()
+        },
       },
     ],
   }))
 
-  const sessionTitle = () =>
-    `${props.context.data.session.get(props.panel.sessionID)?.title ?? "Session"} - work log`
+  const sessionTitle = () => {
+    const view = activeView()
+    const title = props.context.data.session.get(view.sessionID)?.title ?? view.title ?? "Session"
+    return `${title} - work log`
+  }
   const turnLabel = () => {
     const turn = currentTurn()
     if (!turn) return "No work yet"
@@ -670,6 +780,11 @@ function WorklogPanel(props: {
         <text fg={labelColor()} attributes={dim()} wrapMode="none" truncate flexGrow={1} minWidth={0}>
           {turnLabel()}
         </text>
+        <Show when={isChild()}>
+          <text fg={labelColor()} attributes={dim()} flexShrink={0} wrapMode="none">
+            ‹ back
+          </text>
+        </Show>
         <Show when={loadingOlder()}>
           <text fg={labelColor()} attributes={dim()}>
             · loading older…
@@ -787,7 +902,7 @@ function WorklogPanel(props: {
         <Dot focused={focused()} theme={theme} />
         <KeyHint key="f" label="fullscreen" focused={focused()} theme={theme} />
         <Dot focused={focused()} theme={theme} />
-        <KeyHint key="esc" label="hide" focused={focused()} theme={theme} />
+        <KeyHint key="esc" label={isChild() ? "back" : "hide"} focused={focused()} theme={theme} />
       </box>
     </box>
   )
@@ -1418,6 +1533,7 @@ function groupForTool(tool: string): ToolGroup {
   if (tool === "shell") return "commands"
   if (FILES.has(tool)) return "edits"
   if (EXPLORATION.has(tool) || tool === "exploration") return "explored"
+  if (tool === "subagent") return "subagents"
   if (tool === "thought") return "thoughts"
   if (tool === "execute") return "execute"
   return "other"
@@ -1448,6 +1564,17 @@ function explorationLabel(item: WorkItem) {
   return `${item.status === "running" ? "Exploring" : "Explored"}: ${names.join(", ") || "nothing"}`
 }
 
+function subagentSessionID(item: WorkItem) {
+  const metadata = item.metadata
+  const id =
+    stringValue(metadata.sessionId) ??
+    stringValue(metadata.sessionID) ??
+    stringValue(metadata.childID) ??
+    stringValue(metadata.childId)
+  if (id) return id
+  return item.output.match(/<task\s+id=["'](ses_[^"']+)["']/)?.[1]
+}
+
 function summarize(item: WorkItem, context: Context) {
   if (item.call) return executeCallSummary(item.call)
   const input = item.input
@@ -1474,8 +1601,13 @@ function summarize(item: WorkItem, context: Context) {
       return `WebFetch ${stringValue(input.url)}`
     case "websearch":
       return `Web Search "${stringValue(input.query)}"`
-    case "subagent":
-      return `Subagent called${stringValue(input.description) ? ` — ${stringValue(input.description)}` : ""}`
+    case "subagent": {
+      const continuation = Boolean(stringValue(input.sessionID))
+      const agent = stringValue(input.agent) ?? stringValue(input.subagent_type)
+      const name = agent ? agent.charAt(0).toUpperCase() + agent.slice(1) : "General"
+      const description = stringValue(input.description) ?? "Subagent"
+      return `${continuation ? "Continue subagent" : `${name} Subagent`} — ${description}`
+    }
     case "execute":
       return `execute${executeCalls(item.metadata.toolCalls).length ? ` · ${executeCalls(item.metadata.toolCalls).length} call${executeCalls(item.metadata.toolCalls).length === 1 ? "" : "s"}` : ""}`
     case "todowrite":
@@ -1566,6 +1698,7 @@ function icon(item: WorkItem) {
   if (item.tool === "websearch") return "◈"
   if (item.tool === "edit" || item.tool === "patch") return "←"
   if (item.tool === "write") return "#"
+  if (item.tool === "subagent") return stringValue(item.input.sessionID) ? "↳" : "✓"
   return "✓"
 }
 
