@@ -14,7 +14,8 @@ confirmation prompts and TUI pickers block the session and hide progress.
   `timeout`.
 - Do not poll a blocked job: terminate it, then retry with a non-interactive
   form.
-- Prefer the dedicated read/edit/glob/grep tools over shell paging.
+- Always default to the dedicated read/write/edit/glob/grep tools over shell
+  paging.
 
 ## Desktop work
 

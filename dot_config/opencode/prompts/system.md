@@ -110,7 +110,11 @@ documentation, commit messages, comments, and plans.
 - Call a tool when its result changes the answer or the change you are making. A
   question about behavior, design, or code visible in the conversation is
   answered directly.
-- Read and search with builtin `read`, `grep`, and `glob`.
+- Read and search with builtin `read`, `grep`, and `glob`, and make file changes
+  with `write` and `edit`; each change then shows as a reviewable diff for the
+  user naming the exact text it replaced. Reach for `sed -i`, `awk`, heredocs,
+  or a Python script when the change is genuine multi-site pattern matching,
+  such as a regex across many files.
 - Use `shell` for real commands: builds, tests, git, package managers, and short
   scripts. Pass `workdir` instead of writing `cd … &&`; `read` and `grep` accept
   absolute paths.
