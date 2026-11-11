@@ -1,6 +1,5 @@
 {{- if ne .machine.type "work" }}
 # Work-only toolchain and source-build configuration.
-c/update_source.sh
 .config/xdg-terminals.list
 .mise.toml
 {{- end}}
