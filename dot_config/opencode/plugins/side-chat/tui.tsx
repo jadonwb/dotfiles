@@ -8,6 +8,8 @@ import {
   type TextareaRenderable,
 } from "@opentui/core"
 import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js"
+import { readFileSync, renameSync, writeFileSync } from "node:fs"
+import { homedir } from "node:os"
 
 // Replaces the built-in opencode.btw plugin, which is disabled in cli.json.
 const PANEL = "jadon.side-chat"
@@ -53,6 +55,20 @@ export default Plugin.define({
     const [state, update] = context.storage.store<State>("aside", { initial: { threads: {} } })
     const [panelFocused, setPanelFocused] = createSignal(false)
     let focusPanelAction: (() => void) | undefined
+    const resetPanelWidth = () => {
+      const root = process.env.XDG_STATE_HOME ?? `${homedir()}/.local/state`
+      const file = `${root}/opencode/${context.app.channel}/tui/layout.json`
+      try {
+        const data = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
+        delete data.paneWidth
+        delete data.terminalWidth
+        writeFileSync(`${file}.tmp`, JSON.stringify(data))
+        renameSync(`${file}.tmp`, file)
+      } catch {
+        // No saved width; the panel already uses the default.
+      }
+    }
+
     const [dialogOpen, setDialogOpen] = createSignal(false)
     const overrides = (context.options.keys ?? {}) as Record<string, string | false>
     const key = (id: string, fallback: string) => overrides[id] ?? fallback
@@ -385,6 +401,15 @@ export default Plugin.define({
             }
             openPanel(true)
           },
+        },
+        {
+          id: "session.aside.resetwidth",
+          title: "Reset panel width to default",
+          group: "Session",
+          bind: "alt+0",
+          palette: true,
+          enabled: () => context.ui.panel.current()?.name === PANEL,
+          run: resetPanelWidth,
         },
         {
           id: "session.aside.focus",

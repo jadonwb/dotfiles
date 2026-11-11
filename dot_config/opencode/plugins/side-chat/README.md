@@ -48,6 +48,7 @@ instead, using the same `session.aside.*` IDs. The defaults are shown below.
 | `session.aside`                  | `alt+a`       | Ask side chat question (opens the popup).   |
 | `session.aside.toggle`           | `alt+l`       | Open/close the panel; opening focuses it.   |
 | `session.aside.focus`            | `alt+f`       | Toggle focus on the open panel.             |
+| `session.aside.resetwidth`       | `alt+0` | Reset the panel width to its default. |
 | `session.aside.ask`              | `a`           | Ask another side question.                  |
 | `session.aside.hide`             | `escape,q`    | Hide the panel; the thread stays.           |
 | `session.aside.close`            | `x`           | Delete the side thread and close the panel. |

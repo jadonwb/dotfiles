@@ -9,6 +9,8 @@ import type {
 import { SyntaxStyle, TextAttributes, type BoxRenderable, type ScrollBoxRenderable } from "@opentui/core"
 import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, onMount, Show, Switch } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
+import { readFileSync, renameSync, writeFileSync } from "node:fs"
+import { homedir } from "node:os"
 
 const PANEL = "jadon.worklog"
 const TOGGLE_KEY = "alt+w"
@@ -93,6 +95,19 @@ export default Plugin.define({
   setup(context) {
     const theme = context.theme
     const [panelFocused, setPanelFocused] = createSignal(false)
+    const resetPanelWidth = () => {
+      const root = process.env.XDG_STATE_HOME ?? `${homedir()}/.local/state`
+      const file = `${root}/opencode/${context.app.channel}/tui/layout.json`
+      try {
+        const data = JSON.parse(readFileSync(file, "utf8")) as Record<string, unknown>
+        delete data.paneWidth
+        delete data.terminalWidth
+        writeFileSync(`${file}.tmp`, JSON.stringify(data))
+        renameSync(`${file}.tmp`, file)
+      } catch {
+        // No saved width; the panel already uses the default.
+      }
+    }
     const focusSession = () => {
       setTimeout(() => {
         setPanelFocused(false)
@@ -143,6 +158,15 @@ export default Plugin.define({
           },
         },
         {
+          id: "session.worklog.resetwidth",
+          title: "Reset panel width to default",
+          group: "Session",
+          bind: "alt+0",
+          palette: true,
+          enabled: () => context.ui.panel.current()?.name === PANEL,
+          run: resetPanelWidth,
+        },
+        {
           id: "session.worklog.focus",
           title: "Toggle work log focus",
           group: "Session",
@@ -168,7 +192,13 @@ export default Plugin.define({
       append: "session.panel",
       render: (panel) => (
         <Show when={panel.name === PANEL}>
-          <WorklogPanel context={context} panel={panel} syntax={syntax} theme={theme} onFocus={setPanelFocused} />
+          <WorklogPanel
+            context={context}
+            panel={panel}
+            syntax={syntax}
+            theme={theme}
+            onFocus={setPanelFocused}
+          />
         </Show>
       ),
     })

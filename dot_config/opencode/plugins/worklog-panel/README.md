@@ -11,6 +11,7 @@ focus.
 | --- | --- |
 | `alt+w` | Open or close the work log |
 | `alt+f` | Toggle focus on the work log panel |
+| `alt+0` | Reset the panel width to its default |
 | `/worklog` (alias `/wl`) | Same toggle from the prompt |
 | `j`/`k`, arrows | Move the selection |
 | `alt+j`/`alt+k` | Scroll the view without moving the selection or closing detail |
