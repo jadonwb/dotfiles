@@ -1296,7 +1296,7 @@ function FilterDialog(props: {
 
 function ExplorationChildren(props: { item: WorkItem; theme: Context["theme"]; context: Context }) {
   return (
-    <box flexDirection="column" paddingLeft={3} paddingBottom={1} flexShrink={0}>
+    <box flexDirection="column" paddingLeft={3} flexShrink={0}>
       <For each={props.item.children ?? []}>
         {(child) => (
           <box flexDirection="row" paddingLeft={1}>
