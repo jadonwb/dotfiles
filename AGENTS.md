@@ -22,6 +22,12 @@ Non-deployed setup notes live in `docs/`. They are tracked by git but listed in
 per-machine or per-tool setup steps that should travel with the dotfiles, such
 as `docs/op/KEYRING.md`.
 
+## Tests
+
+Repo-only tests live in `tests/` (also in `.chezmoiignore`). Run them from
+the repo root, e.g. `tests/diffview-diff/matrix.sh` checks the
+`diffview-diff` helper's fast path and fallback.
+
 ## Chezmoi scripts
 
 Scripts in `.chezmoiscripts/` install tools that need to track upstream more

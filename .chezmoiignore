@@ -5,8 +5,9 @@
 {{- end}}
 
 # global
-# repo-only setup notes; tracked by git, never deployed
+# repo-only setup notes and tests; tracked by git, never deployed
 docs/
+tests/
 .gitignore
 # keep submodule git metadata out of deployed configs
 .config/nvim/.git
