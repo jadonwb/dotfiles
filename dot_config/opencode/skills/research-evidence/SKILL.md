@@ -1,63 +1,74 @@
 ---
 name: Research and evidence
-description: Research source code, documentation, or external sources and publish reusable evidence artifacts. Use this skill whenever the user asks to research, investigate, compare, verify, cite, survey, or find out what the docs/source actually say, or when several independent questions can run in parallel. Triggers: research, investigate, sources, docs, compare, evidence, citations, survey, fact-check, verify, deeply explore. Do not use for a single fact you can answer with one read.
+description: Route research work and consume its results — answer in-session, or delegate to find, survey, or research, then read evidence by summary first. Triggers: research, find, verify, check, locate, investigate, compare, survey, cite, evidence, fact-check, several independent questions.
 ---
 
 # Research and evidence
 
-Research serves a decision or an edit. Keep the question narrow, cite the source
-of each fact, and publish only what will be reused.
+Research serves a decision or an edit. Keep the question narrow, and publish
+only what will be reused.
 
-Create an evidence artifact as you learn, from the primary session or from
-`search`. Attach it to the plan with `evidenceIDs`: the plan carries the goal
-and the decision, the evidence carries the detail. The evidence artifact is the
-session record. Knowledge the repository should keep belongs in a repository
-note.
+## Choose the route
 
-## Choose the mode
+| Route      | Question shape                                             | Deliverable                                             |
+| ---------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| yourself   | one focused read, one grep, a few tool calls               | the answer, in session                                  |
+| `find`     | one specific fact, reference, symbol, document, or passage | the fact with its exact location, inline                |
+| `survey`   | an unfamiliar area, or the options that exist              | a compact map of options, sources, and gaps             |
+| `research` | a substantive question needing support                     | conclusions with conflicts and limitations, as evidence |
 
-Do the research yourself when it is one focused read, a single grep, or a
-question you can answer in a few tool calls.
+The route follows the question. Do not run `find → survey → research` as a
+pipeline; each rebuilds context from nothing. Resume the same child when
+continuing one investigation.
 
-Delegate to the `search` subagent when:
+Fan out three to five children only for disjoint independent subquestions. Do
+not fan out a small question, and do not duplicate work another child is already
+doing.
 
-- the question needs many files or broad external documentation
-- the output would flood this context and only a compact answer is useful
-- several independent questions can run in parallel
+## Write the child prompt
 
-Give Search a self-contained prompt: the question, known paths or sources, the
-expected output format, the constraints, what the answer will decide, and an
-explicit stopping condition. Launch it in the background and keep working. Treat
-its output as evidence, not as a decision. Do not delegate a design choice.
+A child starts cold. Give it: the question, the known paths or sources, the axis
+that matters, what the answer will decide, the output contract you expect, an
+explicit stopping condition, and the constraints. When the user dictated the
+subagent task, copy their words verbatim before adding your own context.
 
-Scale the effort to the question. One focused read or grep is enough for a
-simple fact. A broad or multi-file question gets one Search agent. Three to five
-parallel Search agents are justified only for independent subquestions with
-disjoint sources; do not fan out a small question, and do not duplicate a search
-another agent is already doing.
+Launch independent children in the background and keep working; wait only when a
+fact blocks the next step.
 
-Start broad, then narrow. Find the landscape and the primary sources first, then
-drill into the specific claim. Prefer primary material over summaries: source
-code, official docs, specs, and release notes before blog posts, and blog posts
-before forum threads.
+Treat a child's output as evidence. Choosing a design or a direction stays in
+this session.
 
-## Read the result
+## Consume the result
 
-Search returns a bare `art_…` evidence artifact ID. Use:
-
-- `tools.evidence["summary"]({ artifactID })` for the question, Summary, and
-  Limitations
-- `tools.evidence["load"]({ artifactID })` when you need the full findings
-
-A one-fact answer may come back inline with no artifact. That is fine; do not
+`find` answers inline. A one-fact answer does not need an artifact; its does not
 create evidence for it.
 
-## Author evidence incrementally
+`survey` returns its map inline, or a summary plus a bare `art_…` ID when the
+map is large enough to revisit.
 
-When the findings will be reused:
+`research` returns a bare `art_…` ID. Read it with
+`tools.evidence["summary"]({ artifactID })` for the question, Summary, and
+Limitations; call `tools.evidence["load"]({ artifactID })` only when you need a
+specific finding. Loading every artifact erases the context saving that
+justified the delegation.
+
+Attach reusable evidence to the plan with `evidenceIDs`: the plan carries the
+goal and the decision, the evidence carries the detail.
+
+A child's artifact belongs to that child. Do not edit it from this session; the
+store only accepts mutations from the writer session, so resume the child with
+the feedback and read the updated result.
+
+When the repository should keep the knowledge, write a repository note beside
+the code or in a directory such as `notes/` or `docs/`. Evidence artifacts are
+in-session records, not project documentation.
+
+## Author evidence in-session
+
+When you do the work yourself and the findings will be reused:
 
 1. `tools.evidence["create"]({ title, description, question?, summary?, limitations? })`
-   — create early; pass what you already know. Returns the bare ID.
+   — create early; pass what you already know.
 2. `tools.evidence["finding"]({ artifactID, title, content })` — add each
    confirmed finding as you learn it. Use the returned `fin_…` ID to replace it
    later; do not duplicate it.
@@ -71,22 +82,9 @@ code, excerpts, paths, symbols, versions, and URLs beside the claim. Separate
 documented facts, inspected code, and inference. Add material uncertainty to
 Limitations.
 
-Label the source tier and confidence:
-
-- **Primary** — source code, official documentation, specs, release notes,
-  reproducible commands or benchmarks. High confidence.
-- **Secondary** — maintained project docs, engineering blogs, issue threads,
-  author posts. Medium confidence; check whether it matches the current version.
-- **Community** — Reddit, Hacker News, forums, unverified summaries. Low
-  confidence; useful for leads and failure reports, not as the only support for
-  a load-bearing claim.
-
-Cross-check key claims against a second source when the decision is expensive.
-When sources conflict, say which one you trust and why.
-
 ## Stop
 
 Stop when the assigned question is answered and its support is recorded. Do not
 turn research into an inventory, a history, a redesign, or a validation project.
-If a source conflicts with another, say which one you trust and why. If a needed
-fact is unavailable, state the gap.
+When sources conflict, say which one you trust and why. When a needed fact is
+unavailable, state the gap.

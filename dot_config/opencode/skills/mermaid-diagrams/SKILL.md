@@ -45,7 +45,9 @@ flowchart LR
   U[User] --> S[system]
   S --> M[(evidence)]
   S --> P[(plans)]
-  S --> Q[search]
+  S --> F[find]
+  S --> Q[survey]
+  S --> D[research]
   S --> R[review]
 ```
 ````

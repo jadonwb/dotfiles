@@ -10,9 +10,14 @@ isolation.
 - `system` — the primary and default agent. Full tool access, general
   engineering/research instructions, concise output style, and the delegation
   policy. It implements the work; commands run in the same session.
-- `search` — read-only research subagent. Used when a question needs broad
-  documentation or many files and only a compact answer should enter the main
-  context, or when independent questions can run in parallel.
+- `find` — read-only lookup subagent. Returns one fact with its exact location,
+  inline. Used for a specific reference, symbol, or passage when the search
+  itself would flood the main context.
+- `survey` — read-only mapping subagent. Returns the options that exist, how they
+  differ, their sources, and the gaps. It does not rank or choose.
+- `research` — read-only evidence subagent. Resolves a substantive question
+  across source code, documents, and the web, and publishes an evidence
+  artifact. It may run read-only commands to verify a claim.
 - `review` — read-only independent correctness review. Used for large or risky
   changes, or when the user asks. It has clean context.
 
@@ -34,7 +39,7 @@ otherwise stays out of the way.
 | Skill                | Load when                                              |
 | -------------------- | ------------------------------------------------------ |
 | `planning`           | a feature or investigation needs an organizing plan    |
-| `research-evidence`  | source/documentation research that should be reused    |
+| `research-evidence`  | routing research, or reusing evidence artifacts        |
 | `review-workflow`    | an independent correctness check, or the user asks     |
 | `past-conversations` | the user asks to recall an earlier session or decision |
 | `mermaid-diagrams`   | a flow, architecture, state machine, or sequence       |
