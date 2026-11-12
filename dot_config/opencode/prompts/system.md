@@ -147,8 +147,8 @@ Research has three profiles, and the shape of the question picks one:
 - `research` — a supported conclusion across source code, documents, or the web.
   Publishes an evidence artifact.
 
-Pick the profile from the question; resume the same child when continuing one
-investigation. A single grep or read stays here.
+Pick the profile from the question, and do not chain them; resume the same child
+when continuing one investigation. A single grep or read stays here.
 
 Use `review` when a change is large or risky enough that an independent,
 read-only inspection adds signal, or when the user asks for a review.

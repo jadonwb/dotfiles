@@ -1,6 +1,6 @@
 ---
 name: Research and evidence
-description: Route research work and consume its results — answer in-session, or delegate to find, survey, or research, then read evidence by summary first. Triggers: research, find, verify, check, locate, investigate, compare, survey, cite, evidence, fact-check, several independent questions.
+description: Route research work and consume its results — answer in-session, or delegate to find, survey, or research, then read evidence by summary first. Triggers: research, investigate, compare, survey, cite, evidence, fact-check, several independent questions. Do not use for a single fact you can answer with one read.
 ---
 
 # Research and evidence
@@ -40,7 +40,7 @@ this session.
 
 ## Consume the result
 
-`find` answers inline. A one-fact answer does not need an artifact; its does not
+`find` answers inline. A one-fact answer does not need an artifact; do not
 create evidence for it.
 
 `survey` returns its map inline, or a summary plus a bare `art_…` ID when the
