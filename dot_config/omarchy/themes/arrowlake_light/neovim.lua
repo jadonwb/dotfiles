@@ -1,13 +1,9 @@
+vim.g.arrowlake_colorscheme = "arrowlake-light"
+
 return {
-  {
-    "jadonwb/arrowlake.nvim",
-    dev = true,
-    priority = 1000,
-  },
-  {
-    "LazyVim/LazyVim",
-    opts = {
-      colorscheme = "arrowlake-light",
-    },
-  },
+	{
+		"jadonwb/arrowlake.nvim",
+		dev = true,
+		priority = 1000,
+	},
 }
