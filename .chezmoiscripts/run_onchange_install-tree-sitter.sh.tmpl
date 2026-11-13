@@ -1,0 +1,59 @@
+{{- if eq .machine.type "work" -}}
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Install the pinned tree-sitter CLI into the user's home. The work machine runs
+# Ubuntu 24.04, which only ships tree-sitter-cli 0.20.8, while nvim-treesitter's
+# `main` branch compiles parsers with `tree-sitter build` and needs 0.26.1 or
+# newer. The Arch machines get a suitable tree-sitter-cli from the distro, so
+# this script is scoped to the work machine. Update the version and checksums in
+# .chezmoidata/tree-sitter.toml to upgrade; this is run_onchange, so the next
+# `chezmoi apply` reruns the script after a pin change.
+
+version="{{ .treesitter.version }}"
+
+case "$(uname -m)" in
+x86_64 | amd64)
+  arch="x64"
+  sha256="{{ .treesitter.x86_64_sha256 }}"
+  ;;
+aarch64 | arm64)
+  arch="arm64"
+  sha256="{{ .treesitter.aarch64_sha256 }}"
+  ;;
+*)
+  echo "tree-sitter: unsupported architecture: $(uname -m)" >&2
+  exit 1
+  ;;
+esac
+
+asset="tree-sitter-cli-linux-${arch}.zip"
+url="https://github.com/tree-sitter/tree-sitter/releases/download/v${version}/${asset}"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/tree-sitter"
+dest="$HOME/.local/bin"
+
+mkdir -p "$cache" "$dest"
+
+installed=""
+if [[ -x "$dest/tree-sitter" ]]; then
+  installed="$("$dest/tree-sitter" --version 2>/dev/null || true)"
+fi
+
+if [[ "$installed" == "tree-sitter $version" ]]; then
+  echo "tree-sitter: $version already installed"
+else
+  archive="$cache/$asset"
+  echo "tree-sitter: downloading $version ($arch)"
+  curl -fL --retry 3 --retry-delay 2 "$url" -o "$archive"
+  printf '%s  %s\n' "$sha256" "$archive" | sha256sum -c -
+
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+
+  unzip -q -o "$archive" tree-sitter -d "$tmp"
+  install -m 0755 "$tmp/tree-sitter" "$dest/tree-sitter"
+
+  rm -f "$archive"
+  echo "tree-sitter: installed $("$dest/tree-sitter" --version)"
+fi
+{{- end -}}

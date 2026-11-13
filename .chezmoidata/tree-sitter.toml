@@ -1,0 +1,9 @@
+# Pinned tree-sitter CLI release. nvim-treesitter's `main` branch needs
+# tree-sitter-cli 0.26.1 or newer for `tree-sitter build`; Ubuntu 24.04 only
+# ships 0.20.8, so the upstream release binary is installed instead.
+# Change version and regenerate both checksums from the release zips to upgrade:
+# https://github.com/tree-sitter/tree-sitter/releases
+[treesitter]
+version = "0.27.2"
+x86_64_sha256 = "b4233ecc4f0e648d6d8ccc4bac96c00c712ca1a5eb1e0ca7197d29b750bffa6d"
+aarch64_sha256 = "4598875d129dfef384b3d78da329b766f151c2f827404fb5f3363a135935d0d3"
