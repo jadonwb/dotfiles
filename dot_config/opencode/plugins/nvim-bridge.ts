@@ -6,11 +6,16 @@ import { promisify } from "node:util"
 
 // Neovim control channel.
 //
-// The editor publishes `{ server, cwd, pid, updated }` in a runtime directory
-// (see lua/features/bridge/registry.lua). This plugin reads that registry and
-// drives the matching editor with `nvim --server … --remote-expr`, using the
-// editor's own documented API. There is no custom protocol: the same calls any
-// external tool can make.
+// The editor publishes `{ server, cwd, pid, updated, sessions }` in a runtime
+// directory (see lua/features/bridge/registry.lua) and drives it with
+// `nvim --server … --remote-expr`, using the editor's own documented API.
+// There is no custom protocol: the same calls any external tool can make.
+//
+// The connection is editor-initiated. `sessions` lists the OpenCode sessions
+// that editor connected to (its prompt target, the transcripts it shows).
+// Only those sessions get the tool — a `context` hook removes it from every
+// other request — and a call drives exactly the editor bound to its session,
+// never one guessed from the working directory.
 //
 // Why the registry exists: a plugin runs in the OpenCode *server*, which does
 // not inherit the environment of the editor that started a run. `$NVIM` is
@@ -24,7 +29,11 @@ type Editor = {
   pid: number
   profile?: string
   updated: number
+  sessions: string[]
 }
+
+/** The tool's effective name: namespace `nvim`, name `control`. */
+const TOOL = "nvim_control"
 
 /** A killed editor leaves its entry behind; only live processes count. */
 function alive(pid: number): boolean {
@@ -73,6 +82,7 @@ async function readEditors(): Promise<Editor[]> {
           pid: typeof parsed.pid === "number" ? parsed.pid : 0,
           profile: parsed.profile,
           updated,
+          sessions: Array.isArray(parsed.sessions) ? parsed.sessions.filter((s) => typeof s === "string") : [],
         })
       } catch {
         // A half-written entry is ignored; the next refresh picks it up.
@@ -83,27 +93,10 @@ async function readEditors(): Promise<Editor[]> {
   return editors
 }
 
-/**
- * Prefer the editor whose working directory contains the session's directory
- * (closest match); among equals, and otherwise, the most recently active one
- * (the registry is refreshed on focus and buffer changes).
- */
-function pick(editors: Editor[], directory: string): Editor | undefined {
-  let best: Editor | undefined
-  let bestScore = -1
-
-  for (const editor of editors) {
-    let score = 0
-    if (directory === editor.cwd) score = 1_000_000
-    else if (directory.startsWith(editor.cwd.replace(/\/$/, "") + "/")) score = editor.cwd.length
-    if (score > bestScore || (score === bestScore && best && editor.updated > best.updated)) {
-      best = editor
-      bestScore = score
-    }
-  }
-
-  if (bestScore > 0 && best) return best
-  return editors.sort((a, b) => b.updated - a.updated)[0]
+/** The editor that connected to `sessionID`: the most recently active one if several did. */
+function boundTo(editors: Editor[], sessionID: string | undefined): Editor | undefined {
+  if (!sessionID) return undefined
+  return editors.filter((editor) => editor.sessions.includes(sessionID)).sort((a, b) => b.updated - a.updated)[0]
 }
 
 async function remote(editor: Editor, expression: string): Promise<string> {
@@ -121,6 +114,13 @@ function quote(value: string): string {
 export default {
   id: "nvim-bridge",
   async setup(ctx: any) {
+    // Only sessions a Neovim connected to see the tool. The hook sees direct
+    // tools only, so the tool is not part of Code Mode's catalog.
+    await ctx.session.hook("context", async (event: any) => {
+      if (!event.tools || !(TOOL in event.tools)) return
+      if (!boundTo(await readEditors(), event.sessionID)) delete event.tools[TOOL]
+    })
+
     await ctx.tool.transform((editor: any) => {
       editor.namespace({
         name: "nvim",
@@ -157,21 +157,13 @@ export default {
           required: ["action"],
           additionalProperties: false,
         },
-        options: { namespace: "nvim" },
+        options: { namespace: "nvim", codemode: false },
         execute: async (input: any, context: any) => {
           const action = String(input.action ?? "")
 
-          const editors = await readEditors()
-          if (editors.length === 0) {
-            return {
-              content:
-                "No Neovim instance is registered. The user must start this editor with the nvim-bridge config and leave it running.",
-            }
-          }
-
-          const target = pick(editors, String(ctx.location?.directory ?? process.cwd()))
+          const target = boundTo(await readEditors(), context.sessionID)
           if (!target) {
-            return { content: "No reachable Neovim instance." }
+            return { content: "No Neovim is connected to this session. The user connects one from Neovim." }
           }
 
           await context.progress({ status: `nvim ${action}` })
