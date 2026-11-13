@@ -18,8 +18,6 @@ import { promisify } from "node:util"
 
 const exec = promisify(execFile)
 
-const STALE_MS = 5 * 60 * 1000
-
 type Editor = {
   server: string
   cwd: string
@@ -50,7 +48,6 @@ function registryDirs(): string[] {
 
 async function readEditors(): Promise<Editor[]> {
   const editors: Editor[] = []
-  const now = Date.now() / 1000
 
   for (const dir of registryDirs()) {
     let names: string[]
@@ -67,7 +64,8 @@ async function readEditors(): Promise<Editor[]> {
         if (typeof parsed.server !== "string" || !parsed.server) continue
         if (typeof parsed.cwd !== "string") continue
         const updated = typeof parsed.updated === "number" ? parsed.updated : 0
-        if (now - updated > STALE_MS / 1000) continue
+        // Liveness, not age: an editor left idle for an hour is still the
+        // user's editor. A dead one is skipped (and pruned by the next editor).
         if (typeof parsed.pid !== "number" || !alive(parsed.pid)) continue
         editors.push({
           server: parsed.server,
@@ -86,8 +84,9 @@ async function readEditors(): Promise<Editor[]> {
 }
 
 /**
- * Prefer the editor whose working directory contains the session's directory;
- * otherwise the most recently active one.
+ * Prefer the editor whose working directory contains the session's directory
+ * (closest match); among equals, and otherwise, the most recently active one
+ * (the registry is refreshed on focus and buffer changes).
  */
 function pick(editors: Editor[], directory: string): Editor | undefined {
   let best: Editor | undefined
@@ -97,7 +96,7 @@ function pick(editors: Editor[], directory: string): Editor | undefined {
     let score = 0
     if (directory === editor.cwd) score = 1_000_000
     else if (directory.startsWith(editor.cwd.replace(/\/$/, "") + "/")) score = editor.cwd.length
-    if (score > bestScore) {
+    if (score > bestScore || (score === bestScore && best && editor.updated > best.updated)) {
       best = editor
       bestScore = score
     }
