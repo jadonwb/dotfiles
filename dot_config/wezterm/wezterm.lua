@@ -35,6 +35,10 @@ config.cell_width = 0.95
 config.front_end = (wezterm.hostname() == "ws205") and "WebGpu" or "OpenGL"
 config.use_ime = false
 
+-- Kitty graphics protocol: Neovim 0.13 draws images with it (vim.ui.img; the
+-- file preview shows PNGs). Off by default in WezTerm.
+config.enable_kitty_graphics = true
+
 config.window_close_confirmation = "NeverPrompt"
 
 local domains = require("ssh_domains")
