@@ -1,56 +1,55 @@
 ---
 name: Desktop
-description: Guidance for using the desktop MCP. Choose one `op=goal` call for any workflow beyond a single one- or two-step action, let Jev decide each step, and verify every objective. The MCP tool description is authoritative for schema. Triggers: desktop, UI test, click, computer control, computer use, live test, desktop automation, Jev.
+description: Automated desktop UI testing through one Markdown mission (desktop op=run). Jev executes it locally; you judge the returned evidence. Triggers: desktop, UI test, click, computer control, computer use, live test, desktop automation, Jev.
 ---
 
 # Desktop
 
-This skill is about how to use the desktop MCP. It does not restate the goal
-schema or examples; the MCP's own description is authoritative for tool behavior
-and schema.
+For anything beyond one simple action, write one Markdown mission and call
+`desktop op=run`. The tool's `mission` field documents the grammar; it is
+authoritative.
 
-## Hard rule
+## Write the mission
 
-**Anything beyond a single one- or two-step desktop action MUST be one `op=goal`
-call.** Do not build the workflow out of primitive calls. If you are about to
-make a second or third primitive call for one task, stop and rewrite it as a
-goal.
+```text
+App: application-window-class
+Purpose: Smooth scrolling setting
+Launch: ["/usr/bin/my-app"]
 
-## Pick the entry point
+1. Open Preferences and go to Scrolling settings.
+   Expect: The Smooth scrolling check box is visible.
+2. Disable Smooth scrolling.
+   Assert: {"target":{"role":"check box","name":"Smooth scrolling"},"property":"checked","equals":false}
+3. Open a long document and scroll down.
+   Expect: The document moved down smoothly.
+   Record: scrolling-off
+4. Re-enable Smooth scrolling.
+   Assert: {"target":{"role":"check box","name":"Smooth scrolling"},"property":"checked","equals":true}
+```
 
-- One simple action (close, focus, launch, wait, screenshot): use the matching
-  primitive.
-- More than one or two observable steps: one `op=goal` call.
-- `op=plan` is for replaying a fixed test, not normal work.
+- One milestone per outcome you want to check; a milestone may take several actions.
+- `Assert:` anything measurable (checked, text, value, present, scroll_delta).
+  Code checks it, and a milestone whose Asserts pass completes at once.
+- `Expect:` describes what you will judge from the frame. Jev also uses it to
+  know when the milestone is finished, so describe the visible end state.
+- Exact text goes in `Values:` or in quotes. Keys go in `Press:` lines. Jev
+  never invents text or keys.
+- `Record:` for animation, scrolling or flicker. `Target:` for a custom-drawn control.
+- Undo what the test changed with explicit final milestones.
 
-## Write the goal for the agent, not the tool
+## Read the result
 
-- One objective per observable state change, in order. Make navigation its own
-  objective when the control is on another page.
-- Put the values that vary in `bindings`, keyed by the control name.
-- Each predicate must identify the target page or state, not a shared label.
-- When control names are unknown, observe the page first and use the real roles
-  and names; do not guess them.
-- If the app exposes no accessible tree, choose a visual surface rather than a
-  tree predicate that cannot succeed.
-
-## Keep the workflow honest
-
-- The predicate is the completion condition. An action returning `ok` does not
-  finish the objective.
-- Let Jev choose the actions; do not pre-compute a click or key sequence.
-- On failure, read the objectives and trace, then fix the ambiguous predicate or
-  instruction. Do not fall back to a manual primitive chain.
-- If one objective keeps failing, narrow it to that objective and make the
-  predicate page-specific before retrying.
+- `status` is execution; `verification.status` is the test verdict
+  (`failed`, `needs_agent_verification`, `passed`).
+- Open `summary.md` and `contact-sheet.png`, then the frames cited as #N and any
+  recording sheets. Judge each Expect yourself and report Assert results and
+  your judgments separately.
+- A paused run (uncertain, stalled, target_not_found, focus left) keeps the
+  desktop. Read its failure and last frames, then resume, or cancel and rewrite
+  the mission more specifically.
 
 ## Shared desktop
 
-- Announce before a goal that opens or focuses a window the user will see.
-- Close every window you launched; make cleanup the last objective or use one
-  close primitive.
-- If the user takes over, stop.
-
-## Hand off
-
-- Login, payment, 2FA, captcha, and destructive confirmations are the user's.
+- Run tests on a server started with `--isolated`: headless, and it never
+  touches the user's windows. On the live desktop, stop if the user takes over.
+- Login, payment, 2FA, captcha and destructive confirmations are the user's.
