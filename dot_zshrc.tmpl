@@ -200,8 +200,6 @@ alias ....='builtin cd ../../..'
 alias .....='builtin cd ../../../..'
 alias ......='builtin cd ../../../../..'
 
-export TMUX_PLUGIN_MANAGER_PATH="$HOME/.config/tmux/plugins/"
-
 source $HOME/.zfuncs
 {{- if eq .machine.type "personal" }}
 source $HOME/.zsh_secrets
