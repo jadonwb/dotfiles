@@ -46,9 +46,40 @@ control and transcript access for connected sessions.
   summarized. A direct report and the existing session transcript cover
   routine handoffs.
 
-To evaluate the setup, hold the lead model fixed and compare a few
-representative tasks with and without delegation. Track accepted changes,
-interventions, elapsed time, and cost.
+## Things to test and tune
+
+### Lead and worker
+
+- Hold both models and compaction settings fixed. Compare the old and revised
+  lead prompts on a few representative tasks: a bounded change, an
+  investigation, and a follow-up after user feedback. Track who takes the
+  first pass, whether the result meets the acceptance criteria, correction
+  rounds, elapsed time, and cost. Use lead-only runs as a baseline when
+  measuring the value of delegation.
+
+### Context and compaction
+
+- Start with the current settings in [`opencode.jsonc`](opencode.jsonc):
+  automatic background compaction, a 30% buffer, and a 32,000-token recent
+  tail. OpenCode's defaults are a 15% buffer (at least 16,000 tokens) and a
+  15,000-token tail. The buffer controls when compaction starts; the tail
+  controls how much recent context survives it. Both settings apply across
+  sessions, and each session uses its selected model's input budget. The
+  compaction model selects who writes the summary. See the
+  [OpenCode compaction guide](https://opencode.ai/docs/compaction).
+- For a long-running lead session, check whether confirmed decisions, open
+  questions, and active worker assignments survive compaction. Put decisions
+  that need to survive multiple rounds in a short project note the lead can
+  reread.
+- Expect most fresh workers to finish one coherent assignment and its tests
+  before compacting. Occasional compaction on a deep investigation is fine.
+  Resume the same child for related fixes while its history helps; start
+  fresh for unrelated work or when a clean brief can replace a long history.
+- If routine worker tasks repeatedly compact before they finish, check task
+  scope and trim noisy tool output first. If well-scoped tasks still need
+  more room, test a smaller buffer and check the effect on both lead and
+  worker. Change one setting at a time and record compactions, lost details,
+  and rework alongside the task results.
 
 ## Verification
 
