@@ -1,151 +1,64 @@
 # OpenCode configuration
 
-A single-primary-agent setup with on-demand skills and durable artifacts. The
-goal is to keep the always-loaded prompt small, let the model work in one
-coherent context, and reserve subagents and skills for work that needs
-isolation.
-
 ## Agents
 
-- `system` — the primary and default agent. Full tool access, general
-  engineering/research instructions, concise output style, and the delegation
-  policy. It implements the work; commands run in the same session.
-- `find` — read-only lookup subagent. Returns one fact with its exact location,
-  inline. Used for a specific reference, symbol, or passage when the search
-  itself would flood the main context.
-- `survey` — read-only mapping subagent. Returns the options that exist, how they
-  differ, their sources, and the gaps. It does not rank or choose.
-- `research` — read-only evidence subagent. Resolves a substantive question
-  across source code, documents, and the web, and publishes an evidence
-  artifact. It may run read-only commands to verify a claim.
-- `review` — read-only independent correctness review. Used for large or risky
-  changes, or when the user asks. It has clean context.
+- `lead` is the default. It can work directly or delegate a bounded assignment
+  to `worker`. It inspects the worker's report and diff, verifies the result,
+  and can make refinements before handing the work to the user for review.
+- `worker` uses DeepSeek Flash to investigate or to implement and test an
+  assignment. It reports directly to the lead and cannot launch subagents.
+- OpenCode's default `build`, `plan`, `general`, and `explore` are disabled.
 
-`system`'s wording lives in `prompts/system.md`, not in the agent body.
-`plugins/system-prompt/` appends it to OpenCode's own base prompt at request
-time. A non-empty agent body replaces that base prompt, which drops the tool
-guidance OpenCode generates from the enabled tools, so `agents/system.md` stays
-frontmatter only.
+Select the lead's model in OpenCode. To use the new guidance in an existing
+session, switch its agent to `lead`; changing `default_agent` applies to new
+sessions.
 
-`plan`, `build`, `general`, and `explore` are disabled. The built-in
-`compaction`, `title`, and `summary` agents remain.
+The agent files in `agents/` contain frontmatter only. A Markdown body would
+replace the provider's base prompt. The `system-prompt` plugin inserts
+`prompts/lead.md` or `prompts/worker.md` after the upstream base prompt on each
+model request. Shared writing style and machine instructions live in
+`AGENTS.md`.
 
-## Skills
+## Skills and integrations
 
-Skills are advertised by name and description; the body loads only when the task
-matches. The always-loaded system prompt names the core workflow skills and
-otherwise stays out of the way.
+`desktop` covers desktop work, `run-as-root` covers privileged operations, and
+`past-conversations` retrieves specific details from local session history. Keep
+project decisions in the repository.
 
-| Skill                | Load when                                              |
-| -------------------- | ------------------------------------------------------ |
-| `planning`           | a feature or investigation needs an organizing plan    |
-| `research-evidence`  | routing research, or reusing evidence artifacts        |
-| `review-workflow`    | an independent correctness check, or the user asks     |
-| `past-conversations` | the user asks to recall an earlier session or decision |
-| `mermaid-diagrams`   | a flow, architecture, state machine, or sequence       |
+`opencode.jsonc` configures MCP servers, plugins, and background compaction.
+`cli.json` holds terminal preferences. The existing artifact registry and Neovim
+integration remain installed; agent guidance and delegation do not depend on
+them.
 
-Past-conversation recall is a skill (`past-conversations`): it queries the local
-session database only when the user asks to recall something. Other discovered
-skills (`opencode`, `omarchy`, `run-as-root`, `diagnose-crash`, `report`, …)
-load when their descriptions match.
+## Why this setup
 
-A system prompt defines permanent behavior and policy; a skill defines a
-repeatable procedure for a task that only applies sometimes. Durable project
-knowledge belongs in `AGENTS.md` and in the repository.
+- [OpenCode's agent docs](https://opencode.ai/docs/agents/) describe background
+  child sessions, direct reports, resumable work, and agent-specific
+  permissions. The setup uses these mechanics directly.
+- [Anthropic's multi-agent guidance](https://claude.com/resources/articles/building-multi-agent-systems-when-and-how-to-use-them)
+  groups work by shared context: a worker who implements a change also has the
+  context to test it.
+  [Cursor's scaling experiments](https://cursor.com/blog/scaling-agents) found
+  their extra integration role became a bottleneck. Those experiments ran at a
+  much larger scale; they do not establish that independent review is
+  universally unhelpful.
+- [Anthropic's research team](https://www.anthropic.com/engineering/multi-agent-research-system)
+  found external storage useful for large deliverables that lose detail when
+  summarized. Revisit the registry if a recurring deliverable needs its own
+  durable home or editor workflow. A direct report and the existing session
+  transcript cover routine handoffs.
 
-A skill has a specific what-and-when description with trigger terms, a body well
-under 500 lines, the workflow and tool sequence with supporting detail only
-where it changes behavior. The always-loaded prompt stays stable so the provider
-can reuse its cached prefix; per-session state lives outside it.
-
-## Artifacts
-
-`plugins/artifacts/` is a standalone filesystem-backed registry and the
-`personal.artifacts` RPC used by Neovim. Kinds:
-
-- `plan` — the working document for a feature or investigation: goal, scope,
-  decisions, checks, and evidence links. It is created early, updated as choices
-  resolve, and completed at the end. Completion freezes it; later work starts a
-  new plan with `previousPlanID`.
-- `evidence` — reusable research with self-contained findings.
-- `review` — an independent outcome and findings.
-
-Create artifacts early. `plan_create`, `evidence_create`, and `review_create`
-accept initial content, so a draft can be filled incrementally as the work
-teaches you something. `artifact_search` finds existing artifact text, so
-discovery works from the text itself. `plan_update` accepts whole fields, an
-ordered `evidenceIDs` list, and an optional `patch` object for one exact
-occurrence, so a plan bullet can change without restating the field.
-`plan_complete` records the outcome and freezes the plan.
-
-The user can review artifacts in Neovim, select text, and send feedback.
-Feedback is a review; implementation continues. Editing an artifact returns
-evidence or a review to draft for re-review; a completed plan cannot be edited.
-
-## Compaction
-
-- Compaction uses OpenCode's built-in summary prompt unmodified, so the prompt
-  carries only stable instructions.
-- `buffer: "30%"` keeps the last 30% of the 1M window free, so automatic
-  compaction starts at ~700k tokens. `keep.tokens: 32000` keeps the recent tail.
-  The threshold is a policy choice.
-- Compaction is lossy: it keeps terse bullets and drops detail it judges
-  recoverable from code or files. Write decisions and comparisons to repository
-  notes or evidence while they are fresh.
-
-## Layout
-
-- `agents/` — primary and subagent prompts.
-- `skills/` — on-demand workflows.
-- `plugins/bridge/` — frontend RPC seam: `personal.bridge` handshake and the
-  domain registry every RPC domain registers through.
-- `plugins/artifacts/` — artifact store and agent tools. Only
-  `plugins/artifacts-rpc/` imports the bridge.
-- `plugins/artifacts-rpc/` — the editor-facing adapter: registers
-  `personal.artifacts` through the bridge.
-- `tests/artifacts/` — artifact store and tool/RPC tests.
-- `opencode.jsonc` — default agent, compaction, MCP servers, plugin list.
-- `cli.json` — terminal preferences and keybinds.
-
-## Bridge
-
-The Neovim <-> OpenCode channel is its own layer, so it can grow into session
-control and editor UI commands on its own:
-
-- `personal.bridge.describe` returns `{ protocol, domains }` — the handshake a
-  frontend uses before calling a domain. It is plumbing only; it carries no
-  product behavior.
-- `plugins/bridge/registry.ts` exports `registerDomain` and `mintRequestID`. An
-  adapter plugin registers its contract through it, so the handshake and
-  registration stay in sync. Storage and tools live in `plugins/artifacts/`;
-  only the RPC adapter (`plugins/artifacts-rpc/`) imports the bridge.
-- The registry lives on `globalThis` under a symbol because each plugin is its
-  own module instance; a module-scope map would be private per plugin.
-
-The Neovim side mirrors this: `editor.features.opencode-rpc` is a
-namespace-parameterized transport, `editor.features.opencode-session` owns
-per-tab session attachment, and `editor.features.opencode-artifacts` owns only
-artifact behavior.
+To evaluate the setup, hold the lead model fixed and compare a few
+representative tasks with and without delegation. Track accepted changes,
+interventions, elapsed time, and cost.
 
 ## Verification
 
-Artifact registry:
+From the chezmoi repository:
 
 ```sh
-mise exec -- node --experimental-strip-types --test \
-  dot_config/opencode/tests/artifacts/store.test.mjs \
-  dot_config/opencode/tests/artifacts/project.test.mjs \
-  dot_config/opencode/tests/artifacts/artifact-tools.test.mjs
-```
-
-Live checks:
-
-```sh
-opencode plugin list
+chezmoi apply ~/.config/opencode
 opencode api get /api/agent
 opencode api get /api/skill
-opencode api post '/api/rpc/personal.artifacts/list?location%5Bdirectory%5D=<dir>' --data '{"input":{}}'
+opencode plugin list
 ```
-
-Apply changes with `chezmoi apply ~/.config/opencode`. Configuration and plugins
-reload without restarting the server; a TUI part may need a fresh TUI.
