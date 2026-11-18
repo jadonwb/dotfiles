@@ -5,6 +5,7 @@
   // the window (~700k of 1M). Keep.tokens plus the fixed system prompt must
   // stay below that trigger, or compaction cannot restore headroom.
   "compaction": {
+    "background": true,
     "auto": true,
     "keep": {
       "tokens": 32000
@@ -13,7 +14,6 @@
   },
   "experimental": {
     "subagent_depth": 1,
-    "background_compaction": true
   },
   "agents": {
     "plan": {
