@@ -218,7 +218,7 @@ export default {
                 if (!input.text) return { content: "show needs text" }
                 const ok = await remote(
                   target,
-                  `v:lua.NVBridge.show_text(${quote(String(input.title ?? "Artifact"))}, ${quote(String(input.text))})`,
+                  `v:lua.NVBridge.show_text(${quote(String(input.title ?? "Text"))}, ${quote(String(input.text))})`,
                 )
                 return {
                   content: ok === "true" ? "Shown in Neovim" : "Neovim could not show the content",

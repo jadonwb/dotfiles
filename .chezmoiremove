@@ -1,0 +1,17 @@
+# Retired OpenCode artifact integration. Saved artifacts and session state stay.
+.config/opencode/plugins/artifacts-rpc/index.ts
+.config/opencode/plugins/artifacts/README.md
+.config/opencode/plugins/artifacts/artifact-rpc.ts
+.config/opencode/plugins/artifacts/artifact-tools.ts
+.config/opencode/plugins/artifacts/format.mjs
+.config/opencode/plugins/artifacts/index.ts
+.config/opencode/plugins/artifacts/project.mjs
+.config/opencode/plugins/artifacts/store.mjs
+.config/opencode/plugins/bridge/contract.ts
+.config/opencode/plugins/bridge/index.ts
+.config/opencode/plugins/bridge/registry.ts
+.config/opencode/tests/artifacts/artifact-tools.test.mjs
+.config/opencode/tests/artifacts/project.test.mjs
+.config/opencode/tests/artifacts/store.test.mjs
+.config/nvim/lua/features/opencode/artifacts.lua
+.config/nvim/tests/opencode/artifacts.lua

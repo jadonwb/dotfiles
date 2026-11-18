@@ -26,9 +26,8 @@ model request. Shared writing style and machine instructions live in
 project decisions in the repository.
 
 `opencode.jsonc` configures MCP servers, plugins, and background compaction.
-`cli.json` holds terminal preferences. The existing artifact registry and Neovim
-integration remain installed; agent guidance and delegation do not depend on
-them.
+`cli.json` holds terminal preferences. The Neovim bridge provides editor
+control and transcript access for connected sessions.
 
 ## Why this setup
 
@@ -44,9 +43,8 @@ them.
   universally unhelpful.
 - [Anthropic's research team](https://www.anthropic.com/engineering/multi-agent-research-system)
   found external storage useful for large deliverables that lose detail when
-  summarized. Revisit the registry if a recurring deliverable needs its own
-  durable home or editor workflow. A direct report and the existing session
-  transcript cover routine handoffs.
+  summarized. A direct report and the existing session transcript cover
+  routine handoffs.
 
 To evaluate the setup, hold the lead model fixed and compare a few
 representative tasks with and without delegation. Track accepted changes,
