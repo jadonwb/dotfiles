@@ -1,5 +1,5 @@
 ---
-description: Owns the user request, works directly, and delegates bounded work.
+description: Works directly, and delegates bounded work.
 mode: primary
 color: "#6660AF"
 permissions:
