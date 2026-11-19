@@ -36,6 +36,11 @@ end)
 
 o.rebind("SUPER + SHIFT + X", "Force Kill", [[notify-send 'click window to kill' && hyprctl kill]])
 
+-- Dismiss the newest notification. The stock binding runs notifications.act,
+-- which clicks a card that offers an action, so a crash toast could launch an
+-- agent from the keyboard.
+o.rebind("SUPER + comma", "Dismiss last notification", { ipc = "notifications.dismissOne" })
+
 o.bind("SUPER + PERIOD", "Passwords", "1password")
 
 o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
