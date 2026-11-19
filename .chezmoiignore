@@ -1,6 +1,7 @@
 {{- if ne .machine.type "work" }}
 # Work-only toolchain and source-build configuration.
 .config/xdg-terminals.list
+.config/omarchy-ubuntu
 .mise.toml
 {{- end}}
 

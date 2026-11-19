@@ -1,0 +1,17 @@
+Refuse to update a shell plugin checkout that has local edits.
+
+diff --git a/bin/omarchy-plugin-update b/bin/omarchy-plugin-update
+index 90a9732e2..c2c61a62b 100755
+--- a/bin/omarchy-plugin-update
++++ b/bin/omarchy-plugin-update
+@@ -39,6 +39,10 @@ valid_plugin_id() {
+ update_one() {
+   local id="$1"
+   local dir="$PLUGINS_DIR/$id"
++  if [[ -n $(git -C "$dir" status --porcelain --untracked-files=all) ]]; then
++echo "omarchy-plugin-update: preserving local changes in '$id'; review them before updating" >&2
++return 1
++  fi
+ 
+   if ! git -C "$dir" fetch --quiet origin HEAD; then
+     echo "omarchy-plugin-update: fetch failed for '$id'" >&2

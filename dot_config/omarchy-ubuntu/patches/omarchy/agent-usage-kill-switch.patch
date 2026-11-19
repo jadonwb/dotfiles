@@ -1,0 +1,18 @@
+Honor the agent-usage kill switch markers before running any collector.
+
+diff --git a/bin/omarchy-agent-usage-update b/bin/omarchy-agent-usage-update
+index c5c26e9fd..36a9d996e 100755
+--- a/bin/omarchy-agent-usage-update
++++ b/bin/omarchy-agent-usage-update
+@@ -1,5 +1,11 @@
+ #!/bin/bash
+ 
++# Kill switch: either marker stops all usage collection for this account.
++for marker in "${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/agents/usage-disabled" \
++  "${XDG_STATE_HOME:-$HOME/.local/state}/omarchy-ubuntu/agent-usage-disabled"; do
++  [[ ! -e $marker ]] || exit 0
++done
++
+ # omarchy:summary=Regenerate the AI agent usage data files
+ # omarchy:args=[--force] [--limits-only] [--except <agent>] [agent...]
+ # omarchy:examples=omarchy agent usage-update | omarchy agent usage-update claude | omarchy agent usage-update --except codex

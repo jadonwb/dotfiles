@@ -1,0 +1,3 @@
+# Account overrides for the omarchy-ubuntu engine (keys from ports/engine.toml).
+# Channel switches are done with `omarchy-ubuntu channel <stable|rc|edge>`.
+jobs = 2

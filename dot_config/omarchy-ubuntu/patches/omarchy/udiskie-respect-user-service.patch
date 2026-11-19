@@ -1,0 +1,16 @@
+Skip the autostart udiskie when this account runs its own udiskie.service.
+
+diff --git a/default/hypr/autostart.lua b/default/hypr/autostart.lua
+index d1529d712..d7bf689ad 100644
+--- a/default/hypr/autostart.lua
++++ b/default/hypr/autostart.lua
+@@ -15,7 +15,9 @@ hl.on("hyprland.start", function()
+   hl.exec_cmd("omarchy-provision-first-run")
+   hl.exec_cmd("omarchy-powerprofiles-init")
+   hl.exec_cmd(o.launch("omarchy-hyprland-monitor-watch"))
++  if not o.shell_succeeds("systemctl --user is-active --quiet udiskie.service") then
+   hl.exec_cmd(o.launch("udiskie --automount --no-notify --no-tray"))
++  end
+ 
+   -- Start the herdr server inside the graphical session so its panes inherit
+   -- WAYLAND_DISPLAY. Otherwise the first SSH login from a remote herdr starts

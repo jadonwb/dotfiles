@@ -1,0 +1,83 @@
+Optional lock.wakeOnMouseMotion=false: ignore the synthetic pointer motion this
+monitor sends after DPMS off, and log wake/blank causes.
+
+diff --git a/shell/plugins/lock/LockView.qml b/shell/plugins/lock/LockView.qml
+index 9f4aa693a..450593fd5 100644
+--- a/shell/plugins/lock/LockView.qml
++++ b/shell/plugins/lock/LockView.qml
+@@ -47,7 +47,7 @@ Item {
+   signal submitPassword(string password)
+   signal passwordTextEdited(string password)
+   signal clearFailureRequested()
+-  signal wakeRequested()
++  signal wakeRequested(string reason)
+ 
+   function forcePasswordFocus() {
+     passwordInput.forceActiveFocus()
+@@ -135,8 +135,8 @@ Item {
+     MouseArea {
+       anchors.fill: parent
+       hoverEnabled: true
+-      onClicked: { root.wakeRequested(); root.forcePasswordFocus() }
+-      onPositionChanged: root.wakeRequested()
++      onClicked: { root.wakeRequested("click"); root.forcePasswordFocus() }
++      onPositionChanged: root.wakeRequested("pointer-motion")
+     }
+ 
+     BorderSurface {
+@@ -183,7 +183,7 @@ Item {
+         onTextChanged: {
+           if (!root.syncingPasswordText) root.passwordTextEdited(text)
+           if (text.length > 0) {
+-            root.wakeRequested()
++            root.wakeRequested("keyboard")
+           }
+           if (text.length > 0 && root.failureMessage.length > 0) root.clearFailureRequested()
+         }
+@@ -195,7 +195,7 @@ Item {
+         }
+ 
+         Keys.onPressed: function(event) {
+-          root.wakeRequested()
++          root.wakeRequested("keyboard")
+           if (event.isAutoRepeat && root.dropsAutoRepeat(event.key)) {
+             event.accepted = true
+             return
+diff --git a/shell/plugins/lock/Service.qml b/shell/plugins/lock/Service.qml
+index a02708e05..ac47cd95a 100644
+--- a/shell/plugins/lock/Service.qml
++++ b/shell/plugins/lock/Service.qml
+@@ -254,8 +254,14 @@ Item {
+     idleBlankTimer.restart()
+   }
+ 
+-  function runWake() {
+-    if (!wakeProcess.running) wakeProcess.running = true
++  function runWake(reason) {
++var lockConfig = shell && shell.shellConfig && shell.shellConfig.lock ? shell.shellConfig.lock : ({})
++if (lockRequested && reason === "pointer-motion" && lockConfig.wakeOnMouseMotion === false) {
++  logEvent("wake-ignored: pointer-motion")
++  return
++}
++if (lockRequested) logEvent("wake-requested: " + (reason || "authentication"))
++if (!wakeProcess.running) wakeProcess.running = true
+     if (lockRequested) armBlankTimer()
+     resumeFingerprint()
+     nudgeFingerprint()
+@@ -349,6 +355,7 @@ Item {
+   }
+ 
+   function runBlank() {
++    logEvent("display-blank-requested")
+     pauseFingerprint()
+     if (!blankProcess.running) blankProcess.running = true
+   }
+@@ -522,7 +529,7 @@ Item {
+         onPasswordTextEdited: function(password) { root.enteredPassword = password }
+         onSubmitPassword: function(password) { root.submitPassword(password) }
+         onClearFailureRequested: root.failureMessage = ""
+-        onWakeRequested: root.runWake()
++        onWakeRequested: function(reason) { root.runWake(reason) }
+       }
+ 
+     }

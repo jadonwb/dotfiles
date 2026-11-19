@@ -1,0 +1,107 @@
+DeepSeek usage reads the active key from OpenCode V2 (opencode.db) and tries
+the next stored key when one is refused.
+
+diff --git a/bin/omarchy-agent-usage-deepseek b/bin/omarchy-agent-usage-deepseek
+index 7f30bfc74..8033e1486 100755
+--- a/bin/omarchy-agent-usage-deepseek
++++ b/bin/omarchy-agent-usage-deepseek
+@@ -17,8 +17,10 @@ the JSON this prints.
+ from __future__ import annotations
+ 
+ import argparse
++import json
+ import math
+ import os
++import sqlite3
+ import sys
+ import urllib.request
+ from decimal import Decimal, InvalidOperation
+@@ -211,24 +213,57 @@ def read_dotenv_key(path: Path) -> str:
+   return ""
+ 
+ 
+-def api_key() -> str:
+-  # The environment first, then the agents that keep a DeepSeek key, read
+-  # only: pi and omp, opencode, and dsh's managed store with its `.env`
+-  # fallback.
++def read_opencode_store_key() -> str:
++  """Read the active DeepSeek key OpenCode V2 keeps in opencode.db."""
++  db = opencode_db()
++  if not db.is_file():
++    return ""
++  try:
++    conn = sqlite3.connect(db.resolve().as_uri() + "?mode=ro", uri=True, timeout=2)
++  except sqlite3.Error:
++    return ""
++  try:
++    conn.execute("PRAGMA query_only = ON")
++    rows = conn.execute(
++      "SELECT value FROM credential WHERE active = 1 AND integration_id = 'deepseek'"
++      " ORDER BY time_updated DESC"
++    ).fetchall()
++  except sqlite3.Error:
++    return ""
++  finally:
++    conn.close()
++  for (raw,) in rows:
++    try:
++      value = json.loads(raw)
++    except Exception:
++      continue
++    if isinstance(value, dict) and value.get("type") == "key":
++      key = str(value.get("key") or "").strip()
++      if key:
++        return key
++  return ""
++
++
++def api_keys() -> list[str]:
++  # The environment first, then the current OpenCode store, then the other
++  # agents that keep a DeepSeek key. A refused credential must not hide a
++  # later valid one.
++  keys = []
+   env_key = str(os.environ.get("DEEPSEEK_API_KEY", "")).strip()
+   if env_key:
+-    return env_key
++    keys.append(env_key)
+   for read in (
++    lambda: read_opencode_store_key(),
++    lambda: read_json_key(data_home() / "opencode" / "auth.json", "deepseek"),
+     lambda: read_json_key(pi_agent_dir() / "auth.json", "deepseek"),
+     lambda: read_json_key(Path.home() / ".omp" / "agent" / "auth.json", "deepseek"),
+-    lambda: read_json_key(data_home() / "opencode" / "auth.json", "deepseek"),
+     lambda: read_dsh_credentials_key(dsh_home() / ".credentials.yaml"),
+     lambda: read_dotenv_key(dsh_home() / ".env"),
+   ):
+     key = read()
+-    if key:
+-      return key
+-  return ""
++    if key and key not in keys:
++      keys.append(key)
++  return keys
+ 
+ 
+ def read_config() -> dict[str, Any]:
+@@ -407,13 +442,16 @@ def collect(api_base_url: str, max_age: float, force: bool) -> dict[str, Any]:
+   # Without a key the record carries local stats only, with no plan, so the
+   # panel leaves out the balance section, and skips the record altogether on
+   # a machine that has never used DeepSeek.
+-  key = api_key()
+-  if not key:
++  keys = api_keys()
++  if not keys:
+     return record
+   record.update(ready=True, tierLabel="Prepaid")
+-  balance = collect_balance(key, api_base_url, force)
+-  if balance["balance"] is not None:
+-    record["balance"] = balance["balance"]
++  balance = None
++  for key in keys:
++    balance = collect_balance(key, api_base_url, force)
++    if balance["balance"] is not None:
++      record["balance"] = balance["balance"]
++      break
+   record.update(
+     usageStatusText=balance["usageStatusText"],
+     authHelpText=balance["authHelpText"],

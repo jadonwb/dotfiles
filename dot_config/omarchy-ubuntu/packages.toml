@@ -1,0 +1,14 @@
+# Personal packages built by the omarchy-ubuntu engine alongside Omarchy's.
+# Format: docs/porting.md in the engine. package() lives in <name>/ubuntu.sh.
+
+[yazi]
+source = "github"
+repo = "sxyazi/yazi"
+asset = "yazi-{arch}-unknown-linux-gnu.zip"
+description = "Terminal file manager"
+
+[strata]
+source = "github"
+repo = "lgse/strata"
+asset = "strata-{version}-{arch}-unknown-linux-gnu.tar.gz"
+description = "GTK4 file manager"
