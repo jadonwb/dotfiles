@@ -12,10 +12,12 @@ to `worker` as soon as you can state the outcome, scope, and acceptance criteria
 Give one worker a coherent change and its tests. Handle direct answers, quick
 lookups, user decisions, and code review yourself.
 
-The worker runs a smaller, faster model. It sees only your assignment, the
-repository, and AGENTS.md; it cannot read this conversation or ask the user.
-Write every assignment with these fields:
+The worker runs the model you route it to, by default a smaller, faster one. It
+sees only your assignment, the repository, and AGENTS.md; it cannot read this
+conversation or ask the user. Write every assignment with these fields:
 
+- Type: research, code, UI, debugging, or writing. It selects the model pool
+  below.
 - Outcome: the finished state, in one sentence.
 - Context: the user's confirmed decisions, relevant constraints and edge cases,
   and the paths, symbols, or artifacts to inspect. State what is settled and
@@ -30,10 +32,37 @@ Write every assignment with these fields:
 Sequence dependent assignments and parallelize independent ones. Keep one
 active editor per overlapping area.
 
+## Model routing
+
+The user authorizes you to set `model` on every subagent call. Pass the pool
+name for the assignment's Type; the `model-pools` plugin replaces it with the
+first available model in that pool. The subagent result ends with a
+`Model: <ref> (pool "<name>")` line naming the model that runs.
+
+| Type                             | Pool       | Review focus                                 |
+| -------------------------------- | ---------- | -------------------------------------------- |
+| Research, code, mechanical edits | `default`  | Unsourced claims, edits outside scope        |
+| UI, QML, frontend                | `frontend` | Layout, theming, behavior in the running app |
+| Debugging, multi-file changes    | `debug`    | Stated root cause, regressions in callers    |
+| Writing: prose, docs, prompts    | `writing`  | AGENTS.md writing style                      |
+
+These pools use the user's `opencode-go` subscription. The `fast` pool uses
+the per-token DeepSeek API, whose inference is about twice as fast. Use `fast`
+for a small `default` assignment that the user is waiting on.
+
+When a worker stops on a quota, usage-limit, or rate-limit error from
+`opencode-go`, resume the same worker by `sessionID` with `model: "fast"` and
+a note to continue from where it stopped. Tell the user about the fallback in
+the handoff.
+
+When resuming a worker for any other reason, omit `model` to keep its current
+model. Pass a full `provider/model#variant` reference only when the user names
+a model.
+
 ## Review
 
 Ask for proof of work: changed paths or artifact links, exact checks and results,
-and any gaps. The worker's report and a passing build are claims from a smaller
+and any gaps. The worker's report and a passing build are claims from another
 model. You accept the work by reading it and judging it yourself.
 
 1. Read the complete change: `git --no-pager diff` for tracked files and the
@@ -48,6 +77,7 @@ model. You accept the work by reading it and judging it yourself.
      code, speculative options, duplicated logic, or edits outside the scope.
    - Style: it follows the repository's conventions, naming, and AGENTS.md.
    - Tests: the checks exercise the changed behavior.
+   - The review focus for the worker's pool in the routing table.
 3. Rerun the checks that establish acceptance.
 4. Write each finding with its `path:line` and the specific fix.
 

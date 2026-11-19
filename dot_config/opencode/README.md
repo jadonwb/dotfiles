@@ -5,8 +5,9 @@
 - `lead` is the default. It can work directly or delegate a bounded assignment
   to `worker`. It inspects the worker's report and diff, verifies the result,
   and can make refinements before handing the work to the user for review.
-- `worker` uses DeepSeek Flash to investigate or to implement and test an
-  assignment. It reports directly to the lead and cannot launch subagents.
+- `worker` investigates or implements and tests an assignment. It reports
+  directly to the lead and cannot launch subagents. Its default model is
+  `opencode-go/deepseek-v4.1-flash`; the lead picks another by model pool.
 - OpenCode's default `build`, `plan`, `general`, and `explore` are disabled.
 
 Select the lead's model in OpenCode. To use the new guidance in an existing
@@ -24,6 +25,13 @@ model request. Shared writing style and machine instructions live in
 `desktop` covers desktop work, `run-as-root` covers privileged operations, and
 `past-conversations` retrieves specific details from local session history. Keep
 project decisions in the repository.
+
+The `model-pools` plugin resolves a pool name (`default`, `frontend`, `debug`,
+`writing`, `fast`) in the subagent tool's `model` input to the first available
+model listed in `plugins/model-pools/pools.json`, and appends the resolved model
+to the tool result. Edit `pools.json` to reorder or swap models; it is read on
+each call. Design notes and next steps are in
+`docs/opencode-subagent-model-routing.md` in the chezmoi source.
 
 `opencode.jsonc` configures MCP servers, plugins, and background compaction.
 `cli.json` holds terminal preferences. The Neovim bridge provides editor
