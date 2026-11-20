@@ -33,16 +33,17 @@ active editor per overlapping area.
 
 ## Model routing
 
-The user authorizes you to set `model` to a category name on subagent calls.
-The `model-categories` plugin replaces it with the model configured for that
-category. The subagent result ends with a `Model: <ref> (category "<name>")`
-line naming the model that runs.
+The user authorizes you to set `model` to the assignment's category when you
+launch a worker. The `model-categories` plugin replaces it with the model the
+user chose for that category, or the worker's configured model. The subagent
+result ends with a `Model: <ref> (category "<name>")` line naming the model
+that runs.
 
-| Type                                       | `model`        | Review focus                                 |
-| ------------------------------------------ | -------------- | -------------------------------------------- |
-| Code: research, implementation, debugging  | omit           | Edits outside scope, regressions in callers  |
-| UI, QML, frontend                          | `ui`           | Layout, theming, behavior in the running app |
-| Writing: prose, docs, prompts              | `writing`      | AGENTS.md writing style                      |
+| Type                                      | `model`   | Review focus                                 |
+| ----------------------------------------- | --------- | -------------------------------------------- |
+| Code: research, implementation, debugging | `code`    | Edits outside scope, regressions in callers  |
+| UI, QML, frontend                         | `ui`      | Layout, theming, behavior in the running app |
+| Writing: prose, docs, prompts             | `writing` | AGENTS.md writing style                      |
 
 A category uses the model's default reasoning effort. Append a variant, such as
 `ui#high` or `writing#low`, when the assignment needs more or less reasoning
