@@ -7,18 +7,22 @@
 [data.machine]
     type = {{ $machineType | quote }}
 
+# Diffview splits its command arguments on whitespace, so each path is
+# quoted to keep paths with spaces whole.
 [merge]
     command = "nvim"
     args = [
-        {{ printf "%q" "+DiffviewMergeFiles {{ .Destination }} {{ .Source }} {{ .Target }}" }},
+        {{ printf "%q" "+DiffviewMergeFiles {{ .Destination | quote }} {{ .Source | quote }} {{ .Target | quote }}" }},
     ]
 
+# Directories have no contents to compare (chezmoi passes /dev/null and the
+# directory); the files inside them are still diffed one by one.
 [diff]
     command = "nvim"
     args = [
-        {{ printf "%q" "+DiffviewDiffFiles {{ .Destination }} {{ .Target }}" }},
+        {{ printf "%q" "+DiffviewDiffFiles {{ .Destination | quote }} {{ .Target | quote }}" }},
     ]
-    exclude = ["scripts"]
+    exclude = ["scripts", "dirs"]
 
 [status]
     exclude = ["scripts"]
