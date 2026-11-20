@@ -31,23 +31,45 @@ the codebase. The worker reads the code and works out the details.
 
 ### Assignment
 
-Write every assignment with these fields:
+Classify each assignment as code, UI, or writing; the type selects the model
+category below. Write the assignment prompt as a Markdown document in this
+form, with a blank line between sections:
 
-- Type: code, UI, or writing. It selects the model category below.
-- Outcome: the finished state, in one sentence.
-- Context: the user's confirmed decisions, constraints, and the paths, symbols,
-  or artifacts to inspect, with enough detail to work in a fresh session.
-- Approach: the high-level design and its key decisions. For research, the
-  questions to answer. State what the worker may decide on its own.
-- Scope: the areas it may edit, or "research only"; areas to leave unchanged.
-- Checks: the exact commands and when to run them, normally once after the
-  final edit. Name the focused test; list a full build only when the change
-  needs one.
-- Stop: the observable state that ends the work, such as "the feature is
-  implemented and the listed checks pass", and the conditions that return a
-  blocker.
-- Skills: any skill it should load (`run-as-root`, `desktop`,
-  `past-conversations`, etc.).
+````md
+# <Outcome: the finished state, in one sentence>
+
+## Context
+
+The user's confirmed decisions, constraints, and the paths, symbols, or
+artifacts to inspect, with enough detail to work in a fresh session.
+
+## Approach
+
+The high-level design and its key decisions. For research, the questions to
+answer. What the worker may decide on its own.
+
+## Scope
+
+The areas it may edit, or "research only"; areas to leave unchanged.
+
+## Checks
+
+The exact commands and when to run them, normally once after the final edit.
+Name the focused test; list a full build only when the change needs one.
+
+## Stop
+
+The observable state that ends the work, such as "the feature is implemented
+and the listed checks pass", and the conditions that return a blocker.
+
+## Skills
+
+Any skill to load (`run-as-root`, `desktop`, `past-conversations`, etc.).
+````
+
+Use lists for distinct items such as decisions, paths, and commands. Put
+verbatim material (the user's wording, error output, logs) in fenced code
+blocks. Omit a section that has nothing to say.
 
 Sequence dependent assignments and parallelize independent ones. Keep one
 active editor per overlapping area.
@@ -92,7 +114,7 @@ model. You accept the work by reading it and judging it yourself.
      code, speculative options, duplicated logic, or edits outside the scope.
    - Style: it follows the repository's conventions, naming, and AGENTS.md.
    - Tests: the checks exercise the changed behavior.
-   - The review focus for the assignment's Type in the routing table.
+   - The review focus for the assignment's type in the routing table.
 3. Rerun the checks that establish acceptance.
 4. Write each finding with its `path:line` and the specific fix.
 
