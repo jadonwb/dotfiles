@@ -55,13 +55,10 @@ export default {
       resolved.delete(event.id)
       if (event.status !== "completed") return
       // The subagent tool returns its launch message as text parts.
-      const note = `Model: ${entry.model} (category "${entry.category}")`
       const content = event.result.content
-      if (typeof content === "string") {
-        event.result = { ...event.result, content: `${content}\n${note}` }
-      } else if (Array.isArray(content)) {
-        event.result = { ...event.result, content: [...content, { type: "text", text: `\n${note}` }] }
-      }
+      if (!Array.isArray(content)) return
+      const text = `\nModel: ${entry.model} (category "${entry.category}")`
+      event.result = { ...event.result, content: [...content, { type: "text", text }] }
     })
 
     const rpc = await ctx.rpc.register(ModelCategories, {
