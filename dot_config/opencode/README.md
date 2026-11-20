@@ -30,15 +30,14 @@ project decisions in the repository.
 The `model-categories` plugin resolves `category` or `category#variant` in the
 subagent tool's `model` input to the model chosen for that category, using the
 model's default variant when none is given, and appends the resolved model to
-the tool result. Choose models with `/worker-models` (also in the command palette):
-pick a category, then a model; `ctrl+d` in the model list returns the category
-to the worker's configured model. Choices are stored in the plugin's server
-storage on this machine. Design notes are in
-`docs/opencode-subagent-model-routing.md` in the chezmoi source.
+the tool result. Choose models with `/worker-models` (also in the command
+palette): pick a category, then a model; `ctrl+d` in the model list returns the
+category to the worker's configured model. Choices are stored in the plugin's
+server storage on this machine.
 
 `opencode.jsonc` configures MCP servers, plugins, and background compaction.
-`cli.json` holds terminal preferences. The Neovim bridge provides editor
-control and transcript access for connected sessions.
+`cli.json` holds terminal preferences. The Neovim bridge provides editor control
+and transcript access for connected sessions.
 
 ## Why this setup
 
@@ -54,8 +53,8 @@ control and transcript access for connected sessions.
   universally unhelpful.
 - [Anthropic's research team](https://www.anthropic.com/engineering/multi-agent-research-system)
   found external storage useful for large deliverables that lose detail when
-  summarized. A direct report and the existing session transcript cover
-  routine handoffs.
+  summarized. A direct report and the existing session transcript cover routine
+  handoffs.
 
 ## Things to test and tune
 
@@ -63,16 +62,16 @@ control and transcript access for connected sessions.
 
 - Hold both models and compaction settings fixed. Compare the old and revised
   lead prompts on a few representative tasks: a bounded change, an
-  investigation, and a follow-up after user feedback. Track who takes the
-  first pass, whether the result meets the acceptance criteria, correction
-  rounds, elapsed time, and cost. Use lead-only runs as a baseline when
-  measuring the value of delegation.
+  investigation, and a follow-up after user feedback. Track who takes the first
+  pass, whether the result meets the acceptance criteria, correction rounds,
+  elapsed time, and cost. Use lead-only runs as a baseline when measuring the
+  value of delegation.
 
 ### Context and compaction
 
 - Start with the current settings in [`opencode.jsonc`](opencode.jsonc):
-  automatic background compaction, a 30% buffer, and a 32,000-token recent
-  tail. OpenCode's defaults are a 15% buffer (at least 16,000 tokens) and a
+  automatic background compaction, a 30% buffer, and a 32,000-token recent tail.
+  OpenCode's defaults are a 15% buffer (at least 16,000 tokens) and a
   15,000-token tail. The buffer controls when compaction starts; the tail
   controls how much recent context survives it. Both settings apply across
   sessions, and each session uses its selected model's input budget. The
@@ -84,13 +83,13 @@ control and transcript access for connected sessions.
   reread.
 - Expect most fresh workers to finish one coherent assignment and its tests
   before compacting. Occasional compaction on a deep investigation is fine.
-  Resume the same child for related fixes while its history helps; start
-  fresh for unrelated work or when a clean brief can replace a long history.
+  Resume the same child for related fixes while its history helps; start fresh
+  for unrelated work or when a clean brief can replace a long history.
 - If routine worker tasks repeatedly compact before they finish, check task
-  scope and trim noisy tool output first. If well-scoped tasks still need
-  more room, test a smaller buffer and check the effect on both lead and
-  worker. Change one setting at a time and record compactions, lost details,
-  and rework alongside the task results.
+  scope and trim noisy tool output first. If well-scoped tasks still need more
+  room, test a smaller buffer and check the effect on both lead and worker.
+  Change one setting at a time and record compactions, lost details, and rework
+  alongside the task results.
 
 ## Verification
 
