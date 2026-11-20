@@ -6,8 +6,9 @@
   to `worker`. It inspects the worker's report and diff, verifies the result,
   and can make refinements before handing the work to the user for review.
 - `worker` investigates or implements and tests an assignment. It reports
-  directly to the lead and cannot launch subagents. Its default model is
-  `opencode-go/deepseek-v4.1-flash`; the lead picks another by model pool.
+  directly to the lead and cannot launch subagents. Its model in
+  `agents/worker.md` runs coding work; the lead picks a model category for UI
+  and writing.
 - OpenCode's default `build`, `plan`, `general`, and `explore` are disabled.
 
 Select the lead's model in OpenCode. To use the new guidance in an existing
@@ -26,11 +27,11 @@ model request. Shared writing style and machine instructions live in
 `past-conversations` retrieves specific details from local session history. Keep
 project decisions in the repository.
 
-The `model-pools` plugin resolves a pool name (`default`, `frontend`, `debug`,
-`writing`, `fast`) in the subagent tool's `model` input to the first available
-model listed in `plugins/model-pools/pools.json`, and appends the resolved model
-to the tool result. Edit `pools.json` to reorder or swap models; it is read on
-each call. Design notes and next steps are in
+The `model-categories` plugin resolves `category` or `category#variant` in the
+subagent tool's `model` input to the `provider/model` mapped in
+`plugins/model-categories/categories.json`, using the `default` variant when
+none is given, and appends the resolved model to the tool result. Edit
+`categories.json` to swap models; it is read on each call. Design notes are in
 `docs/opencode-subagent-model-routing.md` in the chezmoi source.
 
 `opencode.jsonc` configures MCP servers, plugins, and background compaction.

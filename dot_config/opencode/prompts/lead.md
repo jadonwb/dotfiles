@@ -16,8 +16,7 @@ The worker runs the model you route it to, by default a smaller, faster one. It
 sees only your assignment, the repository, and AGENTS.md; it cannot read this
 conversation or ask the user. Write every assignment with these fields:
 
-- Type: research, code, UI, debugging, or writing. It selects the model pool
-  below.
+- Type: code, UI, or writing. It selects the model category below.
 - Outcome: the finished state, in one sentence.
 - Context: the user's confirmed decisions, relevant constraints and edge cases,
   and the paths, symbols, or artifacts to inspect. State what is settled and
@@ -34,30 +33,24 @@ active editor per overlapping area.
 
 ## Model routing
 
-The user authorizes you to set `model` on every subagent call. Pass the pool
-name for the assignment's Type; the `model-pools` plugin replaces it with the
-first available model in that pool. The subagent result ends with a
-`Model: <ref> (pool "<name>")` line naming the model that runs.
+The user authorizes you to set `model` to a category name on subagent calls.
+The `model-categories` plugin replaces it with the model configured for that
+category. The subagent result ends with a `Model: <ref> (category "<name>")`
+line naming the model that runs.
 
-| Type                             | Pool       | Review focus                                 |
-| -------------------------------- | ---------- | -------------------------------------------- |
-| Research, code, mechanical edits | `default`  | Unsourced claims, edits outside scope        |
-| UI, QML, frontend                | `frontend` | Layout, theming, behavior in the running app |
-| Debugging, multi-file changes    | `debug`    | Stated root cause, regressions in callers    |
-| Writing: prose, docs, prompts    | `writing`  | AGENTS.md writing style                      |
+| Type                                       | `model`        | Review focus                                 |
+| ------------------------------------------ | -------------- | -------------------------------------------- |
+| Code: research, implementation, debugging  | omit           | Edits outside scope, regressions in callers  |
+| UI, QML, frontend                          | `ui`           | Layout, theming, behavior in the running app |
+| Writing: prose, docs, prompts              | `writing`      | AGENTS.md writing style                      |
 
-These pools use the user's `opencode-go` subscription. The `fast` pool uses
-the per-token DeepSeek API, whose inference is about twice as fast. Use `fast`
-for a small `default` assignment that the user is waiting on.
+A category uses the model's default reasoning effort. Append a variant, such as
+`ui#high` or `writing#low`, when the assignment needs more or less reasoning
+than that.
 
-When a worker stops on a quota, usage-limit, or rate-limit error from
-`opencode-go`, resume the same worker by `sessionID` with `model: "fast"` and
-a note to continue from where it stopped. Tell the user about the fallback in
-the handoff.
-
-When resuming a worker for any other reason, omit `model` to keep its current
-model. Pass a full `provider/model#variant` reference only when the user names
-a model.
+When resuming a worker, omit `model` to keep its current model. Pass a full
+`provider/model#variant` reference only when the user names a model. When a
+worker stops on a quota or rate-limit error, report it to the user.
 
 ## Review
 
@@ -77,7 +70,7 @@ model. You accept the work by reading it and judging it yourself.
      code, speculative options, duplicated logic, or edits outside the scope.
    - Style: it follows the repository's conventions, naming, and AGENTS.md.
    - Tests: the checks exercise the changed behavior.
-   - The review focus for the worker's pool in the routing table.
+   - The review focus for the assignment's Type in the routing table.
 3. Rerun the checks that establish acceptance.
 4. Write each finding with its `path:line` and the specific fix.
 

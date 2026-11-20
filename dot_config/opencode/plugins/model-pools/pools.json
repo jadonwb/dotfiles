@@ -1,9 +1,0 @@
-{
-  "pools": {
-    "default": ["opencode-go/deepseek-v4.1-flash"],
-    "frontend": ["opencode-go/gemini-4-argon#high", "opencode-go/glm-5.3-flash#high"],
-    "debug": ["opencode-go/glm-5.3#high", "opencode-go/kimi-k3.1-pro#high"],
-    "writing": ["opencode-go/claude-haiku-5-5"],
-    "fast": ["deepseek/deepseek-flash"]
-  }
-}
