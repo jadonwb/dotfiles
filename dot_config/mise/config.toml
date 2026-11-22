@@ -1,8 +1,12 @@
+[settings.upgrade]
+auto_prune = false
+
 [tools]
 go = "latest"
 node = "lts"
 python = "latest"
-zig = "latest"
-zls = "latest"
-
-[settings.upgrade]
+"aqua:modem-dev/hunk" = "latest"
+codex = "latest"
+opencode = { version = "latest", allow_builds = ["@opencode/cli"] }
+uv = "latest"
+yt-dlp = { version = "latest", rename_exe = "yt-dlp" }
