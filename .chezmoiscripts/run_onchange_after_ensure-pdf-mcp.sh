@@ -42,7 +42,7 @@ if [[ -n $pdf_mcp ]] && [[ $(readlink -f "$pdf_mcp") != "$HOME"/.local/share/uv/
   fi
 fi
 
-if [[ -z $pdf_mcp ]] && [[ ! -e $HOME/.local/bin/pdf-mcp ]]; then
+if ! command -v pdf-mcp >/dev/null 2>&1 && [[ ! -e $HOME/.local/bin/pdf-mcp ]]; then
   if ! "$uv" tool install --python 3.14 pdf-mcp; then
     echo "pdf-mcp: uv install failed; continuing without it" >&2
   fi
