@@ -9,4 +9,9 @@ Host {{ $host }}
 {{- end }}
 {{- end }}
 
+Host jwbpi
+    HostName jwbpi.local
+    User jadon
+    IdentityFile ~/.ssh/pi_key
+
 AddKeysToAgent yes
