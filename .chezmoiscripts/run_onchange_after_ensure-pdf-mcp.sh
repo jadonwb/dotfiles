@@ -26,23 +26,6 @@ if ! command -v tesseract >/dev/null 2>&1; then
   exit 0
 fi
 
-# A pipx install owns the same command names. Remove it first so uv can take
-# them over without --force. A non-interactive apply may not have ~/.local/bin
-# on PATH, so check the installed location directly too.
-pdf_mcp="$(command -v pdf-mcp || true)"
-if [[ -z $pdf_mcp && -e $HOME/.local/bin/pdf-mcp ]]; then
-  pdf_mcp="$HOME/.local/bin/pdf-mcp"
-fi
-if [[ -n $pdf_mcp ]] && [[ $(readlink -f "$pdf_mcp") != "$HOME"/.local/share/uv/tools/* ]]; then
-  pipx="$(command -v pipx || true)"
-  if [[ -z $pipx && -x $HOME/.local/bin/pipx ]]; then
-    pipx="$HOME/.local/bin/pipx"
-  fi
-  if [[ -n $pipx ]]; then
-    "$pipx" uninstall pdf-mcp >/dev/null 2>&1 || true
-  fi
-fi
-
 if ! command -v pdf-mcp >/dev/null 2>&1 && [[ ! -e $HOME/.local/bin/pdf-mcp ]]; then
   if ! "$uv" tool install --python 3.14 pdf-mcp; then
     echo "pdf-mcp: uv install failed; continuing without it" >&2

@@ -45,9 +45,6 @@ o.bind("SUPER + PERIOD", "Passwords", "1password")
 
 o.bind("SUPER + E", "Toggle Files", (require("hypr.folio-drawer")))
 
-o.rebind("SUPER + SHIFT + F", "File manager", { launch = "folio" })
-o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", 'uwsm-app -- folio "$(omarchy-cmd-terminal-cwd)"')
-
 o.rebind(
   "SUPER + Q",
   "Toggle calculator",
@@ -57,4 +54,11 @@ o.rebind(
     launch = "gnome-calculator",
   })
 )
+
+-- Native Omarchy binds the file manager to Folio; the Ubuntu port still
+-- defaults to Nautilus and has no omarchy-launch-files, so name Folio here.
+if machine.type == "work" then
+  o.rebind("SUPER + SHIFT + F", "File manager", { launch = "folio" })
+  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", 'uwsm-app -- folio "$(omarchy-cmd-terminal-cwd)"')
+end
 

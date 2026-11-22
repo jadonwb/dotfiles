@@ -3,6 +3,8 @@
 .config/xdg-terminals.list
 .config/omarchy-ubuntu
 .mise.toml
+# Native Omarchy already routes file choosers to Folio.
+.config/xdg-desktop-portal
 {{- end}}
 
 # global

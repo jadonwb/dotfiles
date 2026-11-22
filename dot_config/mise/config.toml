@@ -5,8 +5,5 @@ auto_prune = true
 go = "latest"
 node = "lts"
 python = "latest"
-"aqua:modem-dev/hunk" = "latest"
-codex = "latest"
 opencode = { version = "latest", allow_builds = ["@opencode/cli"] }
-uv = "latest"
 yt-dlp = { version = "latest", rename_exe = "yt-dlp" }
