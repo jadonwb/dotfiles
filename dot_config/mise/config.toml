@@ -1,5 +1,5 @@
 [settings.upgrade]
-auto_prune = false
+auto_prune = true
 
 [tools]
 go = "latest"
