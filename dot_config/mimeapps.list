@@ -9,7 +9,7 @@ application/xhtml+xml=brave-browser.desktop
 text/plain=nvim.desktop
 text/csv=libreoffice-calc.desktop
 text/tab-separated-values=libreoffice-calc.desktop
-inode/directory=io.github.lgse.Strata.desktop
+inode/directory=folio.desktop
 image/jpeg=imv.desktop
 image/png=imv.desktop
 application/x-wayland-gnome-saved-search=thunar.desktop
@@ -45,6 +45,7 @@ application/xml=nvim.desktop
 x-scheme-handler/mailto=HEY.desktop
 x-scheme-handler/codex=chatgpt.desktop
 x-scheme-handler/opencode=ai.opencode.desktop.desktop
+x-scheme-handler/rpi-imager=com.raspberrypi.rpi-imager-uri-handler.desktop
 
 [Added Associations]
 application/x-shellscript=nvim.desktop;

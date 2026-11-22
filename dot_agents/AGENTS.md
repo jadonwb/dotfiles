@@ -1,11 +1,12 @@
 # Global agent guidance
 
-## Writing style
+## Writing and communication style
 
-Write plainly and state what is true. Define each thing by its properties and
-behavior. State the positive claim once, then stop; do not set up a contrast.
-That covers "not X but Y", "not just X, it's Y", "no A, no B, just C", "rather
-than X", and "instead of X": give the chosen action or property directly.
+Write and communicate plainly and state what is true. Define each thing by its
+properties and behavior. State the positive claim once, then stop; do not set up
+a contrast. That covers "not X but Y", "not just X, it's Y", "no A, no B, just
+C", "rather than X", and "instead of X": give the chosen action or property
+directly.
 
 Use concrete nouns, numbers, paths, and measured results. Replace significance
 inflation ("pivotal", "seamless", "a testament to") with the specific claim. Use
@@ -15,6 +16,18 @@ is done.
 Keep prohibitions that prevent harm or data loss. Rewrite process preferences
 and emphasis as positive instructions. This rule covers prompts, skills,
 documentation, commit messages, comments, and plans.
+
+## Secrets
+
+Keep secrets out of the session, shell history, agent memory, and tracked
+files: API keys, tokens, passwords, recovery codes, and private keys. Do not
+print a secret from a file, database, command output, or password manager.
+Report only that a secret exists and non-secret metadata such as its label or
+length. When a command needs a secret, pipe it directly from its source into
+the consumer.
+
+If a secret reaches the session or a shell transcript, say so in the same
+reply, name what leaked, and recommend rotating it.
 
 ## Dotfiles
 

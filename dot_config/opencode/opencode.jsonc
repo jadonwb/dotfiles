@@ -32,7 +32,7 @@
       "pdf": {
         "type": "local",
         "command": [
-          "pdf-mcp"
+          "/home/jadon/.local/bin/pdf-mcp"
         ],
         "timeout": {
           "startup": 120000,
@@ -42,7 +42,7 @@
       "browse": {
         "type": "local",
         "command": [
-          "browse",
+          "/home/jadon/.local/bin/browse",
           "mcp"
         ],
         "environment": {
@@ -52,6 +52,10 @@
       "desktop": {
         "type": "local",
         "command": [
+          "/home/jadon/.local/bin/uv",
+          "run",
+          "--directory",
+          "/home/jadon/c/desktop-mcp",
           "desktop-mcp"
         ],
         "environment": {

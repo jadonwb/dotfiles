@@ -10,13 +10,6 @@
 docs/
 tests/
 .gitignore
-# keep submodule git metadata out of deployed configs
-.config/nvim/.git
-.config/nvim/.gitignore
-# Omarchy owns the generated Neovim theme link
-.config/nvim/lua/plugins/theme.lua
-# lazy.nvim owns the per-machine lockfile
-.config/nvim/lazy-lock.json
 .opencode
 .luarc.json
 TODO.md

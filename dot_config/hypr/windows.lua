@@ -15,13 +15,6 @@ hl.window_rule({
 })
 
 hl.window_rule({
-  name = "strata-file-chooser",
-  match = { class = "^io\\.github\\.lgse\\.Strata\\.FileChooser$" },
-  float = true,
-  center = true,
-})
-
-hl.window_rule({
   name = "btop-tag",
   match = { class = "org.omarchy.btop" },
   tag = "-floating-window",

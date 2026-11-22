@@ -7,8 +7,3 @@ repo = "sxyazi/yazi"
 asset = "yazi-{arch}-unknown-linux-gnu.zip"
 description = "Terminal file manager"
 
-[strata]
-source = "github"
-repo = "lgse/strata"
-asset = "strata-{version}-{arch}-unknown-linux-gnu.tar.gz"
-description = "GTK4 file manager"

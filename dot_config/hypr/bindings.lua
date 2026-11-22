@@ -43,7 +43,7 @@ o.rebind("SUPER + comma", "Dismiss last notification", { ipc = "notifications.di
 
 o.bind("SUPER + PERIOD", "Passwords", "1password")
 
-o.bind("SUPER + E", "Toggle Strata", (require("hypr.strata-drawer")))
+o.bind("SUPER + E", "Toggle Files", (require("hypr.folio-drawer")))
 
 o.rebind(
   "SUPER + Q",
@@ -55,8 +55,3 @@ o.rebind(
   })
 )
 
--- Strata file-manager shortcuts.
-if o.shell_succeeds("command -v strata >/dev/null 2>&1") then
-  o.rebind("SUPER + SHIFT + F", "File manager", { launch = "strata" })
-  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", 'uwsm-app -- strata "$(omarchy-cmd-terminal-cwd)"')
-end

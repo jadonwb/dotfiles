@@ -13,9 +13,7 @@
 .config/opencode/tests/artifacts/artifact-tools.test.mjs
 .config/opencode/tests/artifacts/project.test.mjs
 .config/opencode/tests/artifacts/store.test.mjs
-.config/nvim/lua/features/opencode/artifacts.lua
-.config/nvim/tests/opencode/artifacts.lua
-.config/nvim/after/ftplugin/cpp.lua
-.config/nvim/lua/editor.lua
-.config/nvim/lua/plugins/editor.lua
-.config/nvim/lua/plugins/lazy.lua
+
+# Strata retired in favour of Omarchy Files (Folio).
+.config/hypr/strata-drawer.lua
+.config/xdg-desktop-portal/hyprland-portals.conf

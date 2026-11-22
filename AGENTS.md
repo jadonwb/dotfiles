@@ -3,8 +3,8 @@
 This is my dotfiles repository.
 
 Chezmoi deploys each `~/.config/<app>` from the matching `dot_config` path.
-`external_nvim` is a git submodule; the other configs are tracked directly in
-this repository.
+`~/.config/nvim` is a git-repo external declared in `.chezmoiexternal.toml`;
+the other configs are tracked directly in this repository.
 
 ## Setup notes
 
@@ -50,11 +50,10 @@ Run `chezmoi apply` after completed changes; expect a clean apply with live
 config matching source. After the user explicitly confirms publication, commit
 and push:
 
-1. Each changed application submodule first — stage exactly the files this work
-   changed, commit, and push. Preserve unrelated local modifications, and never
-   amend or force-push unless separately requested.
-2. Then the chezmoi superproject — stage and commit only the changed submodule's
-   gitlink, plus any directly tracked config files or other superproject files
-   this work changed, then push.
-3. When changes span multiple submodules, finish each submodule's commit and
-   push before updating the superproject.
+1. The Neovim external first — commit and push in `~/.config/nvim` (its own
+   repository). Preserve unrelated local modifications, and never amend or
+   force-push unless separately requested.
+2. Then the chezmoi superproject — stage and commit only the files this work
+   changed, then push.
+3. When changes span both repositories, finish the Neovim commit and push
+   before updating the chezmoi superproject.
