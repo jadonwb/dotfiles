@@ -127,7 +127,9 @@ def run_local_scans(reuse: bool = True) -> tuple[dict[str, Any], bool]:
   routed_rows, routed_complete = scan_routed(AGENT_ID, reuse)
   for row in routed_rows:
     stats.add_row(row, model_name(row.model))
-  return stats.snapshot_with_spend(), complete and routed_complete
+  # Older Omarchy collectors have no spend totals; the balance still works.
+  snapshot = getattr(stats, "snapshot_with_spend", stats.snapshot)
+  return snapshot(), complete and routed_complete
 
 
 def cached_local_stats(max_age: float) -> dict[str, Any]:
