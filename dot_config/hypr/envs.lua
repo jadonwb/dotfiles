@@ -16,8 +16,6 @@ local function join_path(...)
   return table.concat(segments, ":")
 end
 
-hl.env("SSH_AUTH_SOCK", os.getenv("XDG_RUNTIME_DIR") .. "/gcr/ssh")
-
 if machine.hostname == "ws205" then
   hl.env("EGL_PLATFORM", "wayland")
   hl.env("GBM_BACKEND", "nvidia-drm")

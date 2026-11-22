@@ -16,3 +16,7 @@
 
 # Strata retired in favour of Omarchy Files (Folio).
 .config/hypr/strata-drawer.lua
+
+# SSH keys load on demand through gcr-ssh-agent; the auto-loader is retired.
+.config/systemd/user/ssh-add-auto.service
+.local/bin/ssh-add-auto
