@@ -248,15 +248,17 @@ def read_opencode_db_key(db: Path) -> str:
 
 def api_key() -> str:
   # The environment first, then the agents that keep a DeepSeek key, read
-  # only: pi and omp, opencode (its database before the legacy auth.json),
-  # and dsh's managed store with its `.env` fallback.
+  # only: OpenCode's database, pi and omp, and the legacy opencode auth.json.
+  # OpenCode is the desktop's default agent, and its database is where a
+  # re-authentication lands; the other stores are fallbacks for machines that
+  # only run pi or omp.
   env_key = str(os.environ.get("DEEPSEEK_API_KEY", "")).strip()
   if env_key:
     return env_key
   for read in (
+    lambda: read_opencode_db_key(opencode_db()),
     lambda: read_json_key(pi_agent_dir() / "auth.json", "deepseek"),
     lambda: read_json_key(Path.home() / ".omp" / "agent" / "auth.json", "deepseek"),
-    lambda: read_opencode_db_key(opencode_db()),
     lambda: read_json_key(data_home() / "opencode" / "auth.json", "deepseek"),
     lambda: read_dsh_credentials_key(dsh_home() / ".credentials.yaml"),
     lambda: read_dotenv_key(dsh_home() / ".env"),
