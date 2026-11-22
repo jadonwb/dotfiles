@@ -7,7 +7,8 @@ uv=""
 if command -v uv >/dev/null 2>&1; then
   uv="$(command -v uv)"
 else
-  for candidate in "$HOME/.local/bin/uv" /usr/bin/uv; do
+  for candidate in "$HOME/.local/bin/uv" "$HOME/.local/share/mise/shims/uv" \
+    "$HOME/.local/share/mise/installs/uv/latest/.mise-bins/uv" /usr/bin/uv; do
     if [[ -x $candidate ]]; then
       uv="$candidate"
       break
