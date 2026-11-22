@@ -55,10 +55,3 @@ o.rebind(
   })
 )
 
--- Native Omarchy binds the file manager to Folio; the Ubuntu port still
--- defaults to Nautilus and has no omarchy-launch-files, so name Folio here.
-if machine.type == "work" then
-  o.rebind("SUPER + SHIFT + F", "File manager", { launch = "folio" })
-  o.rebind("SUPER + ALT + SHIFT + F", "File manager (cwd)", 'uwsm-app -- folio "$(omarchy-cmd-terminal-cwd)"')
-end
-
