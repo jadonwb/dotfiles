@@ -13,7 +13,15 @@
 # DeepSeek out of the system run and writes that record itself.
 set -euo pipefail
 
-OMARCHY_PATH="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+if [[ -z ${OMARCHY_PATH:-} ]]; then
+  if [[ -d $HOME/.local/share/omarchy ]]; then
+    OMARCHY_PATH="$HOME/.local/share/omarchy"
+  elif [[ -d /usr/share/omarchy ]]; then
+    OMARCHY_PATH=/usr/share/omarchy
+  else
+    OMARCHY_PATH="$HOME/.local/share/omarchy"
+  fi
+fi
 export OMARCHY_PATH
 system_update="$OMARCHY_PATH/bin/omarchy-agent-usage-update"
 patched="$HOME/.local/share/omarchy-patches/omarchy-agent-usage-deepseek"

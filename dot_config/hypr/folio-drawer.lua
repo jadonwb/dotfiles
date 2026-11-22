@@ -56,6 +56,6 @@ return window_toggle.new({
       pending_until = 0
       launch_rule:set_enabled(false)
     end, { timeout = 10000, type = "oneshot" })
-    hl.exec_cmd("omarchy-launch-files")
+    hl.exec_cmd("uwsm-app -- folio")
   end,
 })
