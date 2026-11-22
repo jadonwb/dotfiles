@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Run Omarchy's agent usage update with a patched DeepSeek collector.
+#
+# OpenCode V2 keeps credentials in opencode.db. The stock DeepSeek collector
+# reads the legacy auth.json beside it, which goes stale whenever an account is
+# re-authenticated in OpenCode, so the panel keeps using the old key. The
+# patched collector reads the active credential from the database and falls
+# back to the auth files.
+#
+# Every collector Omarchy ships is system-owned and updates overwrite it, so
+# this wrapper lives in ~/.local/bin (ahead of /usr/share/omarchy/bin on PATH)
+# and keeps the patched collector in the user's own share directory. It leaves
+# DeepSeek out of the system run and writes that record itself.
+set -euo pipefail
+
+OMARCHY_PATH="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+export OMARCHY_PATH
+system_update="$OMARCHY_PATH/bin/omarchy-agent-usage-update"
+patched="$HOME/.local/share/omarchy-patches/omarchy-agent-usage-deepseek"
+
+# Split the arguments so DeepSeek is left to the patched collector.
+flags=()
+only=()
+exclude_deepseek=0
+args=("$@")
+i=0
+while (( i < ${#args[@]} )); do
+  case "${args[i]}" in
+    --force|--limits-only)
+      flags+=("${args[i]}")
+      ((i += 1))
+      ;;
+    --except)
+      if [[ ${args[i+1]:-} == deepseek ]]; then
+        exclude_deepseek=1
+      fi
+      ((i += 2))
+      ;;
+    *)
+      only+=("${args[i]}")
+      ((i += 1))
+      ;;
+  esac
+done
+
+wanted=0
+if (( ! exclude_deepseek )); then
+  if (( ${#only[@]} == 0 )); then
+    wanted=1
+  else
+    for agent in "${only[@]}"; do
+      [[ $agent == deepseek ]] && wanted=1
+    done
+  fi
+fi
+
+status=0
+if [[ -x $system_update ]]; then
+  system_args=("$@")
+  if (( ! exclude_deepseek )); then
+    system_args+=(--except deepseek)
+  fi
+  "$system_update" "${system_args[@]}" || status=1
+fi
+
+if (( wanted )) && [[ -x $patched ]]; then
+  if ! record=$("$patched" "${flags[@]}"); then
+    status=1
+  elif [[ -n $record ]]; then
+    usage_dir="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/agents/usage"
+    mkdir -p "$usage_dir"
+    tmp=$(mktemp "$usage_dir/.deepseek.XXXXXX")
+    printf '%s\n' "$record" >"$tmp"
+    mv "$tmp" "$usage_dir/deepseek.json"
+  fi
+fi
+
+exit $status

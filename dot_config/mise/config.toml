@@ -1,0 +1,8 @@
+[tools]
+go = "latest"
+node = "lts"
+python = "latest"
+zig = "latest"
+zls = "latest"
+
+[settings.upgrade]

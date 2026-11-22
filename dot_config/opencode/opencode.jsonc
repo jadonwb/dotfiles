@@ -32,7 +32,7 @@
       "pdf": {
         "type": "local",
         "command": [
-          "/home/jadon/.local/bin/pdf-mcp"
+          "pdf-mcp"
         ],
         "timeout": {
           "startup": 120000,
@@ -42,7 +42,7 @@
       "browse": {
         "type": "local",
         "command": [
-          "/home/jadon/.local/bin/browse",
+          "browse",
           "mcp"
         ],
         "environment": {
@@ -52,14 +52,14 @@
       "desktop": {
         "type": "local",
         "command": [
-          "/home/jadon/.local/bin/uv",
+          "uv",
           "run",
           "--directory",
-          "/home/jadon/c/desktop-mcp",
+          "{env:HOME}/c/desktop-mcp",
           "desktop-mcp"
         ],
         "environment": {
-          "TYPESAFE_API_KEY_COMMAND": "/usr/bin/secret-tool lookup service desktop-mcp key typesafe_api_key"
+          "TYPESAFE_API_KEY_COMMAND": "secret-tool lookup service desktop-mcp key typesafe_api_key"
         },
         "timeout": {
           "startup": 60000,
