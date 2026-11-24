@@ -1,5 +1,29 @@
 [settings]
-disable_tools = ["claude"]
+# Agent CLIs declared by /etc/mise/conf.d/omarchy-tools.toml. Only opencode is
+# used here; the rest stay out of PATH and out of the lazy install.
+disable_tools = [
+  "amp",
+  "antigravity-cli",
+  "claude",
+  "codex",
+  "copilot",
+  "crush",
+  "cursor-agent",
+  "grok",
+  "http:devin",
+  "http:kiro-cli",
+  "muse",
+  "npm:@deepseek-ai/dsh",
+  "npm:@kilocode/cli",
+  "npm:@minimax-ai/code",
+  "npm:@moonshot-ai/kimi-code",
+  "npm:command-code",
+  "npm:freebuff",
+  "oh-my-pi",
+  "ori",
+  "pi",
+  "qwen",
+]
 
 [settings.upgrade]
 auto_prune = true
