@@ -1,3 +1,6 @@
+[settings]
+disable_tools = ["claude"]
+
 [settings.upgrade]
 auto_prune = true
 
