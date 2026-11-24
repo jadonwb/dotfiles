@@ -24,7 +24,7 @@
       "disabled": true
     },
     "compaction": {
-      "model": "deepseek/deepseek-flash#max"
+      "model": "opencode-go/glm-5.3#max"
     }
   },
   "mcp": {
