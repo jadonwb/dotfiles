@@ -17,3 +17,9 @@
 # SSH keys load on demand through gcr-ssh-agent; the auto-loader is retired.
 .config/systemd/user/ssh-add-auto.service
 .local/bin/ssh-add-auto
+
+# ChatGPT and Codex are uninstalled; retire the launcher wrapper and theme files.
+.local/bin/chatgpt
+.local/share/applications/chatgpt.desktop
+.config/omarchy/themes/arrowlake/codex.txt
+.config/omarchy/themes/arrowlake_light/codex.txt
