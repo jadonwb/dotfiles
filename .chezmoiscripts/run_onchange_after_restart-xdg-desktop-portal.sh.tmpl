@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Restart the portal after its configuration changes. xdg-desktop-portal reads
+# the file chooser routing once, when it starts, so a new portals.conf alone
+# leaves the old backend in place until the next login.
+#
+# The hash below is what makes this a run_onchange script: editing the portal
+# configuration changes the rendered script.
+#
+# portal configuration: {{ include "dot_config/xdg-desktop-portal/hyprland-portals.conf" | sha256sum }}
+set -euo pipefail
+
+if ! systemctl --user is-active --quiet xdg-desktop-portal.service; then
+  exit 0
+fi
+
+systemctl --user restart xdg-desktop-portal.service
